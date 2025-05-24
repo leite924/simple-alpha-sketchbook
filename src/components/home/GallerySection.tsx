@@ -1,5 +1,5 @@
-
 import { useEffect, useState } from "react";
+import { AspectRatio } from "@/components/ui/aspect-ratio";
 
 const defaultGalleryImages = [
   {
@@ -50,8 +50,8 @@ const GallerySection = () => {
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editForm, setEditForm] = useState({ url: "", title: "", alt: "" });
 
-  // Check if user is admin (in a real app, this would use authentication)
   useEffect(() => {
+    // Check if user is admin (in a real app, this would use authentication)
     const checkAdmin = () => {
       // For demo purposes, we're checking if we're on the admin page
       // In a real app, this would be based on authentication
@@ -145,67 +145,69 @@ const GallerySection = () => {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {galleryImages.map((image, index) => (
-            <div key={index} className="photo-card group h-72 md:h-80 relative">
+            <div key={index} className="photo-card group relative">
               {editingIndex === index ? (
-                <div className="absolute inset-0 bg-white p-4 z-10 border rounded-lg shadow-lg">
-                  <h4 className="font-bold mb-3">Editar Imagem {index + 1}</h4>
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-sm font-medium mb-1">URL da Imagem</label>
-                      <input
-                        type="text"
-                        value={editForm.url}
-                        onChange={(e) => setEditForm({ ...editForm, url: e.target.value })}
-                        className="w-full p-2 border rounded"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1">Título</label>
-                      <input
-                        type="text"
-                        value={editForm.title}
-                        onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
-                        className="w-full p-2 border rounded"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1">Descrição (alt)</label>
-                      <input
-                        type="text"
-                        value={editForm.alt}
-                        onChange={(e) => setEditForm({ ...editForm, alt: e.target.value })}
-                        className="w-full p-2 border rounded"
-                      />
-                    </div>
-                    <div className="flex justify-end gap-2 mt-4">
-                      <button
-                        onClick={handleCancelEdit}
-                        className="px-3 py-1 bg-gray-200 rounded text-sm"
-                      >
-                        Cancelar
-                      </button>
-                      <button
-                        onClick={handleSaveEdit}
-                        className="px-3 py-1 bg-amber-600 text-white rounded text-sm"
-                      >
-                        Salvar
-                      </button>
+                <AspectRatio ratio={16/9}>
+                  <div className="absolute inset-0 bg-white p-4 z-10 border rounded-lg shadow-lg">
+                    <h4 className="font-bold mb-3">Editar Imagem {index + 1}</h4>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-sm font-medium mb-1">URL da Imagem</label>
+                        <input
+                          type="text"
+                          value={editForm.url}
+                          onChange={(e) => setEditForm({ ...editForm, url: e.target.value })}
+                          className="w-full p-2 border rounded"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Título</label>
+                        <input
+                          type="text"
+                          value={editForm.title}
+                          onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                          className="w-full p-2 border rounded"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Descrição (alt)</label>
+                        <input
+                          type="text"
+                          value={editForm.alt}
+                          onChange={(e) => setEditForm({ ...editForm, alt: e.target.value })}
+                          className="w-full p-2 border rounded"
+                        />
+                      </div>
+                      <div className="flex justify-end gap-2 mt-4">
+                        <button
+                          onClick={handleCancelEdit}
+                          className="px-3 py-1 bg-gray-200 rounded text-sm"
+                        >
+                          Cancelar
+                        </button>
+                        <button
+                          onClick={handleSaveEdit}
+                          className="px-3 py-1 bg-amber-600 text-white rounded text-sm"
+                        >
+                          Salvar
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
+                </AspectRatio>
               ) : (
-                <>
+                <AspectRatio ratio={16/9}>
                   <img
                     src={image.url}
                     alt={image.alt}
                     loading="lazy"
                     width="800"
-                    height="600"
-                    className={`w-full h-full object-cover transition-opacity duration-300 ${
+                    height="450"
+                    className={`w-full h-full object-cover rounded-lg transition-opacity duration-300 ${
                       imagesLoaded ? "opacity-100" : "opacity-0"
                     }`}
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src = 'https://via.placeholder.com/800x600?text=Imagem+não+encontrada';
+                      (e.target as HTMLImageElement).src = 'https://via.placeholder.com/800x450?text=Imagem+não+encontrada';
                     }}
                   />
                   <div className="photo-card-overlay">
@@ -221,7 +223,7 @@ const GallerySection = () => {
                       </button>
                     )}
                   </div>
-                </>
+                </AspectRatio>
               )}
             </div>
           ))}
