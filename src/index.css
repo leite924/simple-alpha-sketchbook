@@ -99,7 +99,7 @@
     @apply bg-background text-foreground font-sans;
     width: 100vw;
     height: 100vh;
-    overflow: hidden;
+    overflow-x: hidden;
     margin: 0;
     padding: 0;
   }
@@ -108,7 +108,7 @@
     @apply bg-background text-foreground font-sans;
     width: 100vw;
     height: 100vh;
-    overflow: hidden;
+    overflow-x: hidden;
     margin: 0;
     padding: 0;
   }
@@ -116,7 +116,7 @@
   #root {
     width: 100vw;
     height: 100vh;
-    overflow: hidden;
+    overflow-x: hidden;
     display: flex;
     flex-direction: column;
   }
