@@ -7,6 +7,12 @@ import { ChartBar, Users, Book, DollarSign } from "lucide-react";
 const Dashboard = () => {
   // Em um app real, esses dados viriam de uma API
   const [stats] = useState<DashboardStats>({
+    totalUsers: 256,
+    totalCourses: 12,
+    totalClasses: 18,
+    totalEnrollments: 156,
+    monthlyRevenue: 42580.25,
+    activeStudents: 256,
     totalStudents: 256,
     activeClasses: 18,
     totalRevenue: 42580.25,

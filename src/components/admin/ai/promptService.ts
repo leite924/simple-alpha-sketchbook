@@ -10,7 +10,7 @@ export const formatPrompt = (prompt: ContentPrompt): string => {
   switch (type) {
     case 'blog':
       formattedPrompt = `Crie um artigo para o blog sobre "${topic || 'o tópico especificado'}".`;
-      if (keywords && keywords.length) {
+      if (keywords && keywords.length > 0) {
         formattedPrompt += ` Inclua as seguintes palavras-chave: ${keywords.join(', ')}.`;
       }
       break;
@@ -19,7 +19,7 @@ export const formatPrompt = (prompt: ContentPrompt): string => {
       break;
     case 'seo':
       formattedPrompt = `Gere uma otimização SEO para o conteúdo sobre "${topic || 'o tópico especificado'}"`;
-      if (keywords && keywords.length) {
+      if (keywords && keywords.length > 0) {
         formattedPrompt += ` com foco nas palavras-chave: ${keywords.join(', ')}.`;
       }
       break;

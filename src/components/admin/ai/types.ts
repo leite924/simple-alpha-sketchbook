@@ -1,12 +1,12 @@
 
 export interface ContentPrompt {
-  id: string;
-  title: string;
-  content: string;
+  id?: string;
+  title?: string;
+  content?: string;
   type: 'blog' | 'course' | 'email' | 'social' | 'seo' | 'dashboard';
-  createdAt: Date;
+  createdAt?: Date;
   topic?: string;
-  keywords?: string;
+  keywords?: string[];
   targetAudience?: string;
   tone?: string;
   length?: string;
@@ -32,6 +32,7 @@ export interface AIConfig {
   model: string;
   apiKey: string;
   lastUpdated?: Date;
+  updatedBy?: string;
 }
 
 export interface AIModel {

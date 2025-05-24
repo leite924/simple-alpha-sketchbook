@@ -34,6 +34,9 @@ export const generateWithOpenAI = async (config: AIConfig, prompt: string): Prom
     
     return {
       content: data.choices[0].message.content,
+      type: 'openai',
+      model: config.model,
+      timestamp: new Date(),
       metadata: {
         tokens: data.usage?.total_tokens,
         processingTime,
@@ -78,6 +81,9 @@ export const generateWithPerplexity = async (config: AIConfig, prompt: string): 
     
     return {
       content: data.choices[0].message.content,
+      type: 'perplexity',
+      model: config.model,
+      timestamp: new Date(),
       metadata: {
         processingTime,
       }

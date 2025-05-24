@@ -30,10 +30,10 @@ export const getAIConfig = async (): Promise<AIConfig | null> => {
     });
     
     return {
-      provider: record.provider as 'openai' | 'perplexity' | null,
-      model: record.model,
+      provider: record.provider || '',
+      model: record.model || '',
       apiKey: record.api_key || '',
-      lastUpdated: record.last_updated || undefined,
+      lastUpdated: record.last_updated ? new Date(record.last_updated) : undefined,
       updatedBy: record.updated_by || undefined
     };
   } catch (error) {

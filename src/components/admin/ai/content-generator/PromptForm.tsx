@@ -18,8 +18,9 @@ const PromptForm = ({ prompt, setPrompt, onGenerate, isGenerating }: PromptFormP
   const [contentType, setContentType] = useState<'blog' | 'course' | 'seo' | 'dashboard'>(prompt.type);
 
   const handleContentTypeChange = (value: string) => {
-    setContentType(value as 'blog' | 'course' | 'seo' | 'dashboard');
-    setPrompt({ ...prompt, type: value as 'blog' | 'course' | 'seo' | 'dashboard' });
+    const validType = value as 'blog' | 'course' | 'seo' | 'dashboard';
+    setContentType(validType);
+    setPrompt({ ...prompt, type: validType });
   };
 
   return (

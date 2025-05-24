@@ -22,6 +22,17 @@ export interface DashboardStats {
   newEnrollments: number;
 }
 
+export interface PaymentTransaction {
+  id: number;
+  userName: string;
+  description: string;
+  amount: number;
+  date: Date;
+  status: "completed" | "pending" | "failed";
+  paymentMethod?: string;
+  userId?: string;
+}
+
 export interface ClassItem {
   id: string;
   courseName: string;
