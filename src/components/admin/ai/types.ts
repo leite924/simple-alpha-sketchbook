@@ -1,26 +1,27 @@
 
-export type AIProvider = 'openai' | 'perplexity' | null;
-export type AIModel = string;
-
-export interface AIConfig {
-  provider: AIProvider;
-  model: AIModel;
-  apiKey: string;
-  lastUpdated?: string;
-  updatedBy?: string;
-}
-
-export interface AIContent {
-  id?: string;
+export interface ContentPrompt {
+  id: string;
   title: string;
   content: string;
-  createdAt?: string;
-  generatedBy?: string;
+  type: 'blog' | 'course' | 'email' | 'social';
+  createdAt: Date;
 }
 
-export interface AIPrompt {
-  id?: string;
-  prompt: string;
-  template?: string;
-  category?: string;
+export interface AIResponse {
+  content: string;
+  type: string;
+  model: string;
+  timestamp: Date;
+}
+
+export interface AIProvider {
+  name: string;
+  apiKey: string;
+  models: string[];
+}
+
+export interface AIConfig {
+  provider: string;
+  model: string;
+  apiKey: string;
 }

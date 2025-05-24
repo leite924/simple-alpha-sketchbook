@@ -1,174 +1,211 @@
 
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { Menu, X, Camera, User, Settings } from "lucide-react";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Menu, X, User, LogOut } from "lucide-react";
+import { useAuth } from "@/components/auth/AuthProvider";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
 
-  useEffect(() => {
-    const handleScroll = () => {
-      if (window.scrollY > 10) {
-        setIsScrolled(true);
-      } else {
-        setIsScrolled(false);
-      }
-    };
-
-    window.addEventListener("scroll", handleScroll);
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-    };
-  }, []);
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/");
+  };
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
   };
 
-  const closeMenu = () => {
-    setIsMenuOpen(false);
-  };
-
   return (
-    <header
-      className={`sticky top-0 z-50 w-full transition-all duration-300 ${
-        isScrolled
-          ? "bg-background/95 backdrop-blur-md shadow-md"
-          : "bg-background" // Changed from bg-transparent to bg-background
-      }`}
-    >
-      <div className="container mx-auto px-4 w-full">
-        <div className="flex h-16 items-center justify-between">
-          <div className="flex items-center">
-            <Link to="/" className="flex items-center space-x-2">
-              <Camera className="h-8 w-8 text-primary" />
-              <span className="logo-text text-xl font-bold">FotoCursos</span>
-            </Link>
-          </div>
+    <header className="bg-white shadow-sm sticky top-0 z-50">
+      <div className="container mx-auto px-4">
+        <div className="flex justify-between items-center h-16">
+          <Link to="/" className="text-2xl font-bold text-purple">
+            Escola de Fotografia
+          </Link>
 
-          {/* Desktop navigation */}
-          <nav className="hidden md:flex items-center space-x-6">
-            <Link
-              to="/"
-              className="text-foreground/90 hover:text-foreground font-medium transition-colors"
-            >
-              Home
+          {/* Desktop Navigation */}
+          <nav className="hidden md:flex space-x-8">
+            <Link to="/" className="text-gray-700 hover:text-purple transition-colors">
+              Início
             </Link>
-            <Link
-              to="/cursos"
-              className="text-foreground/90 hover:text-foreground font-medium transition-colors"
-            >
+            <Link to="/courses" className="text-gray-700 hover:text-purple transition-colors">
               Cursos
             </Link>
-            <Link
-              to="/turmas"
-              className="text-foreground/90 hover:text-foreground font-medium transition-colors"
-            >
+            <Link to="/classes" className="text-gray-700 hover:text-purple transition-colors">
               Turmas
             </Link>
-            <Link
-              to="/blog"
-              className="text-foreground/90 hover:text-foreground font-medium transition-colors"
-            >
+            <Link to="/blog" className="text-gray-700 hover:text-purple transition-colors">
               Blog
             </Link>
-            <Link
-              to="/sobre"
-              className="text-foreground/90 hover:text-foreground font-medium transition-colors"
-            >
+            <Link to="/about" className="text-gray-700 hover:text-purple transition-colors">
               Sobre
             </Link>
-            <Link
-              to="/area-do-aluno"
-              className="text-foreground/90 hover:text-foreground font-medium transition-colors"
-            >
-              <Button variant="outline" size="sm" className="flex items-center gap-1">
-                <User size={16} />
-                Área do Aluno
-              </Button>
-            </Link>
-            <Link
-              to="/admin"
-              className="text-foreground/90 hover:text-foreground font-medium transition-colors"
-            >
-              <Button variant="default" size="sm" className="flex items-center gap-1">
-                <Settings size={16} />
-                Admin
-              </Button>
+            <Link to="/contact" className="text-gray-700 hover:text-purple transition-colors">
+              Contato
             </Link>
           </nav>
 
+          {/* Auth Section */}
+          <div className="hidden md:flex items-center space-x-4">
+            {user ? (
+              <>
+                <Link to="/student-area" className="text-gray-700 hover:text-purple transition-colors">
+                  Área do Estudante
+                </Link>
+                <Link to="/admin" className="text-gray-700 hover:text-purple transition-colors">
+                  Administração
+                </Link>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="flex items-center space-x-2">
+                      <User className="h-4 w-4" />
+                      <span>{user.email}</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => navigate("/student-area")}>
+                      <User className="h-4 w-4 mr-2" />
+                      Meu Perfil
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleSignOut}>
+                      <LogOut className="h-4 w-4 mr-2" />
+                      Sair
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
+            ) : (
+              <>
+                <Link to="/auth">
+                  <Button variant="outline">Entrar</Button>
+                </Link>
+                <Link to="/auth">
+                  <Button>Cadastrar</Button>
+                </Link>
+              </>
+            )}
+          </div>
+
           {/* Mobile menu button */}
           <button
-            className="md:hidden p-2 text-foreground"
+            className="md:hidden"
             onClick={toggleMenu}
-            aria-label="Menu"
+            aria-label="Toggle menu"
           >
             {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         </div>
-      </div>
 
-      {/* Mobile menu */}
-      {isMenuOpen && (
-        <div className="md:hidden bg-background w-full animate-fade-in border-t">
-          <nav className="container mx-auto px-4 py-4 flex flex-col space-y-4">
-            <Link
-              to="/"
-              onClick={closeMenu}
-              className="px-4 py-2 text-foreground/90 hover:text-foreground hover:bg-muted rounded-md transition-colors"
-            >
-              Home
-            </Link>
-            <Link
-              to="/cursos"
-              onClick={closeMenu}
-              className="px-4 py-2 text-foreground/90 hover:text-foreground hover:bg-muted rounded-md transition-colors"
-            >
-              Cursos
-            </Link>
-            <Link
-              to="/turmas"
-              onClick={closeMenu}
-              className="px-4 py-2 text-foreground/90 hover:text-foreground hover:bg-muted rounded-md transition-colors"
-            >
-              Turmas
-            </Link>
-            <Link
-              to="/blog"
-              onClick={closeMenu}
-              className="px-4 py-2 text-foreground/90 hover:text-foreground hover:bg-muted rounded-md transition-colors"
-            >
-              Blog
-            </Link>
-            <Link
-              to="/sobre"
-              onClick={closeMenu}
-              className="px-4 py-2 text-foreground/90 hover:text-foreground hover:bg-muted rounded-md transition-colors"
-            >
-              Sobre
-            </Link>
-            <Link
-              to="/area-do-aluno"
-              onClick={closeMenu}
-              className="px-4 py-2 flex items-center space-x-2 bg-muted text-foreground rounded-md"
-            >
-              <User size={16} />
-              <span>Área do Aluno</span>
-            </Link>
-            <Link
-              to="/admin"
-              onClick={closeMenu}
-              className="px-4 py-2 flex items-center space-x-2 bg-primary text-primary-foreground rounded-md"
-            >
-              <Settings size={16} />
-              <span>Admin</span>
-            </Link>
-          </nav>
-        </div>
-      )}
+        {/* Mobile Navigation */}
+        {isMenuOpen && (
+          <div className="md:hidden">
+            <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 border-t">
+              <Link
+                to="/"
+                className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-purple"
+                onClick={toggleMenu}
+              >
+                Início
+              </Link>
+              <Link
+                to="/courses"
+                className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-purple"
+                onClick={toggleMenu}
+              >
+                Cursos
+              </Link>
+              <Link
+                to="/classes"
+                className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-purple"
+                onClick={toggleMenu}
+              >
+                Turmas
+              </Link>
+              <Link
+                to="/blog"
+                className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-purple"
+                onClick={toggleMenu}
+              >
+                Blog
+              </Link>
+              <Link
+                to="/about"
+                className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-purple"
+                onClick={toggleMenu}
+              >
+                Sobre
+              </Link>
+              <Link
+                to="/contact"
+                className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-purple"
+                onClick={toggleMenu}
+              >
+                Contato
+              </Link>
+
+              {/* Mobile Auth Section */}
+              <div className="pt-4 border-t">
+                {user ? (
+                  <>
+                    <Link
+                      to="/student-area"
+                      className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-purple"
+                      onClick={toggleMenu}
+                    >
+                      Área do Estudante
+                    </Link>
+                    <Link
+                      to="/admin"
+                      className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-purple"
+                      onClick={toggleMenu}
+                    >
+                      Administração
+                    </Link>
+                    <button
+                      onClick={() => {
+                        handleSignOut();
+                        toggleMenu();
+                      }}
+                      className="block w-full text-left px-3 py-2 text-base font-medium text-gray-700 hover:text-purple"
+                    >
+                      Sair ({user.email})
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      to="/auth"
+                      className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-purple"
+                      onClick={toggleMenu}
+                    >
+                      Entrar
+                    </Link>
+                    <Link
+                      to="/auth"
+                      className="block px-3 py-2 text-base font-medium text-purple hover:text-purple-dark"
+                      onClick={toggleMenu}
+                    >
+                      Cadastrar
+                    </Link>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </header>
   );
 };
