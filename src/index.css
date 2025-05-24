@@ -1,3 +1,4 @@
+
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Merriweather:ital,wght@0,300;0,400;0,700;1,400&display=swap');
 
 @tailwind base;
@@ -96,26 +97,26 @@
 
   html {
     @apply bg-background text-foreground font-sans;
-    width: 100%;
-    height: 100%;
-    overflow-x: hidden;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
     margin: 0;
     padding: 0;
   }
 
   body {
     @apply bg-background text-foreground font-sans;
-    width: 100%;
-    height: 100%;
-    overflow-x: hidden;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
     margin: 0;
     padding: 0;
   }
 
   #root {
-    width: 100%;
-    height: 100%;
-    overflow-x: hidden;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
   }
