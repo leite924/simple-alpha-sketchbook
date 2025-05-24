@@ -1,13 +1,13 @@
 
 import { useState, useEffect } from 'react';
-import { AIConfig, AIModel } from '@/components/admin/ai/types';
+import { AIConfig } from '@/components/admin/ai/types';
 import { toast } from 'sonner';
 
 export const useConfigForm = (aiConfig: AIConfig | null, isUpdating: boolean) => {
   const [editConfig, setEditConfig] = useState<AIConfig>({
-    provider: null,
-    model: null,
-    apiKey: null
+    provider: '',
+    model: '',
+    apiKey: ''
   });
   
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -28,9 +28,9 @@ export const useConfigForm = (aiConfig: AIConfig | null, isUpdating: boolean) =>
       setValidationError(null);
     } else {
       setEditConfig({
-        provider: null,
-        model: null,
-        apiKey: null
+        provider: '',
+        model: '',
+        apiKey: ''
       });
       setValidationError(null);
     }
@@ -41,12 +41,12 @@ export const useConfigForm = (aiConfig: AIConfig | null, isUpdating: boolean) =>
     setEditConfig({
       ...editConfig,
       provider,
-      model: null
+      model: ''
     });
     setValidationError(null);
   };
   
-  const handleModelChange = (model: AIModel) => {
+  const handleModelChange = (model: string) => {
     setEditConfig({
       ...editConfig,
       model

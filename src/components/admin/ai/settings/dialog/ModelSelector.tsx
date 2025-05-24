@@ -1,12 +1,11 @@
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { AIModel } from "@/components/admin/ai/types";
 
 interface ModelSelectorProps {
   provider: string | null;
   model: string | null;
-  onModelChange: (model: AIModel) => void;
+  onModelChange: (model: string) => void;
   disabled?: boolean;
 }
 
@@ -16,7 +15,7 @@ const ModelSelector = ({ provider, model, onModelChange, disabled = false }: Mod
       <Label>Modelo</Label>
       <Select 
         value={model || ''}
-        onValueChange={(value) => onModelChange(value as AIModel)}
+        onValueChange={onModelChange}
         disabled={disabled || !provider}
       >
         <SelectTrigger>

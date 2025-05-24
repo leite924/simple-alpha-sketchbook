@@ -1,7 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 
-export async function getClassDetails(classId: string): Promise<{ price: string } | undefined> {
+export async function getClassDetails(classId: string): Promise<{ price: number } | undefined> {
   try {
     const { data, error } = await supabase
       .from('classes')

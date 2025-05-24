@@ -3,7 +3,7 @@ export interface ContentPrompt {
   id?: string;
   title?: string;
   content?: string;
-  type: 'blog' | 'course' | 'email' | 'social' | 'seo' | 'dashboard';
+  type: 'blog' | 'course' | 'seo' | 'dashboard';
   createdAt?: Date;
   topic?: string;
   keywords?: string[];
@@ -35,7 +35,4 @@ export interface AIConfig {
   updatedBy?: string;
 }
 
-export interface AIModel {
-  name: string;
-  value: string;
-}
+export type AIModel = string;

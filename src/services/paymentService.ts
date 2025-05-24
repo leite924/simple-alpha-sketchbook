@@ -14,18 +14,18 @@ export async function createTransaction(
   }
 ) {
   try {
+    // Since payment_transactions table doesn't exist in Supabase,
+    // we'll create a transaction record in the transactions table instead
     const { data, error } = await supabase
-      .from('payment_transactions')
+      .from('transactions')
       .insert({
-        user_id: userId,
-        status: 'completed', // In a real system, this would start as 'pending'
+        description: `Payment for class ${classId}`,
+        type: 'income',
         amount: amount,
-        payment_method: paymentMethod,
-        installments: installments || 1,
-        card_brand: cardDetails?.cardBrand || null,
-        last_four: cardDetails?.lastFour || null,
-        class_id: classId,
-        coupon_id: couponId
+        transaction_date: new Date().toISOString().split('T')[0],
+        reference_id: classId,
+        reference_type: 'class_enrollment',
+        notes: `Payment method: ${paymentMethod}, Installments: ${installments || 1}`
       })
       .select()
       .single();

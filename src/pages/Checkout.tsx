@@ -67,17 +67,17 @@ const Checkout = () => {
         <div className="mb-8">
           <h2 className="text-2xl font-semibold mb-2">{classDetails?.course_name}</h2>
           <p className="text-gray-700 mb-4">
-            {classDetails?.period} | {classDetails?.days} | {classDetails?.time}
+            {classDetails?.period} | {classDetails?.days}
           </p>
           <p className="font-medium text-lg">
-            Valor: R$ {parseFloat(classDetails?.price || '0').toFixed(2)}
+            Valor: R$ {classDetails?.price?.toFixed(2) || '0.00'}
           </p>
         </div>
         
         {classDetails && (
           <CheckoutForm
             classId={classId!}
-            classPrice={parseFloat(classDetails.price)}
+            classPrice={classDetails.price}
             className={classDetails.course_name}
           />
         )}
