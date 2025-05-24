@@ -8,7 +8,7 @@ import { ClassItem } from "./types";
 interface ClassesTableProps {
   classes: ClassItem[];
   onEdit: (classItem: ClassItem) => void;
-  onDelete: (id: number) => void;
+  onDelete: (id: string) => void;
 }
 
 const ClassesTable = ({ classes, onEdit, onDelete }: ClassesTableProps) => {

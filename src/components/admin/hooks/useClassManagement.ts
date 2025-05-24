@@ -79,7 +79,7 @@ export const useClassManagement = () => {
       days: values.days,
       period: values.period,
       total_spots: parseInt(values.totalSpots.toString(), 10),
-      spots_available: parseInt(values.availableSpots.toString(), 10),
+      spots_available: parseInt((values.availableSpots || values.spotsAvailable || values.totalSpots).toString(), 10),
       price: parseFloat(values.price.toString()),
       is_active: values.isActive
     };

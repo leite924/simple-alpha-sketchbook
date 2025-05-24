@@ -3,8 +3,14 @@ export interface ContentPrompt {
   id: string;
   title: string;
   content: string;
-  type: 'blog' | 'course' | 'email' | 'social';
+  type: 'blog' | 'course' | 'email' | 'social' | 'seo' | 'dashboard';
   createdAt: Date;
+  topic?: string;
+  keywords?: string;
+  targetAudience?: string;
+  tone?: string;
+  length?: string;
+  additionalInstructions?: string;
 }
 
 export interface AIResponse {
@@ -12,6 +18,7 @@ export interface AIResponse {
   type: string;
   model: string;
   timestamp: Date;
+  metadata?: any;
 }
 
 export interface AIProvider {
@@ -24,4 +31,10 @@ export interface AIConfig {
   provider: string;
   model: string;
   apiKey: string;
+  lastUpdated?: Date;
+}
+
+export interface AIModel {
+  name: string;
+  value: string;
 }
