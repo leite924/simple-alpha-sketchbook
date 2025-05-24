@@ -61,7 +61,7 @@ export const usePaymentProcessing = () => {
         throw new Error('Failed to fetch class details');
       }
       
-      const amount = parseFloat(classData.price);
+      const amount = parseFloat(classData.price.toString());
       const finalAmount = amount - discountAmount;
       
       // Create transaction record

@@ -1,7 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 
-export async function getClassDetails(classId: string): Promise<{ price: number } | undefined> {
+export async function getClassDetails(classId: string): Promise<{ price: string } | undefined> {
   try {
     const { data, error } = await supabase
       .from('classes')
@@ -12,7 +12,9 @@ export async function getClassDetails(classId: string): Promise<{ price: number 
     if (error) throw new Error(`Error fetching class data: ${error.message}`);
     if (!data) throw new Error(`Class not found with ID: ${classId}`);
     
-    return data;
+    return {
+      price: data.price.toString()
+    };
   } catch (error) {
     console.error('Error in getClassDetails:', error);
     throw error;
