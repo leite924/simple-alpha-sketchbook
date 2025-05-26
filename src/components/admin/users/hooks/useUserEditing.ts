@@ -86,29 +86,20 @@ export const useUserEditing = () => {
         }
       }
       
-      // LÓGICA SIMPLIFICADA PARA MENSAGENS
+      // LÓGICA CORRIGIDA PARA MENSAGENS
       console.log("Verificando mensagem a exibir...");
       
       if (isSpecialAdmin) {
         console.log("É super admin - mostrando mensagem especial");
         toast.success("Super administrador atualizado com sucesso!");
-      } else if (values._changePassword === false) {
+      } else if (values._changePassword === false || values._changePassword === undefined) {
         // Usuário NÃO quis alterar senha - sucesso simples sempre
         console.log("Usuário não quis alterar senha - sucesso simples");
         toast.success("Usuário atualizado com sucesso!");
       } else if (values._changePassword === true) {
-        // Usuário QUIS alterar senha - verificar se foi fornecida
-        const passwordProvided = values.password && 
-                                values.password.trim() !== '' &&
-                                !values.password.match(/^[•]+$/);
-        
-        console.log("Usuário quis alterar senha. Senha fornecida?", passwordProvided);
-        
-        if (passwordProvided) {
-          toast.warning("Perfil atualizado, mas a senha não pôde ser alterada. Entre em contato com o administrador do sistema para alteração de senhas.");
-        } else {
-          toast.success("Usuário atualizado com sucesso!");
-        }
+        // Usuário QUIS alterar senha - sempre informar sobre a limitação do sistema
+        console.log("Usuário quis alterar senha - informando sobre limitação");
+        toast.info("Perfil atualizado com sucesso! Nota: Para alterar senhas, o usuário deve usar a opção 'Esqueci minha senha' no login.");
       } else {
         // Fallback para casos não previstos
         console.log("Caso não previsto - usando sucesso padrão");
