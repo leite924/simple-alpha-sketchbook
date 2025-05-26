@@ -89,10 +89,12 @@ export const useUserEditing = () => {
       const passwordProvided = values.hasOwnProperty('password') && 
                               values.password !== undefined && 
                               values.password !== null && 
-                              values.password.trim() !== '';
+                              values.password.trim() !== '' &&
+                              values.password.trim().length > 0;
       
       console.log("Password provided?", passwordProvided);
       console.log("Password value:", values.password);
+      console.log("Values keys:", Object.keys(values));
       
       // Mostrar mensagem apropriada
       if (isSpecialAdmin) {
