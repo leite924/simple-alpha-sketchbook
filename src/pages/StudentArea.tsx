@@ -12,6 +12,8 @@ const StudentArea = () => {
   const { isAuthenticated, loading, user } = useAuth();
   const [isLoading, setIsLoading] = useState(loading);
   
+  console.log("StudentArea state:", { isAuthenticated, loading, userEmail: user?.email });
+  
   useEffect(() => {
     setIsLoading(loading);
   }, [loading]);

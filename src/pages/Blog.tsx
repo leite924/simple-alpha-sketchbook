@@ -16,6 +16,8 @@ const Blog = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   
+  console.log("Blog component rendering");
+  
   const { 
     data: posts = [], 
     isLoading: isLoadingPosts, 
@@ -26,6 +28,13 @@ const Blog = () => {
     data: allCategories = [], 
     isLoading: isLoadingCategories 
   } = useAllBlogCategories();
+
+  console.log("Blog data:", { 
+    postsCount: posts.length, 
+    isLoadingPosts, 
+    isLoadingCategories, 
+    postsError 
+  });
 
   // Filter posts by search term and category
   const filteredPosts = posts.filter((post) => {

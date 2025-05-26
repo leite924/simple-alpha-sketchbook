@@ -25,6 +25,14 @@ export const useAuth = () => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const auth = useOptimizedAuth();
 
+  // Debug log para verificar estados
+  console.log("AuthProvider state:", {
+    user: auth.user?.email || null,
+    loading: auth.loading,
+    userRole: auth.userRole,
+    isAuthenticated: auth.isAuthenticated
+  });
+
   return (
     <AuthContext.Provider value={auth}>
       {children}

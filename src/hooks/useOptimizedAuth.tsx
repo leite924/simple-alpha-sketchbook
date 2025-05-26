@@ -14,29 +14,32 @@ export const useOptimizedAuth = () => {
 
     const initializeAuth = async () => {
       try {
+        console.log("Initializing auth...");
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (!isMounted) return;
 
         if (error) {
-          console.error("Auth error:", error);
-          setLoading(false);
-          return;
+          console.error("Auth initialization error:", error);
         }
 
+        console.log("Session retrieved:", session ? "Found" : "None");
         setSession(session);
         setUser(session?.user ?? null);
 
         if (session?.user) {
+          console.log("Fetching user role for:", session.user.email);
           try {
-            const { data: roleData } = await supabase
+            const { data: roleData, error: roleError } = await supabase
               .from('user_roles')
               .select('role')
               .eq('user_id', session.user.id)
               .single();
             
             if (isMounted) {
-              setUserRole(roleData?.role || 'viewer');
+              const role = roleData?.role || 'viewer';
+              console.log("User role found:", role);
+              setUserRole(role);
             }
           } catch (error) {
             console.error("Role fetch error:", error);
@@ -44,12 +47,14 @@ export const useOptimizedAuth = () => {
               setUserRole('viewer');
             }
           }
+        } else {
+          setUserRole('viewer');
         }
-
-        setLoading(false);
       } catch (error) {
         console.error("Auth initialization error:", error);
+      } finally {
         if (isMounted) {
+          console.log("Auth initialization complete, setting loading to false");
           setLoading(false);
         }
       }
@@ -61,11 +66,12 @@ export const useOptimizedAuth = () => {
       async (event, session) => {
         if (!isMounted) return;
 
-        console.log("Auth state changed:", event);
+        console.log("Auth state changed:", event, session ? "Session exists" : "No session");
         setSession(session);
         setUser(session?.user ?? null);
 
         if (session?.user) {
+          console.log("Fetching role for user on auth change:", session.user.email);
           try {
             const { data: roleData } = await supabase
               .from('user_roles')
@@ -74,7 +80,9 @@ export const useOptimizedAuth = () => {
               .single();
             
             if (isMounted) {
-              setUserRole(roleData?.role || 'viewer');
+              const role = roleData?.role || 'viewer';
+              console.log("Role updated:", role);
+              setUserRole(role);
             }
           } catch (error) {
             console.error("Role fetch error in auth change:", error);
@@ -84,6 +92,11 @@ export const useOptimizedAuth = () => {
           }
         } else {
           setUserRole('viewer');
+        }
+
+        // Ensure loading is set to false after auth state change
+        if (isMounted) {
+          setLoading(false);
         }
       }
     );
@@ -95,6 +108,7 @@ export const useOptimizedAuth = () => {
   }, []);
 
   const signOut = async () => {
+    console.log("Signing out...");
     await supabase.auth.signOut();
   };
 

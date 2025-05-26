@@ -19,6 +19,8 @@ const Admin = () => {
     error
   } = useAdminAuth();
 
+  console.log("Admin page state:", { authenticated, userRole, isLoading, error });
+
   useEffect(() => {
     console.log("Admin page rendered at", new Date().toISOString());
     console.log("Authentication state:", { authenticated, userRole, isLoading, error });
