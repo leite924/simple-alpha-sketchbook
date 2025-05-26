@@ -19,15 +19,26 @@ export function useUserActions(users: User[], setUsers: React.Dispatch<React.Set
     
     try {
       if (isEditingUser && currentUser) {
-        // Atualizar o perfil no Supabase
+        // Buscar o perfil pelo email primeiro
+        const { data: existingProfile, error: searchError } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('email', currentUser.email)
+          .single();
+          
+        if (searchError) {
+          console.error("Erro ao buscar perfil:", searchError);
+          throw new Error(`Erro ao buscar perfil: ${searchError.message}`);
+        }
+        
+        // Atualizar o perfil no Supabase usando o ID encontrado
         const { error: profileError } = await supabase
           .from('profiles')
           .update({
             first_name: values.name.split(' ')[0],
             last_name: values.name.split(' ').slice(1).join(' '),
-            is_active: true
           })
-          .eq('id', currentUser.email);
+          .eq('id', existingProfile.id);
         
         if (profileError) throw profileError;
         
@@ -35,7 +46,7 @@ export function useUserActions(users: User[], setUsers: React.Dispatch<React.Set
         const { data: existingRole, error: roleCheckError } = await supabase
           .from('user_roles')
           .select('*')
-          .eq('user_id', currentUser.email)
+          .eq('user_id', existingProfile.id)
           .single();
           
         if (roleCheckError && roleCheckError.code !== 'PGRST116') {
@@ -47,21 +58,21 @@ export function useUserActions(users: User[], setUsers: React.Dispatch<React.Set
           const { error: insertError } = await supabase
             .from('user_roles')
             .insert({
-              user_id: currentUser.email, 
-              role: values.role 
+              user_id: existingProfile.id, 
+              role: values.role === "viewer" ? "user" : values.role 
             } as unknown as any);
             
           if (insertError) throw insertError;
-        } else if (existingRole.role !== values.role) {
+        } else if (existingRole.role !== (values.role === "viewer" ? "user" : values.role)) {
           console.log("Atualizando função de usuário para:", values.role);
           
           // Atualizar função existente
           const { error: updateError } = await supabase
             .from('user_roles')
             .update({ 
-            role: values.role === "viewer" ? "user" : values.role 
-          })
-            .eq('user_id', currentUser.email);
+              role: values.role === "viewer" ? "user" : values.role 
+            })
+            .eq('user_id', existingProfile.id);
             
           if (updateError) {
             console.error("Erro ao atualizar função:", updateError);
@@ -80,11 +91,14 @@ export function useUserActions(users: User[], setUsers: React.Dispatch<React.Set
         toast.success("Usuário atualizado com sucesso!");
       } else {
         try {
-          // Verificar se o usuário já existe no perfil
+          // Gerar um UUID para o novo perfil
+          const profileId = crypto.randomUUID();
+          
+          // Verificar se já existe um usuário com este email
           const { data: existingProfile, error: checkError } = await supabase
             .from('profiles')
             .select('id')
-            .eq('id', values.email)
+            .eq('email', values.email)
             .single();
             
           if (checkError && checkError.code !== 'PGRST116') {
@@ -96,13 +110,13 @@ export function useUserActions(users: User[], setUsers: React.Dispatch<React.Set
             throw new Error('Já existe um usuário com este email');
           }
           
-          console.log("Criando perfil para:", values.email);
+          console.log("Criando perfil com ID:", profileId, "para email:", values.email);
           
-          // Criar um perfil no Supabase
+          // Criar um perfil no Supabase com UUID gerado
           const { data, error } = await supabase
             .from('profiles')
             .insert({
-              id: values.email,
+              id: profileId,
               first_name: values.name.split(' ')[0],
               last_name: values.name.split(' ').slice(1).join(' '),
               email: values.email
@@ -116,8 +130,8 @@ export function useUserActions(users: User[], setUsers: React.Dispatch<React.Set
           
           console.log("Perfil criado com sucesso:", data);
           
-          // Adicionar papel/função
-          console.log("Atribuindo função:", values.role, "para usuário:", values.email);
+          // Adicionar papel/função usando o UUID do perfil
+          console.log("Atribuindo função:", values.role, "para usuário ID:", profileId);
           
           // Mapeamento de roles do frontend para roles do banco
           const roleMapping: Record<string, Database["public"]["Enums"]["user_role"]> = {
@@ -132,7 +146,7 @@ export function useUserActions(users: User[], setUsers: React.Dispatch<React.Set
           const { error: roleError } = await supabase
             .from('user_roles')
             .insert({
-              user_id: values.email,
+              user_id: profileId,
               role: dbRole
             });
             
@@ -190,11 +204,22 @@ export function useUserActions(users: User[], setUsers: React.Dispatch<React.Set
           throw new Error("Usuário não encontrado");
         }
         
+        // Buscar o perfil pelo email para obter o UUID
+        const { data: profileData, error: searchError } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('email', userToDelete.email)
+          .single();
+          
+        if (searchError) {
+          throw new Error(`Erro ao encontrar perfil: ${searchError.message}`);
+        }
+        
         // Excluir a função do usuário primeiro
         const { error: roleError } = await supabase
           .from('user_roles')
           .delete()
-          .eq('user_id', userToDelete.email);
+          .eq('user_id', profileData.id);
           
         if (roleError) throw roleError;
         
@@ -202,7 +227,7 @@ export function useUserActions(users: User[], setUsers: React.Dispatch<React.Set
         const { error: profileError } = await supabase
           .from('profiles')
           .delete()
-          .eq('id', userToDelete.email);
+          .eq('id', profileData.id);
         
         if (profileError) throw profileError;
         

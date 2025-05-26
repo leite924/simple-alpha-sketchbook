@@ -12,7 +12,6 @@ type ProfileUpdate = Database['public']['Tables']['profiles']['Update'];
  */
 export async function findUserByEmail(email: string): Promise<string | undefined> {
   try {
-    // Use explicit typing for the query response to avoid deep type instantiation
     const { data, error } = await supabase
       .from('profiles')
       .select('id')
@@ -62,6 +61,7 @@ export async function createUser(
     // Define the profile data with explicit typing
     const profileInsertData: ProfileInsert = {
       id: profileId,
+      email: email,
       first_name: firstName,
       last_name: lastName,
       cpf: profileData.cpf,
