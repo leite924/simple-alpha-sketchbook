@@ -20,7 +20,16 @@ export interface User {
 export interface UserDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (values: UserFormValues) => Promise<boolean>;
+  onSubmit: (values: UserFormValues & { _changePassword?: boolean }) => Promise<boolean>;
   currentUser?: User | null;
   isEditing: boolean;
+}
+
+export interface Permission {
+  role: string;
+  module: string;
+  can_view: boolean;
+  can_create: boolean;
+  can_edit: boolean;
+  can_delete: boolean;
 }
