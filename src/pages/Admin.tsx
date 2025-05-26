@@ -19,11 +19,19 @@ const Admin = () => {
     error
   } = useAdminAuth();
 
-  console.log("Admin page state:", { authenticated, userRole, isLoading, error });
+  console.log("🔍 Admin page state:", { authenticated, userRole, isLoading, error });
 
   useEffect(() => {
-    console.log("Admin page rendered at", new Date().toISOString());
-    console.log("Authentication state:", { authenticated, userRole, isLoading, error });
+    console.log("📄 Admin page rendered at", new Date().toISOString());
+    console.log("🔐 Authentication state:", { authenticated, userRole, isLoading, error });
+    
+    // Add timeout to ensure loading doesn't stay true indefinitely
+    const timeout = setTimeout(() => {
+      if (isLoading) {
+        console.warn("⚠️ Loading timeout - forcing loading to false");
+        setErrorInfo("Tempo limite de carregamento excedido");
+      }
+    }, 10000); // 10 second timeout
     
     // Add key event listener for diagnostics toggle
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -39,6 +47,7 @@ const Admin = () => {
     window.addEventListener('keydown', handleKeyDown);
     
     return () => {
+      clearTimeout(timeout);
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [authenticated, userRole, isLoading, error]);
@@ -48,7 +57,7 @@ const Admin = () => {
     return <AdminErrorDisplay error={error || errorInfo || "Erro desconhecido na página de administração"} />;
   }
 
-  // Show loading state
+  // Show loading state with timeout protection
   if (isLoading) {
     return (
       <MainLayout>
@@ -58,6 +67,9 @@ const Admin = () => {
             <p>Carregando painel administrativo...</p>
             <p className="text-sm text-gray-500 mt-2">
               Verificando autenticação e permissões...
+            </p>
+            <p className="text-xs text-gray-400 mt-2">
+              Estado: {JSON.stringify({ authenticated, userRole, isLoading })}
             </p>
           </div>
         </div>
