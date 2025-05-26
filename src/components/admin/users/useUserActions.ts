@@ -1,16 +1,22 @@
+
 import { useState } from "react";
 import { UserFormValues, User } from "./types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Database } from "@/integrations/supabase/types";
 
-export function useUserActions(users: User[], setUsers: React.Dispatch<React.SetStateAction<User[]>>, isAuthenticated: boolean) {
+export function useUserActions(
+  users: User[], 
+  setUsers: React.Dispatch<React.SetStateAction<User[]>>, 
+  isAuthenticated: boolean,
+  refreshUsers?: () => void
+) {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditingUser, setIsEditingUser] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   const handleUserSubmit = async (values: UserFormValues): Promise<boolean> => {
-    console.log("Iniciando cadastro de usuário:", values);
+    console.log("Iniciando operação de usuário:", values);
     if (!isAuthenticated) {
       toast.error("Você precisa estar logado para gerenciar usuários");
       return false;
@@ -52,24 +58,26 @@ export function useUserActions(users: User[], setUsers: React.Dispatch<React.Set
           throw roleCheckError;
         }
         
+        const dbRole = values.role === "viewer" ? "user" : values.role;
+        
         if (!existingRole) {
           // Inserir nova função
           const { error: insertError } = await supabase
             .from('user_roles')
             .insert({
               user_id: existingProfile.id, 
-              role: values.role === "viewer" ? "user" : values.role 
-            } as unknown as any);
+              role: dbRole
+            });
             
           if (insertError) throw insertError;
-        } else if (existingRole.role !== (values.role === "viewer" ? "user" : values.role)) {
-          console.log("Atualizando função de usuário para:", values.role);
+        } else if (existingRole.role !== dbRole) {
+          console.log("Atualizando função de usuário para:", dbRole);
           
           // Atualizar função existente
           const { error: updateError } = await supabase
             .from('user_roles')
             .update({ 
-              role: values.role === "viewer" ? "user" : values.role 
+              role: dbRole
             })
             .eq('user_id', existingProfile.id);
             
@@ -79,14 +87,6 @@ export function useUserActions(users: User[], setUsers: React.Dispatch<React.Set
           }
         }
         
-        // Atualizar o estado local
-        setUsers(
-          users.map((user) =>
-            user.id === currentUser.id
-              ? { ...user, name: values.name, role: values.role as User["role"] }
-              : user
-          )
-        );
         toast.success("Usuário atualizado com sucesso!");
       } else {
         // Lógica de criação de novo usuário
@@ -105,7 +105,7 @@ export function useUserActions(users: User[], setUsers: React.Dispatch<React.Set
         }
         
         if (existingProfile) {
-          throw new Error('Já existe um usuário com este email');
+          throw new Error('Já existe um usuário com este email. Verifique se o usuário não foi criado anteriormente.');
         }
         
         // Gerar um UUID para o novo perfil
@@ -163,19 +163,12 @@ export function useUserActions(users: User[], setUsers: React.Dispatch<React.Set
         }
         
         console.log("Função atribuída com sucesso");
-        
-        // Adicionar ao estado local
-        const newUser: User = {
-          id: Math.max(0, ...users.map((user) => user.id)) + 1,
-          name: values.name,
-          email: values.email,
-          role: values.role,
-          status: "active",
-          createdAt: new Date(),
-          lastLogin: new Date()
-        };
-        setUsers([...users, newUser]);
         toast.success("Usuário criado com sucesso!");
+      }
+      
+      // Recarregar os dados dos usuários após a operação
+      if (refreshUsers) {
+        refreshUsers();
       }
       
       // Fechar o diálogo e resetar estado
@@ -234,8 +227,11 @@ export function useUserActions(users: User[], setUsers: React.Dispatch<React.Set
         
         if (profileError) throw profileError;
         
-        // Atualizar o estado local
-        setUsers(users.filter((user) => user.id !== userId));
+        // Recarregar os dados
+        if (refreshUsers) {
+          refreshUsers();
+        }
+        
         toast.success("Usuário excluído com sucesso!");
       } catch (error: any) {
         console.error("Erro ao excluir usuário:", error);

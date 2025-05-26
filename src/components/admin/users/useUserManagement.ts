@@ -15,7 +15,8 @@ export const useUserManagement = (initialUsers: User[] = []) => {
     filteredUsers, 
     searchTerm, 
     setSearchTerm, 
-    isLoading 
+    isLoading,
+    refreshUsers
   } = useUserData(isAuthenticated, initialUsers);
   
   // Manage user actions
@@ -29,7 +30,7 @@ export const useUserManagement = (initialUsers: User[] = []) => {
     handleDeleteUser,
     handleDialogClose,
     handleAddUser
-  } = useUserActions(users as User[], setUsers, isAuthenticated);
+  } = useUserActions(users as User[], setUsers, isAuthenticated, refreshUsers);
 
   // Return all necessary functionality
   return {
@@ -48,6 +49,7 @@ export const useUserManagement = (initialUsers: User[] = []) => {
     handleEditUser,
     handleDeleteUser,
     handleDialogClose,
-    handleAddUser
+    handleAddUser,
+    refreshUsers
   };
 };

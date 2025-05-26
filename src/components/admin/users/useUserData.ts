@@ -1,58 +1,10 @@
 
 import { useState, useEffect } from 'react';
-import { User } from "../types"; // Import User from types.ts instead of defining locally
-
-// Mock data for development purposes
-const mockUsers: User[] = [
-  {
-    id: 1,
-    name: 'João Silva',
-    email: 'joao@example.com',
-    role: 'admin',
-    status: 'active',
-    createdAt: new Date('2023-01-15'),
-    lastLogin: new Date('2023-05-20'),
-  },
-  {
-    id: 2,
-    name: 'Maria Oliveira',
-    email: 'maria@example.com',
-    role: 'instructor',
-    status: 'active',
-    createdAt: new Date('2023-02-01'),
-    lastLogin: new Date('2023-05-22'),
-  },
-  {
-    id: 3,
-    name: 'Carlos Pereira',
-    email: 'carlos@example.com',
-    role: 'student',
-    status: 'inactive',
-    createdAt: new Date('2023-03-10'),
-    lastLogin: new Date('2023-04-15'),
-  },
-  {
-    id: 4,
-    name: 'Ana Souza',
-    email: 'ana@example.com',
-    role: 'viewer',
-    status: 'active',
-    createdAt: new Date('2023-04-05'),
-    lastLogin: new Date('2023-05-25'),
-  },
-  {
-    id: 5,
-    name: 'Ricardo Alves',
-    email: 'ricardo@example.com',
-    role: 'admin',
-    status: 'active',
-    createdAt: new Date('2023-05-01'),
-    lastLogin: new Date('2023-05-28'),
-  },
-];
+import { User } from "../types";
+import { supabase } from "@/integrations/supabase/client";
 
 export const useUserData = (isAuthenticated: boolean = true, initialUsers: User[] = []) => {
-  const [users, setUsers] = useState<User[]>(initialUsers.length > 0 ? initialUsers : []);
+  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -64,32 +16,93 @@ export const useUserData = (isAuthenticated: boolean = true, initialUsers: User[
     user.role.toLowerCase().includes(searchTerm.toLowerCase())
   );
   
-  useEffect(() => {
-    // Only fetch data if no initial users were provided
-    if (initialUsers.length === 0) {
-      // In a real app, this would be an API call
-      // For now, we're using mock data
-      const fetchUsers = async () => {
-        try {
-          // Simulating API delay
-          await new Promise(resolve => setTimeout(resolve, 800));
-          setUsers(mockUsers);
-          setLoading(false);
-        } catch (err) {
-          setError(err instanceof Error ? err : new Error('Unknown error'));
-          setLoading(false);
-        }
-      };
+  const fetchUsersFromSupabase = async () => {
+    try {
+      console.log("Buscando usuários do Supabase...");
+      setLoading(true);
       
-      if (isAuthenticated) {
-        fetchUsers();
-      } else {
-        setLoading(false);
+      // Buscar perfis com suas funções
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select(`
+          id,
+          email,
+          first_name,
+          last_name,
+          created_at
+        `);
+        
+      if (profilesError) {
+        console.error("Erro ao buscar perfis:", profilesError);
+        throw profilesError;
       }
+      
+      console.log("Perfis encontrados:", profilesData?.length || 0);
+      
+      if (!profilesData || profilesData.length === 0) {
+        console.log("Nenhum perfil encontrado");
+        setUsers([]);
+        setLoading(false);
+        return;
+      }
+      
+      // Buscar funções dos usuários
+      const { data: rolesData, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('user_id, role');
+        
+      if (rolesError) {
+        console.error("Erro ao buscar funções:", rolesError);
+        // Não falha se não conseguir buscar funções, usa 'viewer' como padrão
+      }
+      
+      console.log("Funções encontradas:", rolesData?.length || 0);
+      
+      // Combinar dados de perfis com funções
+      const usersWithRoles: User[] = profilesData.map((profile, index) => {
+        const userRole = rolesData?.find(role => role.user_id === profile.id);
+        const role = userRole?.role || 'viewer';
+        
+        // Mapear roles do banco para roles do frontend
+        const roleMapping: Record<string, User["role"]> = {
+          'super_admin': 'admin',
+          'admin': 'admin',
+          'instructor': 'instructor',
+          'student': 'student',
+          'user': 'viewer'
+        };
+        
+        const mappedRole = roleMapping[role] || 'viewer';
+        
+        return {
+          id: index + 1, // ID sequencial para a interface
+          name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Usuário',
+          email: profile.email || '',
+          role: mappedRole,
+          status: 'active' as const,
+          createdAt: new Date(profile.created_at || new Date()),
+          lastLogin: new Date() // Placeholder - não temos esta informação
+        };
+      });
+      
+      console.log("Usuários processados:", usersWithRoles.length);
+      setUsers(usersWithRoles);
+      
+    } catch (err) {
+      console.error("Erro ao buscar usuários:", err);
+      setError(err instanceof Error ? err : new Error('Erro desconhecido'));
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchUsersFromSupabase();
     } else {
       setLoading(false);
     }
-  }, [isAuthenticated, initialUsers]);
+  }, [isAuthenticated]);
   
   const addUser = (user: Omit<User, 'id' | 'createdAt'>) => {
     const newUser: User = {
@@ -110,6 +123,13 @@ export const useUserData = (isAuthenticated: boolean = true, initialUsers: User[
     setUsers(users.filter(user => user.id !== id));
   };
   
+  // Função para recarregar os dados
+  const refreshUsers = () => {
+    if (isAuthenticated) {
+      fetchUsersFromSupabase();
+    }
+  };
+  
   return {
     users,
     filteredUsers,
@@ -121,6 +141,7 @@ export const useUserData = (isAuthenticated: boolean = true, initialUsers: User[
     error,
     addUser,
     updateUser,
-    deleteUser
+    deleteUser,
+    refreshUsers
   };
 };
