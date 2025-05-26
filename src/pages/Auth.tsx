@@ -10,8 +10,8 @@ import AlertMessages from "@/components/auth/AlertMessages";
 import { supabase } from "@/integrations/supabase/client";
 
 const Auth = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("midiaputz@gmail.com");
+  const [password, setPassword] = useState("*Putz123");
   const [showConfirmationAlert, setShowConfirmationAlert] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const navigate = useNavigate();

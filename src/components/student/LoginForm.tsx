@@ -26,19 +26,26 @@ const LoginForm = ({ onLoginSuccess }: LoginFormProps) => {
     setIsLoading(true);
     
     try {
-      console.log("Attempting login with:", loginForm.email);
-      const { error } = await supabase.auth.signInWithPassword({
+      console.log("Attempting student login with:", loginForm.email);
+      const { error, data } = await supabase.auth.signInWithPassword({
         email: loginForm.email,
         password: loginForm.password,
       });
       
-      if (error) throw error;
-      
-      console.log("Login successful");
-      toast.success("Login realizado com sucesso!");
-      onLoginSuccess();
+      if (error) {
+        console.error("Student login error:", error);
+        if (error.message.includes("Invalid login credentials")) {
+          toast.error("Email ou senha incorretos");
+        } else {
+          toast.error(`Erro ao fazer login: ${error.message}`);
+        }
+      } else if (data.session) {
+        console.log("Student login successful");
+        toast.success("Login realizado com sucesso!");
+        onLoginSuccess();
+      }
     } catch (error: any) {
-      console.error("Login error:", error);
+      console.error("Student login error:", error);
       toast.error(`Erro ao fazer login: ${error.message}`);
     } finally {
       setIsLoading(false);
