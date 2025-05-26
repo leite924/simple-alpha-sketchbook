@@ -34,38 +34,78 @@ const LoginForm = ({
     setErrorMessage("");
     setShowConfirmationAlert(false);
     
+    console.log("🔐 === INÍCIO DO PROCESSO DE LOGIN ===");
+    console.log("📧 Email:", email);
+    console.log("🔑 Senha fornecida:", password ? "***FORNECIDA***" : "VAZIA");
+    console.log("🌐 Supabase URL:", "https://qwlalihzfrkvfwauksxr.supabase.co");
+    
     try {
-      console.log("Attempting login with:", email);
+      console.log("1️⃣ Tentando fazer login com Supabase...");
       
       const { error, data } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+        email: email.trim(),
+        password: password,
       });
       
+      console.log("2️⃣ Resposta do Supabase:");
+      console.log("   - Erro:", error);
+      console.log("   - Dados:", data);
+      console.log("   - Session:", data?.session ? "PRESENTE" : "AUSENTE");
+      console.log("   - User:", data?.user ? "PRESENTE" : "AUSENTE");
+      
       if (error) {
-        console.error("Login error:", error);
+        console.error("❌ Erro de login detalhado:");
+        console.error("   - Código:", error.status);
+        console.error("   - Mensagem:", error.message);
+        console.error("   - Nome:", error.name);
         
         if (error.message.includes("Email not confirmed")) {
+          console.log("📧 Email não confirmado");
           setShowConfirmationAlert(true);
           toast.error("É necessário confirmar o email antes de fazer login");
         } else if (error.message.includes("Invalid login credentials")) {
+          console.log("🚫 Credenciais inválidas");
           setErrorMessage("Email ou senha incorretos. Verifique suas credenciais e tente novamente.");
           toast.error("Credenciais inválidas");
+        } else if (error.message.includes("Email link is invalid")) {
+          console.log("🔗 Link de email inválido");
+          setErrorMessage("Link de email inválido ou expirado.");
+          toast.error("Link de email inválido");
+        } else if (error.message.includes("User not found")) {
+          console.log("👤 Usuário não encontrado");
+          setErrorMessage("Usuário não encontrado. Verifique o email.");
+          toast.error("Usuário não encontrado");
         } else {
+          console.log("❓ Erro desconhecido");
           setErrorMessage(`Erro ao fazer login: ${error.message}`);
           toast.error(`Erro ao fazer login: ${error.message}`);
         }
       } else if (data.session) {
-        console.log("Login successful");
+        console.log("✅ Login bem-sucedido!");
+        console.log("   - Session ID:", data.session.access_token.substring(0, 20) + "...");
+        console.log("   - User ID:", data.user?.id);
+        console.log("   - User Email:", data.user?.email);
+        
         toast.success("Login realizado com sucesso!");
+        
+        console.log("3️⃣ Redirecionando para /admin...");
         navigate("/admin", { replace: true });
+      } else {
+        console.log("⚠️ Login sem erro mas também sem session");
+        setErrorMessage("Erro inesperado: login sem sessão");
+        toast.error("Erro inesperado no login");
       }
     } catch (error: any) {
-      console.error("Erro completo:", error);
+      console.error("💥 Erro completo no catch:");
+      console.error("   - Tipo:", typeof error);
+      console.error("   - Erro:", error);
+      console.error("   - Stack:", error.stack);
+      
       setErrorMessage(`Erro ao fazer login: ${error.message}`);
       toast.error(`Erro ao fazer login: ${error.message}`);
     } finally {
       setLoading(false);
+      console.log("🏁 === FIM DO PROCESSO DE LOGIN ===");
     }
   };
 
