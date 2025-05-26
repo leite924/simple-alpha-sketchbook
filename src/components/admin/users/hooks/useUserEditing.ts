@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { UserFormValues, User } from "../types";
 
 export const useUserEditing = () => {
-  const editUser = async (currentUser: User, values: UserFormValues): Promise<boolean> => {
+  const editUser = async (currentUser: User, values: UserFormValues & { _changePassword?: boolean }): Promise<boolean> => {
     console.log("Editando usuário:", values);
     console.log("Dados recebidos:", JSON.stringify(values, null, 2));
     
@@ -85,11 +85,11 @@ export const useUserEditing = () => {
         }
       }
       
-      // Verificar se o usuário realmente pretende alterar a senha
-      const intentToChangePassword = values.hasOwnProperty('password');
+      // Usar a flag _changePassword para determinar a intenção do usuário
+      const intentToChangePassword = values._changePassword === true;
       
       console.log("Intent to change password?", intentToChangePassword);
-      console.log("Values keys:", Object.keys(values));
+      console.log("_changePassword flag:", values._changePassword);
       
       // Mostrar mensagem apropriada
       if (isSpecialAdmin) {

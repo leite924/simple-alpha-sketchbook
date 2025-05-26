@@ -10,7 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 
 interface UserFormProps {
   defaultValues: UserFormValues;
-  onSubmit: (values: UserFormValues) => Promise<boolean>;
+  onSubmit: (values: UserFormValues & { _changePassword?: boolean }) => Promise<boolean>;
   onCancel: () => void;
   isEditing: boolean;
 }
@@ -37,11 +37,14 @@ const UserForm = ({ defaultValues, onSubmit, onCancel, isEditing }: UserFormProp
       console.log("Change password?", changePassword);
       console.log("Is editing?", isEditing);
       
-      // Se estamos editando e não queremos alterar a senha, remover completamente o campo password
-      let submitValues: any = { ...values };
+      // Incluir a flag _changePassword para indicar a intenção do usuário
+      let submitValues: any = { 
+        ...values,
+        _changePassword: isEditing ? changePassword : true // Se não está editando, sempre tem intenção de definir senha
+      };
       
+      // Se estamos editando e não queremos alterar a senha, remover o campo password
       if (isEditing && !changePassword) {
-        // Remover completamente o campo password
         const { password, ...valuesWithoutPassword } = submitValues;
         submitValues = valuesWithoutPassword;
         console.log("Password field removed. Final values:", submitValues);
