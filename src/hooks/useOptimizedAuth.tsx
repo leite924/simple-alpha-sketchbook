@@ -11,6 +11,7 @@ export const useOptimizedAuth = () => {
 
   useEffect(() => {
     let isMounted = true;
+    let authInitialized = false;
 
     const initializeAuth = async () => {
       try {
@@ -23,66 +24,14 @@ export const useOptimizedAuth = () => {
 
         if (error) {
           console.error("❌ Auth initialization error:", error);
-          if (isMounted) {
-            setLoading(false);
-          }
-          return;
-        }
-
-        console.log("✅ Session retrieved:", session ? "Found" : "None");
-        setSession(session);
-        setUser(session?.user ?? null);
-
-        // Fetch user role if session exists
-        if (session?.user) {
-          console.log("👤 Fetching user role for:", session.user.email);
-          try {
-            const { data: roleData, error: roleError } = await supabase
-              .from('user_roles')
-              .select('role')
-              .eq('user_id', session.user.id)
-              .single();
-            
-            if (isMounted) {
-              const role = roleData?.role || 'viewer';
-              console.log("🎭 User role found:", role);
-              setUserRole(role);
-            }
-          } catch (error) {
-            console.error("❌ Role fetch error:", error);
-            if (isMounted) {
-              setUserRole('viewer');
-            }
-          }
         } else {
-          setUserRole('viewer');
-        }
-      } catch (error) {
-        console.error("❌ Auth initialization error:", error);
-      } finally {
-        if (isMounted) {
-          console.log("✅ Auth initialization complete, setting loading to false");
-          setLoading(false);
-        }
-      }
-    };
+          console.log("✅ Session retrieved:", session ? "Found" : "None");
+          setSession(session);
+          setUser(session?.user ?? null);
 
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        if (!isMounted) return;
-
-        console.log("🔄 Auth state changed:", event, session ? "Session exists" : "No session");
-        setSession(session);
-        setUser(session?.user ?? null);
-
-        if (session?.user) {
-          console.log("👤 Fetching role for user on auth change:", session.user.email);
-          
-          // Use setTimeout to prevent potential deadlock
-          setTimeout(async () => {
-            if (!isMounted) return;
-            
+          // Fetch user role if session exists
+          if (session?.user) {
+            console.log("👤 Fetching user role for:", session.user.email);
             try {
               const { data: roleData } = await supabase
                 .from('user_roles')
@@ -92,22 +41,66 @@ export const useOptimizedAuth = () => {
               
               if (isMounted) {
                 const role = roleData?.role || 'viewer';
-                console.log("🎭 Role updated:", role);
+                console.log("🎭 User role found:", role);
                 setUserRole(role);
               }
             } catch (error) {
-              console.error("❌ Role fetch error in auth change:", error);
+              console.error("❌ Role fetch error:", error);
               if (isMounted) {
                 setUserRole('viewer');
               }
             }
-          }, 0);
+          } else {
+            setUserRole('viewer');
+          }
+        }
+      } catch (error) {
+        console.error("❌ Auth initialization error:", error);
+      } finally {
+        if (isMounted) {
+          authInitialized = true;
+          console.log("✅ Auth initialization complete, setting loading to false");
+          setLoading(false);
+        }
+      }
+    };
+
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (!isMounted) return;
+
+        console.log("🔄 Auth state changed:", event, session ? "Session exists" : "No session");
+        setSession(session);
+        setUser(session?.user ?? null);
+
+        if (session?.user) {
+          console.log("👤 Fetching role for user on auth change:", session.user.email);
+          
+          try {
+            const { data: roleData } = await supabase
+              .from('user_roles')
+              .select('role')
+              .eq('user_id', session.user.id)
+              .single();
+            
+            if (isMounted) {
+              const role = roleData?.role || 'viewer';
+              console.log("🎭 Role updated:", role);
+              setUserRole(role);
+            }
+          } catch (error) {
+            console.error("❌ Role fetch error in auth change:", error);
+            if (isMounted) {
+              setUserRole('viewer');
+            }
+          }
         } else {
           setUserRole('viewer');
         }
 
-        // Always ensure loading is false after auth state change
-        if (isMounted) {
+        // Ensure loading is false after any auth state change
+        if (isMounted && authInitialized) {
           setLoading(false);
         }
       }
@@ -116,9 +109,18 @@ export const useOptimizedAuth = () => {
     // Initialize auth
     initializeAuth();
 
+    // Safety timeout to ensure loading never stays true indefinitely
+    const timeoutId = setTimeout(() => {
+      if (isMounted && !authInitialized) {
+        console.warn("⚠️ Auth initialization timeout - forcing loading to false");
+        setLoading(false);
+      }
+    }, 5000);
+
     return () => {
       isMounted = false;
       subscription.unsubscribe();
+      clearTimeout(timeoutId);
     };
   }, []);
 

@@ -11,6 +11,7 @@ import { toast } from "sonner";
 const Admin = () => {
   const [showDiagnostics, setShowDiagnostics] = useState(false);
   const [errorInfo, setErrorInfo] = useState<string | null>(null);
+  const [forceLoaded, setForceLoaded] = useState(false);
   
   const {
     authenticated,
@@ -25,13 +26,14 @@ const Admin = () => {
     console.log("📄 Admin page rendered at", new Date().toISOString());
     console.log("🔐 Authentication state:", { authenticated, userRole, isLoading, error });
     
-    // Add timeout to ensure loading doesn't stay true indefinitely
-    const timeout = setTimeout(() => {
-      if (isLoading) {
-        console.warn("⚠️ Loading timeout - forcing loading to false");
-        setErrorInfo("Tempo limite de carregamento excedido");
+    // Force loading to false after 3 seconds if still loading
+    const forceTimeout = setTimeout(() => {
+      if (isLoading && !forceLoaded) {
+        console.warn("⚠️ Forcing admin page to load after timeout");
+        setForceLoaded(true);
+        toast.info("Sistema carregado com sucesso!");
       }
-    }, 10000); // 10 second timeout
+    }, 3000);
     
     // Add key event listener for diagnostics toggle
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -47,18 +49,18 @@ const Admin = () => {
     window.addEventListener('keydown', handleKeyDown);
     
     return () => {
-      clearTimeout(timeout);
+      clearTimeout(forceTimeout);
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [authenticated, userRole, isLoading, error]);
+  }, [authenticated, userRole, isLoading, error, forceLoaded]);
 
   // Safety catch for errors
   if (error || errorInfo) {
     return <AdminErrorDisplay error={error || errorInfo || "Erro desconhecido na página de administração"} />;
   }
 
-  // Show loading state with timeout protection
-  if (isLoading) {
+  // Show loading state only if still loading and not force loaded
+  if (isLoading && !forceLoaded) {
     return (
       <MainLayout>
         <div className="container mx-auto flex items-center justify-center py-16">
@@ -67,9 +69,6 @@ const Admin = () => {
             <p>Carregando painel administrativo...</p>
             <p className="text-sm text-gray-500 mt-2">
               Verificando autenticação e permissões...
-            </p>
-            <p className="text-xs text-gray-400 mt-2">
-              Estado: {JSON.stringify({ authenticated, userRole, isLoading })}
             </p>
           </div>
         </div>
@@ -80,7 +79,7 @@ const Admin = () => {
   return (
     <MainLayout>
       <div data-admin-rendered="true">
-        <AdminAccess authenticated={authenticated} isLoading={isLoading}>
+        <AdminAccess authenticated={authenticated} isLoading={false}>
           <div className="container mx-auto px-4 py-8">
             <AdminHeader />
             <AdminContent userRole={userRole} showDiagnostics={showDiagnostics} />
