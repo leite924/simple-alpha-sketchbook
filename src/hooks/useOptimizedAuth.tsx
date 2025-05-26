@@ -11,61 +11,33 @@ export const useOptimizedAuth = () => {
 
   useEffect(() => {
     let isMounted = true;
+    
+    console.log("🔄 Initializing auth...");
 
-    const initializeAuth = async () => {
+    // Function to fetch user role
+    const fetchUserRole = async (userId: string) => {
       try {
-        console.log("🔄 Initializing auth...");
+        console.log("👤 Fetching user role for:", userId);
+        const { data: roleData } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', userId)
+          .maybeSingle();
         
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (!isMounted) return;
-
-        if (error) {
-          console.error("❌ Auth error:", error);
-          setSession(null);
-          setUser(null);
-          setUserRole('viewer');
-          setLoading(false);
-          return;
-        }
-
-        console.log("✅ Session retrieved:", session ? "Found" : "None");
-        setSession(session);
-        setUser(session?.user ?? null);
-
-        if (session?.user) {
-          console.log("👤 Fetching user role for:", session.user.email);
-          try {
-            const { data: roleData } = await supabase
-              .from('user_roles')
-              .select('role')
-              .eq('user_id', session.user.id)
-              .maybeSingle();
-            
-            const role = roleData?.role || 'viewer';
-            console.log("🎭 User role found:", role);
-            setUserRole(role);
-          } catch (error) {
-            console.error("❌ Role fetch error:", error);
-            setUserRole('viewer');
-          }
-        } else {
-          setUserRole('viewer');
+        if (isMounted) {
+          const role = roleData?.role || 'viewer';
+          console.log("🎭 User role found:", role);
+          setUserRole(role);
         }
       } catch (error) {
-        console.error("❌ Auth initialization error:", error);
-        setSession(null);
-        setUser(null);
-        setUserRole('viewer');
-      } finally {
+        console.error("❌ Role fetch error:", error);
         if (isMounted) {
-          console.log("✅ Auth initialization complete");
-          setLoading(false);
+          setUserRole('viewer');
         }
       }
     };
 
-    // Set up auth listener
+    // Set up auth state listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!isMounted) return;
@@ -76,31 +48,57 @@ export const useOptimizedAuth = () => {
         setUser(session?.user ?? null);
 
         if (session?.user) {
-          try {
-            const { data: roleData } = await supabase
-              .from('user_roles')
-              .select('role')
-              .eq('user_id', session.user.id)
-              .maybeSingle();
-            
-            const role = roleData?.role || 'viewer';
-            console.log("🎭 Role updated:", role);
-            setUserRole(role);
-          } catch (error) {
-            console.error("❌ Role fetch error:", error);
-            setUserRole('viewer');
-          }
+          await fetchUserRole(session.user.id);
         } else {
           setUserRole('viewer');
         }
 
-        // Ensure loading is false after auth state changes
+        // Always set loading to false after handling auth state change
         setLoading(false);
       }
     );
 
-    // Initialize auth
-    initializeAuth();
+    // Get initial session
+    const getInitialSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (!isMounted) return;
+
+        if (error) {
+          console.error("❌ Initial session error:", error);
+          setSession(null);
+          setUser(null);
+          setUserRole('viewer');
+          setLoading(false);
+          return;
+        }
+
+        console.log("✅ Initial session retrieved:", session ? "Found" : "None");
+        setSession(session);
+        setUser(session?.user ?? null);
+
+        if (session?.user) {
+          await fetchUserRole(session.user.id);
+        } else {
+          setUserRole('viewer');
+        }
+
+        setLoading(false);
+        console.log("✅ Auth initialization complete");
+      } catch (error) {
+        console.error("❌ Auth initialization error:", error);
+        if (isMounted) {
+          setSession(null);
+          setUser(null);
+          setUserRole('viewer');
+          setLoading(false);
+        }
+      }
+    };
+
+    // Initialize session
+    getInitialSession();
 
     return () => {
       isMounted = false;
