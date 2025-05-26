@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { UserFormValues, User } from "./types";
 import { supabase } from "@/integrations/supabase/client";
@@ -46,6 +45,24 @@ export function useUserActions(
           .eq('id', existingProfile.id);
         
         if (profileError) throw profileError;
+        
+        // Se uma nova senha foi fornecida, atualizar a senha
+        if (values.password && values.password.trim() !== '') {
+          console.log("Atualizando senha do usuário");
+          
+          // Usar a API de administração do Supabase para atualizar a senha
+          const { error: passwordError } = await supabase.auth.admin.updateUserById(
+            existingProfile.id,
+            { password: values.password }
+          );
+          
+          if (passwordError) {
+            console.error("Erro ao atualizar senha:", passwordError);
+            throw new Error(`Erro ao atualizar senha: ${passwordError.message}`);
+          }
+          
+          console.log("Senha atualizada com sucesso");
+        }
         
         // Atualizar a função do usuário se necessário
         const { data: existingRole, error: roleCheckError } = await supabase

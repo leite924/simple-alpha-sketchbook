@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { UserFormValues } from "./types";
 import { useState } from "react";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface UserFormProps {
   defaultValues: UserFormValues;
@@ -16,6 +17,7 @@ interface UserFormProps {
 
 const UserForm = ({ defaultValues, onSubmit, onCancel, isEditing }: UserFormProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [changePassword, setChangePassword] = useState(false);
   
   const form = useForm<UserFormValues>({
     defaultValues
@@ -24,7 +26,13 @@ const UserForm = ({ defaultValues, onSubmit, onCancel, isEditing }: UserFormProp
   const handleSubmit = async (values: UserFormValues) => {
     setIsSubmitting(true);
     try {
-      const success = await onSubmit(values);
+      // Se estamos editando e não queremos alterar a senha, remover o campo password
+      const submitValues = { ...values };
+      if (isEditing && !changePassword) {
+        delete submitValues.password;
+      }
+      
+      const success = await onSubmit(submitValues);
       if (success) {
         form.reset();
       }
@@ -64,17 +72,32 @@ const UserForm = ({ defaultValues, onSubmit, onCancel, isEditing }: UserFormProp
           )}
         />
 
-        {!isEditing && (
+        {isEditing && (
+          <div className="flex items-center space-x-2">
+            <Checkbox 
+              id="changePassword" 
+              checked={changePassword}
+              onCheckedChange={(checked) => setChangePassword(checked as boolean)}
+            />
+            <label htmlFor="changePassword" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+              Alterar senha
+            </label>
+          </div>
+        )}
+
+        {(!isEditing || changePassword) && (
           <FormField
             control={form.control}
             name="password"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Senha</FormLabel>
+                <FormLabel>
+                  {isEditing ? "Nova Senha" : "Senha"}
+                </FormLabel>
                 <FormControl>
                   <Input 
                     type="password" 
-                    placeholder="Digite a senha" 
+                    placeholder={isEditing ? "Digite a nova senha" : "Digite a senha"} 
                     {...field} 
                   />
                 </FormControl>
