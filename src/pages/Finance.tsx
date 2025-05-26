@@ -7,7 +7,6 @@ import Dashboard from '@/components/finance/Dashboard';
 import AdminAccess from '@/components/admin/AdminAccess';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 
-// This component will be the container for the financial system accessible only to admins
 const Finance: React.FC = () => {
   const { tab = 'dashboard' } = useParams<{ tab?: string }>();
   const validTabs = ['dashboard', 'receivables', 'payables', 'cashflow', 'refunds', 'categories'];
@@ -19,7 +18,6 @@ const Finance: React.FC = () => {
     error
   } = useAdminAuth();
 
-  // Verify if the tab is valid
   if (!validTabs.includes(tab)) {
     return <Navigate to="/financeiro/dashboard" replace />;
   }

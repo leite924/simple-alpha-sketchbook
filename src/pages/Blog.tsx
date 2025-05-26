@@ -29,18 +29,15 @@ const Blog = () => {
 
   // Filter posts by search term and category
   const filteredPosts = posts.filter((post) => {
-    // Filter by search term
     const matchesSearch = post.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
                        (post.excerpt?.toLowerCase().includes(searchTerm.toLowerCase()) || false);
     
-    // Filter by category
     const matchesCategory = selectedCategory === "" || 
                          (post.categories?.includes(selectedCategory) || false);
     
     return matchesSearch && matchesCategory;
   });
 
-  // Reset filters handler
   const resetFilters = () => {
     setSearchTerm("");
     setSelectedCategory("");
@@ -48,22 +45,17 @@ const Blog = () => {
 
   return (
     <MainLayout>
-      {/* Blog Hero */}
       <BlogHero />
 
-      {/* Blog Content */}
       <section className="py-12 md:py-16">
         <div className="container mx-auto px-4">
           <div className="flex flex-col lg:flex-row gap-8">
-            {/* Main Content */}
             <div className="w-full lg:w-3/4">
-              {/* Search */}
               <BlogSearch 
                 searchTerm={searchTerm}
                 setSearchTerm={setSearchTerm}
               />
 
-              {/* Blog Posts */}
               <PostGrid
                 isLoading={isLoadingPosts}
                 posts={posts}
@@ -72,13 +64,10 @@ const Blog = () => {
                 resetFilters={resetFilters}
               />
 
-              {/* Pagination */}
               <BlogPagination isVisible={filteredPosts.length > 0} />
             </div>
 
-            {/* Sidebar */}
             <div className="w-full lg:w-1/4">
-              {/* Categories */}
               <CategoryFilter
                 isLoading={isLoadingCategories}
                 selectedCategory={selectedCategory}
@@ -86,10 +75,8 @@ const Blog = () => {
                 categories={allCategories}
               />
 
-              {/* Featured Post */}
               <FeaturedPost />
 
-              {/* Newsletter */}
               <NewsletterSignup />
             </div>
           </div>

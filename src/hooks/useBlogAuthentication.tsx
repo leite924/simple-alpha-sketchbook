@@ -2,10 +2,10 @@
 import { useAuth } from "@/components/auth/AuthProvider";
 
 export const useBlogAuthentication = () => {
-  const { user, loading, userRole } = useAuth();
+  const { user, loading, userRole, isAuthenticated } = useAuth();
   
   return {
-    isAuthenticated: !!user,
+    isAuthenticated,
     userProfile: user ? {
       id: user.id,
       email: user.email,
