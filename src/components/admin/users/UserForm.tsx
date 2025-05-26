@@ -1,4 +1,3 @@
-
 import { useForm } from "react-hook-form";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -7,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { UserFormValues } from "./types";
 import { useState, useEffect } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { supabase } from "@/integrations/supabase/client";
 
 interface UserFormProps {
   defaultValues: UserFormValues;
@@ -18,10 +18,33 @@ interface UserFormProps {
 const UserForm = ({ defaultValues, onSubmit, onCancel, isEditing }: UserFormProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [changePassword, setChangePassword] = useState(false);
+  const [isCurrentUserSuperAdmin, setIsCurrentUserSuperAdmin] = useState(false);
   
   const form = useForm<UserFormValues>({
     defaultValues
   });
+
+  // Verificar se o usuário atual é super admin
+  useEffect(() => {
+    const checkCurrentUserRole = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: roleData } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', user.id)
+            .single();
+          
+          setIsCurrentUserSuperAdmin(roleData?.role === 'super_admin');
+        }
+      } catch (error) {
+        console.error("Erro ao verificar role do usuário:", error);
+      }
+    };
+
+    checkCurrentUserRole();
+  }, []);
 
   // Limpar o campo de senha quando o checkbox é desmarcado
   useEffect(() => {
@@ -119,6 +142,11 @@ const UserForm = ({ defaultValues, onSubmit, onCancel, isEditing }: UserFormProp
             />
             <label htmlFor="changePassword" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
               Alterar senha
+              {!isCurrentUserSuperAdmin && (
+                <span className="text-xs text-muted-foreground ml-1">
+                  (apenas super admins)
+                </span>
+              )}
             </label>
           </div>
         )}
@@ -138,9 +166,15 @@ const UserForm = ({ defaultValues, onSubmit, onCancel, isEditing }: UserFormProp
                     placeholder={isEditing ? "Digite a nova senha" : "Digite a senha"} 
                     {...field}
                     value={field.value || ''}
+                    disabled={isEditing && !isCurrentUserSuperAdmin}
                   />
                 </FormControl>
                 <FormMessage />
+                {isEditing && !isCurrentUserSuperAdmin && (
+                  <p className="text-xs text-muted-foreground">
+                    Apenas super administradores podem alterar senhas
+                  </p>
+                )}
               </FormItem>
             )}
           />

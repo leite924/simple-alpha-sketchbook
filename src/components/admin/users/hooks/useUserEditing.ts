@@ -9,7 +9,24 @@ export const useUserEditing = () => {
     console.log("Editando usuário:", values);
     
     try {
-      console.log("1. Buscando perfil existente...");
+      console.log("1. Verificando se o usuário logado é super admin...");
+      // Verificar se o usuário atual é super admin
+      const { data: { user: currentLoggedUser } } = await supabase.auth.getUser();
+      
+      if (!currentLoggedUser) {
+        throw new Error("Usuário não autenticado");
+      }
+
+      const { data: currentUserRole } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', currentLoggedUser.id)
+        .single();
+
+      const isCurrentUserSuperAdmin = currentUserRole?.role === 'super_admin';
+      console.log("2. Usuário logado é super admin?", isCurrentUserSuperAdmin);
+      
+      console.log("3. Buscando perfil existente...");
       // Buscar o perfil existente pelo email
       const { data: existingProfile, error: searchError } = await supabase
         .from('profiles')
@@ -22,9 +39,9 @@ export const useUserEditing = () => {
         throw new Error(`Erro ao buscar perfil: ${searchError.message}`);
       }
       
-      console.log("2. Perfil encontrado:", existingProfile);
+      console.log("4. Perfil encontrado:", existingProfile);
       
-      console.log("3. Atualizando perfil no Supabase...");
+      console.log("5. Atualizando perfil no Supabase...");
       // Atualizar o perfil no Supabase usando o ID encontrado
       const { error: profileError } = await supabase
         .from('profiles')
@@ -39,13 +56,31 @@ export const useUserEditing = () => {
         throw profileError;
       }
       
-      console.log("4. Perfil atualizado com sucesso");
+      console.log("6. Perfil atualizado com sucesso");
       
       // Verificar se é o email especial que deve ser super admin
       const isSpecialAdmin = values.email === 'midiaputz@gmail.com';
-      console.log("5. É super admin?", isSpecialAdmin);
+      console.log("7. É super admin?", isSpecialAdmin);
       
-      console.log("6. Verificando função do usuário...");
+      // Alterar senha se solicitado e se o usuário logado for super admin
+      if (values._changePassword && values.password && isCurrentUserSuperAdmin) {
+        console.log("8. Alterando senha (super admin)...");
+        
+        const { error: passwordError } = await supabase.auth.admin.updateUserById(
+          existingProfile.id,
+          { password: values.password }
+        );
+        
+        if (passwordError) {
+          console.error("ERRO ao alterar senha:", passwordError);
+          // Não falha a operação toda, apenas informa o erro
+          toast.error("Erro ao alterar senha. Verifique as permissões.");
+        } else {
+          console.log("9. Senha alterada com sucesso");
+        }
+      }
+      
+      console.log("10. Verificando função do usuário...");
       // Atualizar a função do usuário se necessário
       const { data: existingRole, error: roleCheckError } = await supabase
         .from('user_roles')
@@ -58,7 +93,7 @@ export const useUserEditing = () => {
         throw roleCheckError;
       }
       
-      console.log("7. Função existente:", existingRole);
+      console.log("11. Função existente:", existingRole);
       
       // Mapeamento de roles do frontend para roles do banco
       const roleMapping: Record<string, any> = {
@@ -71,10 +106,10 @@ export const useUserEditing = () => {
       
       // Se for o email especial, forçar super_admin, senão usar o role selecionado
       const dbRole = isSpecialAdmin ? "super_admin" : (roleMapping[values.role] || "user");
-      console.log("8. Função a ser aplicada:", dbRole);
+      console.log("12. Função a ser aplicada:", dbRole);
       
       if (!existingRole) {
-        console.log("9. Inserindo nova função...");
+        console.log("13. Inserindo nova função...");
         // Inserir nova função
         const { error: insertError } = await supabase
           .from('user_roles')
@@ -87,9 +122,9 @@ export const useUserEditing = () => {
           console.error("ERRO ao inserir função:", insertError);
           throw insertError;
         }
-        console.log("10. Nova função inserida com sucesso");
+        console.log("14. Nova função inserida com sucesso");
       } else if (existingRole.role !== dbRole) {
-        console.log("11. Atualizando função existente para:", dbRole);
+        console.log("15. Atualizando função existente para:", dbRole);
         
         // Atualizar função existente
         const { error: updateError } = await supabase
@@ -103,18 +138,20 @@ export const useUserEditing = () => {
           console.error("ERRO ao atualizar função:", updateError);
           throw updateError;
         }
-        console.log("12. Função atualizada com sucesso");
+        console.log("16. Função atualizada com sucesso");
       } else {
-        console.log("11. Função já está correta, nenhuma alteração necessária");
+        console.log("15. Função já está correta, nenhuma alteração necessária");
       }
       
-      console.log("13. Exibindo mensagem de sucesso...");
+      console.log("17. Exibindo mensagem de sucesso...");
       
-      // Simplificar as mensagens
+      // Mensagens mais inteligentes baseadas no contexto
       if (isSpecialAdmin) {
         toast.success("Super administrador atualizado com sucesso!");
-      } else if (values._changePassword) {
-        toast.success("Perfil atualizado com sucesso! Nota: Para alterar senhas, o usuário deve usar a opção 'Esqueci minha senha' no login.");
+      } else if (values._changePassword && isCurrentUserSuperAdmin) {
+        toast.success("Usuário e senha atualizados com sucesso!");
+      } else if (values._changePassword && !isCurrentUserSuperAdmin) {
+        toast.success("Perfil atualizado com sucesso! Nota: Apenas super administradores podem alterar senhas.");
       } else {
         toast.success("Usuário atualizado com sucesso!");
       }
