@@ -22,12 +22,10 @@ export const useOptimizedAuth = () => {
 
         if (error) {
           console.error("❌ Auth error:", error);
-          if (isMounted) {
-            setSession(null);
-            setUser(null);
-            setUserRole('viewer');
-            setLoading(false);
-          }
+          setSession(null);
+          setUser(null);
+          setUserRole('viewer');
+          setLoading(false);
           return;
         }
 
@@ -44,27 +42,21 @@ export const useOptimizedAuth = () => {
               .eq('user_id', session.user.id)
               .maybeSingle();
             
-            if (isMounted) {
-              const role = roleData?.role || 'viewer';
-              console.log("🎭 User role found:", role);
-              setUserRole(role);
-            }
+            const role = roleData?.role || 'viewer';
+            console.log("🎭 User role found:", role);
+            setUserRole(role);
           } catch (error) {
             console.error("❌ Role fetch error:", error);
-            if (isMounted) {
-              setUserRole('viewer');
-            }
+            setUserRole('viewer');
           }
         } else {
           setUserRole('viewer');
         }
       } catch (error) {
         console.error("❌ Auth initialization error:", error);
-        if (isMounted) {
-          setSession(null);
-          setUser(null);
-          setUserRole('viewer');
-        }
+        setSession(null);
+        setUser(null);
+        setUserRole('viewer');
       } finally {
         if (isMounted) {
           console.log("✅ Auth initialization complete");
@@ -73,6 +65,7 @@ export const useOptimizedAuth = () => {
       }
     };
 
+    // Set up auth listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!isMounted) return;
@@ -90,28 +83,23 @@ export const useOptimizedAuth = () => {
               .eq('user_id', session.user.id)
               .maybeSingle();
             
-            if (isMounted) {
-              const role = roleData?.role || 'viewer';
-              console.log("🎭 Role updated:", role);
-              setUserRole(role);
-            }
+            const role = roleData?.role || 'viewer';
+            console.log("🎭 Role updated:", role);
+            setUserRole(role);
           } catch (error) {
             console.error("❌ Role fetch error:", error);
-            if (isMounted) {
-              setUserRole('viewer');
-            }
+            setUserRole('viewer');
           }
         } else {
           setUserRole('viewer');
         }
 
-        // Sempre definir loading como false após mudanças de estado
-        if (isMounted) {
-          setLoading(false);
-        }
+        // Ensure loading is false after auth state changes
+        setLoading(false);
       }
     );
 
+    // Initialize auth
     initializeAuth();
 
     return () => {

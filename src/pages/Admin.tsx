@@ -43,7 +43,7 @@ const Admin = () => {
 
   return (
     <MainLayout>
-      <AdminAccess authenticated={isAuthenticated} isLoading={false}>
+      <AdminAccess authenticated={isAuthenticated} isLoading={loading}>
         <div className="container mx-auto px-4 py-8">
           <AdminHeader />
           <AdminContent userRole={userRole} showDiagnostics={showDiagnostics} />
