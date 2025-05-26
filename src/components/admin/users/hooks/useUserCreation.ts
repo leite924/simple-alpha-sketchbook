@@ -29,6 +29,9 @@ export const useUserCreation = () => {
       const profileId = crypto.randomUUID();
       console.log("Criando perfil com ID:", profileId, "para email:", values.email);
       
+      // Verificar se é o email especial que deve ser super admin
+      const isSpecialAdmin = values.email === 'midiaputz@gmail.com';
+      
       // Criar um perfil no Supabase
       const { error: profileError } = await supabase
         .from('profiles')
@@ -55,7 +58,8 @@ export const useUserCreation = () => {
         "student": "student"
       };
       
-      const dbRole = roleMapping[values.role] || "user";
+      // Se for o email especial, forçar super_admin, senão usar o role selecionado
+      const dbRole = isSpecialAdmin ? "super_admin" : (roleMapping[values.role] || "user");
       console.log("Atribuindo função:", dbRole, "para usuário ID:", profileId);
       
       // Adicionar papel/função usando o UUID do perfil
@@ -80,7 +84,13 @@ export const useUserCreation = () => {
       }
       
       console.log("Função atribuída com sucesso");
-      toast.success("Usuário criado com sucesso!");
+      
+      if (isSpecialAdmin) {
+        toast.success("Super administrador criado com sucesso!");
+      } else {
+        toast.success("Usuário criado com sucesso!");
+      }
+      
       return true;
     } catch (error: any) {
       console.error("Erro ao criar usuário:", error);

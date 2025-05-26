@@ -31,24 +31,6 @@ export const useUserEditing = () => {
       
       if (profileError) throw profileError;
       
-      // Se uma nova senha foi fornecida, atualizar a senha
-      if (values.password && values.password.trim() !== '') {
-        console.log("Atualizando senha do usuário");
-        
-        // Usar a API de administração do Supabase para atualizar a senha
-        const { error: passwordError } = await supabase.auth.admin.updateUserById(
-          existingProfile.id,
-          { password: values.password }
-        );
-        
-        if (passwordError) {
-          console.error("Erro ao atualizar senha:", passwordError);
-          throw new Error(`Erro ao atualizar senha: ${passwordError.message}`);
-        }
-        
-        console.log("Senha atualizada com sucesso");
-      }
-      
       // Atualizar a função do usuário se necessário
       const { data: existingRole, error: roleCheckError } = await supabase
         .from('user_roles')
@@ -89,7 +71,13 @@ export const useUserEditing = () => {
         }
       }
       
-      toast.success("Usuário atualizado com sucesso!");
+      // Mostrar aviso sobre senha se foi fornecida
+      if (values.password && values.password.trim() !== '') {
+        toast.warning("Perfil atualizado, mas a senha não pôde ser alterada. Entre em contato com o administrador do sistema para alteração de senhas.");
+      } else {
+        toast.success("Usuário atualizado com sucesso!");
+      }
+      
       return true;
     } catch (error: any) {
       console.error("Erro ao editar usuário:", error);
