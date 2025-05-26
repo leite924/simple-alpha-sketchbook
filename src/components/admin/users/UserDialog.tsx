@@ -15,6 +15,14 @@ const UserDialog = ({ currentUser, isEditing, onSubmit, onOpenChange }: UserDial
     onOpenChange(false);
   };
 
+  const handleSubmit = async (values: UserFormValues): Promise<boolean> => {
+    const success = await onSubmit(values);
+    if (success) {
+      onOpenChange(false);
+    }
+    return success;
+  };
+
   return (
     <DialogContent>
       <DialogHeader>
@@ -30,7 +38,7 @@ const UserDialog = ({ currentUser, isEditing, onSubmit, onOpenChange }: UserDial
 
       <UserForm 
         defaultValues={defaultValues}
-        onSubmit={onSubmit}
+        onSubmit={handleSubmit}
         onCancel={handleCancel}
         isEditing={isEditing}
       />

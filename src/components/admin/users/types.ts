@@ -18,7 +18,7 @@ export interface UserFormValues {
 export interface UserDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (values: UserFormValues) => void;
+  onSubmit: (values: UserFormValues) => Promise<boolean>;
   currentUser: User | null;
   isEditing: boolean;
 }
