@@ -27,11 +27,15 @@ function App() {
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/sobre" element={<About />} />
+        <Route path="/about" element={<About />} />
         <Route path="/cursos" element={<Courses />} />
+        <Route path="/courses" element={<Courses />} />
         <Route path="/curso/:slug" element={<CourseDetail />} />
         <Route path="/turmas" element={<Classes />} />
+        <Route path="/classes" element={<Classes />} />
         <Route path="/turma/:id" element={<ClassDetail />} />
         <Route path="/contato" element={<Contact />} />
+        <Route path="/contact" element={<Contact />} />
         <Route path="/blog" element={<Blog />} />
         <Route path="/blog/:slug" element={<BlogPost />} />
         <Route path="/quiz" element={<Quiz />} />

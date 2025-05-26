@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import MainLayout from "@/components/layout/MainLayout";
 import { toast } from "sonner";
@@ -30,7 +30,6 @@ const StudentArea = () => {
 
   const handleLoginSuccess = () => {
     console.log("Login successful in StudentArea");
-    // Just log success, state will be handled by AuthProvider
   };
 
   if (loading || localLoading) {

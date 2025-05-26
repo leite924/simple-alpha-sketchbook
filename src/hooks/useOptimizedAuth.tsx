@@ -16,45 +16,40 @@ export const useOptimizedAuth = () => {
       try {
         console.log("🔄 Initializing auth...");
         
-        // Get current session
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (!isMounted) return;
 
         if (error) {
-          console.error("❌ Auth initialization error:", error);
-          setSession(null);
-          setUser(null);
-          setUserRole('viewer');
-        } else {
-          console.log("✅ Session retrieved:", session ? "Found" : "None");
-          setSession(session);
-          setUser(session?.user ?? null);
+          console.error("❌ Auth error:", error);
+        }
 
-          // Fetch user role if session exists
-          if (session?.user) {
-            console.log("👤 Fetching user role for:", session.user.email);
-            try {
-              const { data: roleData } = await supabase
-                .from('user_roles')
-                .select('role')
-                .eq('user_id', session.user.id)
-                .maybeSingle();
-              
-              if (isMounted) {
-                const role = roleData?.role || 'viewer';
-                console.log("🎭 User role found:", role);
-                setUserRole(role);
-              }
-            } catch (error) {
-              console.error("❌ Role fetch error:", error);
-              if (isMounted) {
-                setUserRole('viewer');
-              }
+        console.log("✅ Session retrieved:", session ? "Found" : "None");
+        setSession(session);
+        setUser(session?.user ?? null);
+
+        if (session?.user) {
+          console.log("👤 Fetching user role for:", session.user.email);
+          try {
+            const { data: roleData } = await supabase
+              .from('user_roles')
+              .select('role')
+              .eq('user_id', session.user.id)
+              .maybeSingle();
+            
+            if (isMounted) {
+              const role = roleData?.role || 'viewer';
+              console.log("🎭 User role found:", role);
+              setUserRole(role);
             }
-          } else {
-            setUserRole('viewer');
+          } catch (error) {
+            console.error("❌ Role fetch error:", error);
+            if (isMounted) {
+              setUserRole('viewer');
+            }
           }
+        } else {
+          setUserRole('viewer');
         }
       } catch (error) {
         console.error("❌ Auth initialization error:", error);
@@ -65,25 +60,22 @@ export const useOptimizedAuth = () => {
         }
       } finally {
         if (isMounted) {
-          console.log("✅ Auth initialization complete, setting loading to false");
+          console.log("✅ Auth initialization complete");
           setLoading(false);
         }
       }
     };
 
-    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!isMounted) return;
 
-        console.log("🔄 Auth state changed:", event, session ? "Session exists" : "No session");
+        console.log("🔄 Auth state changed:", event);
         
         setSession(session);
         setUser(session?.user ?? null);
 
         if (session?.user) {
-          console.log("👤 Fetching role for user on auth change:", session.user.email);
-          
           try {
             const { data: roleData } = await supabase
               .from('user_roles')
@@ -97,7 +89,7 @@ export const useOptimizedAuth = () => {
               setUserRole(role);
             }
           } catch (error) {
-            console.error("❌ Role fetch error in auth change:", error);
+            console.error("❌ Role fetch error:", error);
             if (isMounted) {
               setUserRole('viewer');
             }
@@ -106,14 +98,12 @@ export const useOptimizedAuth = () => {
           setUserRole('viewer');
         }
 
-        // Always set loading to false after auth state change
         if (isMounted) {
           setLoading(false);
         }
       }
     );
 
-    // Initialize auth
     initializeAuth();
 
     return () => {
