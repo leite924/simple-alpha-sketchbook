@@ -11,7 +11,6 @@ import { toast } from "sonner";
 const Admin = () => {
   const [showDiagnostics, setShowDiagnostics] = useState(false);
   const [errorInfo, setErrorInfo] = useState<string | null>(null);
-  const [forceLoaded, setForceLoaded] = useState(false);
   
   const {
     authenticated,
@@ -25,15 +24,6 @@ const Admin = () => {
   useEffect(() => {
     console.log("📄 Admin page rendered at", new Date().toISOString());
     console.log("🔐 Authentication state:", { authenticated, userRole, isLoading, error });
-    
-    // Force loading to false after 3 seconds if still loading
-    const forceTimeout = setTimeout(() => {
-      if (isLoading && !forceLoaded) {
-        console.warn("⚠️ Forcing admin page to load after timeout");
-        setForceLoaded(true);
-        toast.info("Sistema carregado com sucesso!");
-      }
-    }, 3000);
     
     // Add key event listener for diagnostics toggle
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -49,18 +39,17 @@ const Admin = () => {
     window.addEventListener('keydown', handleKeyDown);
     
     return () => {
-      clearTimeout(forceTimeout);
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [authenticated, userRole, isLoading, error, forceLoaded]);
+  }, [authenticated, userRole, isLoading, error]);
 
   // Safety catch for errors
   if (error || errorInfo) {
     return <AdminErrorDisplay error={error || errorInfo || "Erro desconhecido na página de administração"} />;
   }
 
-  // Show loading state only if still loading and not force loaded
-  if (isLoading && !forceLoaded) {
+  // Show loading state only if still loading
+  if (isLoading) {
     return (
       <MainLayout>
         <div className="container mx-auto flex items-center justify-center py-16">

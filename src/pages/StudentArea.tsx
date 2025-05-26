@@ -10,16 +10,12 @@ import { useAuth } from "@/components/auth/AuthProvider";
 
 const StudentArea = () => {
   const { isAuthenticated, loading, user } = useAuth();
-  const [isLoading, setIsLoading] = useState(loading);
+  const [localLoading, setLocalLoading] = useState(false);
   
   console.log("StudentArea state:", { isAuthenticated, loading, userEmail: user?.email });
-  
-  useEffect(() => {
-    setIsLoading(loading);
-  }, [loading]);
 
   const handleLogout = async () => {
-    setIsLoading(true);
+    setLocalLoading(true);
     try {
       console.log("Attempting logout");
       await supabase.auth.signOut();
@@ -28,11 +24,16 @@ const StudentArea = () => {
       console.error("Logout error:", error);
       toast.error(`Erro ao fazer logout: ${error.message}`);
     } finally {
-      setIsLoading(false);
+      setLocalLoading(false);
     }
   };
 
-  if (isLoading) {
+  const handleLoginSuccess = () => {
+    console.log("Login successful in StudentArea");
+    // Just log success, state will be handled by AuthProvider
+  };
+
+  if (loading || localLoading) {
     return (
       <MainLayout>
         <div className="container mx-auto px-4 py-8">
@@ -54,7 +55,7 @@ const StudentArea = () => {
       <section className="py-16">
         <div className="container mx-auto px-4">
           {!isAuthenticated ? (
-            <LoginForm onLoginSuccess={() => {}} />
+            <LoginForm onLoginSuccess={handleLoginSuccess} />
           ) : (
             <StudentDashboard onLogout={handleLogout} />
           )}

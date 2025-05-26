@@ -36,6 +36,7 @@ function App() {
         <Route path="/blog/:slug" element={<BlogPost />} />
         <Route path="/quiz" element={<Quiz />} />
         <Route path="/estudante" element={<StudentArea />} />
+        <Route path="/student-area" element={<StudentArea />} />
         <Route path="/admin" element={<Admin />} />
         <Route path="/login" element={<Login />} />
         <Route path="/auth" element={<Auth />} />

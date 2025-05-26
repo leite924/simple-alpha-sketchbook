@@ -11,7 +11,6 @@ export const useOptimizedAuth = () => {
 
   useEffect(() => {
     let isMounted = true;
-    let authInitialized = false;
 
     const initializeAuth = async () => {
       try {
@@ -24,6 +23,9 @@ export const useOptimizedAuth = () => {
 
         if (error) {
           console.error("❌ Auth initialization error:", error);
+          setSession(null);
+          setUser(null);
+          setUserRole('viewer');
         } else {
           console.log("✅ Session retrieved:", session ? "Found" : "None");
           setSession(session);
@@ -37,7 +39,7 @@ export const useOptimizedAuth = () => {
                 .from('user_roles')
                 .select('role')
                 .eq('user_id', session.user.id)
-                .single();
+                .maybeSingle();
               
               if (isMounted) {
                 const role = roleData?.role || 'viewer';
@@ -56,9 +58,13 @@ export const useOptimizedAuth = () => {
         }
       } catch (error) {
         console.error("❌ Auth initialization error:", error);
+        if (isMounted) {
+          setSession(null);
+          setUser(null);
+          setUserRole('viewer');
+        }
       } finally {
         if (isMounted) {
-          authInitialized = true;
           console.log("✅ Auth initialization complete, setting loading to false");
           setLoading(false);
         }
@@ -71,6 +77,7 @@ export const useOptimizedAuth = () => {
         if (!isMounted) return;
 
         console.log("🔄 Auth state changed:", event, session ? "Session exists" : "No session");
+        
         setSession(session);
         setUser(session?.user ?? null);
 
@@ -82,7 +89,7 @@ export const useOptimizedAuth = () => {
               .from('user_roles')
               .select('role')
               .eq('user_id', session.user.id)
-              .single();
+              .maybeSingle();
             
             if (isMounted) {
               const role = roleData?.role || 'viewer';
@@ -99,8 +106,8 @@ export const useOptimizedAuth = () => {
           setUserRole('viewer');
         }
 
-        // Ensure loading is false after any auth state change
-        if (isMounted && authInitialized) {
+        // Always set loading to false after auth state change
+        if (isMounted) {
           setLoading(false);
         }
       }
@@ -109,18 +116,9 @@ export const useOptimizedAuth = () => {
     // Initialize auth
     initializeAuth();
 
-    // Safety timeout to ensure loading never stays true indefinitely
-    const timeoutId = setTimeout(() => {
-      if (isMounted && !authInitialized) {
-        console.warn("⚠️ Auth initialization timeout - forcing loading to false");
-        setLoading(false);
-      }
-    }, 5000);
-
     return () => {
       isMounted = false;
       subscription.unsubscribe();
-      clearTimeout(timeoutId);
     };
   }, []);
 

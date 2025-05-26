@@ -33,7 +33,8 @@ const Blog = () => {
     postsCount: posts.length, 
     isLoadingPosts, 
     isLoadingCategories, 
-    postsError 
+    postsError,
+    categories: allCategories.length
   });
 
   // Filter posts by search term and category
@@ -73,7 +74,9 @@ const Blog = () => {
                 resetFilters={resetFilters}
               />
 
-              <BlogPagination isVisible={filteredPosts.length > 0} />
+              {filteredPosts.length > 0 && (
+                <BlogPagination isVisible={true} />
+              )}
             </div>
 
             <div className="w-full lg:w-1/4">
