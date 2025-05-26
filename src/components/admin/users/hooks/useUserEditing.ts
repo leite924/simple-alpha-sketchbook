@@ -7,8 +7,6 @@ export const useUserEditing = () => {
   const editUser = async (currentUser: User, values: UserFormValues & { _changePassword?: boolean }): Promise<boolean> => {
     console.log("=== INÍCIO DO PROCESSO DE EDIÇÃO ===");
     console.log("Editando usuário:", values);
-    console.log("Dados recebidos:", JSON.stringify(values, null, 2));
-    console.log("Flag _changePassword:", values._changePassword);
     
     try {
       console.log("1. Buscando perfil existente...");
@@ -110,19 +108,14 @@ export const useUserEditing = () => {
         console.log("11. Função já está correta, nenhuma alteração necessária");
       }
       
-      console.log("13. Definindo mensagem de sucesso...");
-      // LÓGICA DE MENSAGENS
+      console.log("13. Exibindo mensagem de sucesso...");
+      
+      // Simplificar as mensagens
       if (isSpecialAdmin) {
-        console.log("Exibindo mensagem para super admin");
         toast.success("Super administrador atualizado com sucesso!");
-      } else if (values._changePassword === false || values._changePassword === undefined) {
-        console.log("Usuário não quis alterar senha - sucesso simples");
-        toast.success("Usuário atualizado com sucesso!");
-      } else if (values._changePassword === true) {
-        console.log("Usuário quis alterar senha - informando sobre limitação");
-        toast.info("Perfil atualizado com sucesso! Nota: Para alterar senhas, o usuário deve usar a opção 'Esqueci minha senha' no login.");
+      } else if (values._changePassword) {
+        toast.success("Perfil atualizado com sucesso! Nota: Para alterar senhas, o usuário deve usar a opção 'Esqueci minha senha' no login.");
       } else {
-        console.log("Caso não previsto - usando sucesso padrão");
         toast.success("Usuário atualizado com sucesso!");
       }
       

@@ -1,3 +1,4 @@
+
 import { useForm } from "react-hook-form";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -31,39 +32,39 @@ const UserForm = ({ defaultValues, onSubmit, onCancel, isEditing }: UserFormProp
 
   const handleSubmit = async (values: UserFormValues) => {
     console.log("=== INÍCIO DA SUBMISSÃO DO FORM ===");
-    console.log("Form submitted with values:", values);
-    console.log("Change password checkbox?", changePassword);
-    console.log("Is editing?", isEditing);
+    console.log("Valores do form:", values);
+    console.log("Checkbox alterar senha:", changePassword);
+    console.log("Modo edição:", isEditing);
+    
+    if (isSubmitting) {
+      console.log("Já está processando, ignorando submissão duplicada");
+      return;
+    }
     
     setIsSubmitting(true);
     console.log("Estado isSubmitting definido para true");
     
     try {
-      // LÓGICA SIMPLIFICADA PARA A FLAG
-      let submitValues: any = { 
+      const submitValues = { 
         ...values,
-        _changePassword: isEditing ? changePassword : false // Se não está editando, não há intenção de alterar senha existente
+        _changePassword: isEditing ? changePassword : false
       };
       
-      console.log("Final _changePassword flag:", submitValues._changePassword);
-      console.log("Final submit values:", submitValues);
-      console.log("Chamando onSubmit...");
+      console.log("Valores finais para submissão:", submitValues);
       
       const success = await onSubmit(submitValues);
       console.log("Resultado do onSubmit:", success);
       
       if (success) {
-        console.log("Sucesso! Resetando form e estado...");
+        console.log("Sucesso! Resetando form...");
         form.reset();
-        setChangePassword(false); // Reset checkbox state
-        console.log("Form resetado");
-      } else {
-        console.log("onSubmit retornou false");
+        setChangePassword(false);
+        console.log("Form resetado com sucesso");
       }
     } catch (error) {
       console.error("Erro durante submissão:", error);
     } finally {
-      console.log("Definindo isSubmitting para false");
+      console.log("Finalizando submissão - definindo isSubmitting para false");
       setIsSubmitting(false);
       console.log("=== FIM DA SUBMISSÃO DO FORM ===");
     }
@@ -183,7 +184,12 @@ const UserForm = ({ defaultValues, onSubmit, onCancel, isEditing }: UserFormProp
         />
 
         <div className="flex justify-end gap-2">
-          <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
+          <Button 
+            type="button" 
+            variant="outline" 
+            onClick={onCancel} 
+            disabled={isSubmitting}
+          >
             Cancelar
           </Button>
           <Button type="submit" disabled={isSubmitting}>
