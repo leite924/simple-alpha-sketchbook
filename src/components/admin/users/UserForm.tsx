@@ -1,4 +1,3 @@
-
 import { useForm } from "react-hook-form";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -31,12 +30,15 @@ const UserForm = ({ defaultValues, onSubmit, onCancel, isEditing }: UserFormProp
   }, [changePassword, isEditing, form]);
 
   const handleSubmit = async (values: UserFormValues) => {
+    console.log("=== INÍCIO DA SUBMISSÃO DO FORM ===");
+    console.log("Form submitted with values:", values);
+    console.log("Change password checkbox?", changePassword);
+    console.log("Is editing?", isEditing);
+    
     setIsSubmitting(true);
+    console.log("Estado isSubmitting definido para true");
+    
     try {
-      console.log("Form submitted with values:", values);
-      console.log("Change password checkbox?", changePassword);
-      console.log("Is editing?", isEditing);
-      
       // LÓGICA SIMPLIFICADA PARA A FLAG
       let submitValues: any = { 
         ...values,
@@ -45,14 +47,25 @@ const UserForm = ({ defaultValues, onSubmit, onCancel, isEditing }: UserFormProp
       
       console.log("Final _changePassword flag:", submitValues._changePassword);
       console.log("Final submit values:", submitValues);
+      console.log("Chamando onSubmit...");
       
       const success = await onSubmit(submitValues);
+      console.log("Resultado do onSubmit:", success);
+      
       if (success) {
+        console.log("Sucesso! Resetando form e estado...");
         form.reset();
         setChangePassword(false); // Reset checkbox state
+        console.log("Form resetado");
+      } else {
+        console.log("onSubmit retornou false");
       }
+    } catch (error) {
+      console.error("Erro durante submissão:", error);
     } finally {
+      console.log("Definindo isSubmitting para false");
       setIsSubmitting(false);
+      console.log("=== FIM DA SUBMISSÃO DO FORM ===");
     }
   };
 
