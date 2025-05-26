@@ -26,16 +26,6 @@ const Blog = () => {
     data: allCategories = [], 
     isLoading: isLoadingCategories 
   } = useAllBlogCategories();
-  
-  // Format the date for display
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return "";
-    return new Date(dateString).toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
-    });
-  };
 
   // Filter posts by search term and category
   const filteredPosts = posts.filter((post) => {

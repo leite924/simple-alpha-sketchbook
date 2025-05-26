@@ -22,7 +22,6 @@ export const useAdminAuth = () => {
         if (sessionError) {
           console.error("Session error:", sessionError);
           setError("Erro ao obter sessão");
-          setIsLoading(false);
           return;
         }
         
@@ -42,42 +41,39 @@ export const useAdminAuth = () => {
             
           if (countError) {
             console.error("Erro ao verificar contagem de funções:", countError);
-            setError("Erro ao verificar permissões de usuário");
-            setIsLoading(false);
-            return;
-          }
-          
-          console.log("Total roles count:", roleCount);
-          
-          if (roleCount === 0) {
-            console.log("Nenhuma função encontrada, configurando primeiro usuário como administrador");
-            
-            try {
-              // Se não existe nenhum usuário com função, o primeiro usuário se torna admin
-              await assignHighestAdminRole(session.user.id);
-              setUserRole('super_admin');
-              console.log("Usuário definido como super_admin");
-            } catch (assignError) {
-              console.error("Erro ao atribuir função de admin:", assignError);
-              setUserRole('viewer');
-            }
+            setUserRole('viewer');
           } else {
-            // Fetch the user's role from the user_roles table
-            const { data: roleData, error: roleError } = await supabase
-              .from('user_roles')
-              .select('role')
-              .eq('user_id', session.user.id)
-              .single();
+            console.log("Total roles count:", roleCount);
+            
+            if (roleCount === 0) {
+              console.log("Nenhuma função encontrada, configurando primeiro usuário como administrador");
               
-            if (roleError && roleError.code !== 'PGRST116') {
-              console.error("Erro ao buscar função do usuário:", roleError);
-              setError("Erro ao verificar permissões de usuário");
-              setUserRole('viewer');
+              try {
+                // Se não existe nenhum usuário com função, o primeiro usuário se torna admin
+                await assignHighestAdminRole(session.user.id);
+                setUserRole('super_admin');
+                console.log("Usuário definido como super_admin");
+              } catch (assignError) {
+                console.error("Erro ao atribuir função de admin:", assignError);
+                setUserRole('viewer');
+              }
             } else {
-              // Set the user role (default to viewer if not found)
-              const role = roleData?.role || 'viewer';
-              console.log("Função do usuário definida como:", role);
-              setUserRole(role);
+              // Fetch the user's role from the user_roles table
+              const { data: roleData, error: roleError } = await supabase
+                .from('user_roles')
+                .select('role')
+                .eq('user_id', session.user.id)
+                .single();
+                
+              if (roleError && roleError.code !== 'PGRST116') {
+                console.error("Erro ao buscar função do usuário:", roleError);
+                setUserRole('viewer');
+              } else {
+                // Set the user role (default to viewer if not found)
+                const role = roleData?.role || 'viewer';
+                console.log("Função do usuário definida como:", role);
+                setUserRole(role);
+              }
             }
           }
         } else {
@@ -104,26 +100,30 @@ export const useAdminAuth = () => {
       
       if (session?.user) {
         setUserId(session.user.id);
-        try {
-          // Fetch the user's role from the user_roles table
-          const { data: roleData, error: roleError } = await supabase
-            .from('user_roles')
-            .select('role')
-            .eq('user_id', session.user.id)
-            .single();
-            
-          if (roleError && roleError.code !== 'PGRST116') {
-            console.error("Erro ao buscar função do usuário:", roleError);
+        
+        // Use setTimeout to avoid blocking the auth state change
+        setTimeout(async () => {
+          try {
+            // Fetch the user's role from the user_roles table
+            const { data: roleData, error: roleError } = await supabase
+              .from('user_roles')
+              .select('role')
+              .eq('user_id', session.user.id)
+              .single();
+              
+            if (roleError && roleError.code !== 'PGRST116') {
+              console.error("Erro ao buscar função do usuário:", roleError);
+              setUserRole('viewer');
+            } else {
+              const role = roleData?.role || 'viewer';
+              console.log("Role updated to:", role);
+              setUserRole(role);
+            }
+          } catch (error) {
+            console.error("Erro ao buscar função na alteração de autenticação:", error);
             setUserRole('viewer');
-          } else {
-            const role = roleData?.role || 'viewer';
-            console.log("Role updated to:", role);
-            setUserRole(role);
           }
-        } catch (error) {
-          console.error("Erro ao buscar função na alteração de autenticação:", error);
-          setUserRole('viewer');
-        }
+        }, 0);
       } else {
         setUserId(null);
         setUserRole('viewer');
