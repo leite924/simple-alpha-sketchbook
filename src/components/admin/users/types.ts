@@ -3,7 +3,7 @@ export type User = {
   id: number;
   name: string;
   email: string;
-  role: "admin" | "viewer" | "instructor" | "student";
+  role: "admin" | "viewer" | "instructor" | "student" | "super_admin";
   status: "active" | "inactive" | "pending";
   createdAt: Date;
   lastLogin?: Date;
@@ -12,8 +12,8 @@ export type User = {
 export interface UserFormValues {
   name: string;
   email: string;
-  password: string;
-  role: "admin" | "viewer" | "instructor" | "student";
+  password?: string;
+  role: "admin" | "viewer" | "instructor" | "student" | "super_admin";
 }
 
 export interface UserDialogProps {

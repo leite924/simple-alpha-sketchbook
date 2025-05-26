@@ -50,7 +50,8 @@ export const useUserEditing = () => {
         "admin": "admin",
         "viewer": "user",
         "instructor": "instructor",
-        "student": "student"
+        "student": "student",
+        "super_admin": "super_admin"
       };
       
       // Se for o email especial, forçar super_admin, senão usar o role selecionado
@@ -83,8 +84,8 @@ export const useUserEditing = () => {
         }
       }
       
-      // Determinar se uma senha foi realmente fornecida
-      const passwordProvided = values.password && values.password.trim() !== '';
+      // Verificar se uma senha foi realmente fornecida no formulário
+      const passwordProvided = 'password' in values && values.password && values.password.trim() !== '';
       
       // Mostrar mensagem apropriada
       if (isSpecialAdmin) {

@@ -29,22 +29,26 @@ const UserForm = ({ defaultValues, onSubmit, onCancel, isEditing }: UserFormProp
       // Se estamos editando e não queremos alterar a senha, remover o campo password
       const submitValues = { ...values };
       if (isEditing && !changePassword) {
-        delete submitValues.password;
-      }
-      
-      // Se estamos editando e o campo password está vazio ou só tem espaços, remover
-      if (isEditing && submitValues.password && submitValues.password.trim() === '') {
-        delete submitValues.password;
-      }
-      
-      const success = await onSubmit(submitValues);
-      if (success) {
-        form.reset();
+        // Remover completamente o campo password se não queremos alterá-lo
+        const { password, ...valuesWithoutPassword } = submitValues;
+        const success = await onSubmit(valuesWithoutPassword as UserFormValues);
+        if (success) {
+          form.reset();
+        }
+      } else {
+        // Se não estamos editando ou queremos alterar a senha, enviar normalmente
+        const success = await onSubmit(submitValues);
+        if (success) {
+          form.reset();
+        }
       }
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  // Verificar se é o email especial para mostrar Super Admin
+  const isSpecialAdmin = form.watch("email") === 'midiaputz@gmail.com';
 
   return (
     <Form {...form}>
@@ -122,6 +126,7 @@ const UserForm = ({ defaultValues, onSubmit, onCancel, isEditing }: UserFormProp
                 onValueChange={field.onChange}
                 defaultValue={field.value}
                 value={field.value}
+                disabled={isSpecialAdmin}
               >
                 <FormControl>
                   <SelectTrigger>
@@ -129,6 +134,9 @@ const UserForm = ({ defaultValues, onSubmit, onCancel, isEditing }: UserFormProp
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
+                  {isSpecialAdmin && (
+                    <SelectItem value="super_admin">Super Admin</SelectItem>
+                  )}
                   <SelectItem value="admin">Administrador</SelectItem>
                   <SelectItem value="instructor">Instrutor</SelectItem>
                   <SelectItem value="student">Estudante</SelectItem>
@@ -136,6 +144,11 @@ const UserForm = ({ defaultValues, onSubmit, onCancel, isEditing }: UserFormProp
                 </SelectContent>
               </Select>
               <FormMessage />
+              {isSpecialAdmin && (
+                <p className="text-sm text-muted-foreground">
+                  Este email é automaticamente definido como Super Admin
+                </p>
+              )}
             </FormItem>
           )}
         />

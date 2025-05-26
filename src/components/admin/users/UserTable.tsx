@@ -13,10 +13,11 @@ interface UserTableProps {
 
 const UserTable = ({ users, onEditUser, onDeleteUser }: UserTableProps) => {
   // Function to map any role value to one of the supported roles
-  const mapToSupportedRole = (role: string): "admin" | "viewer" | "instructor" | "student" => {
+  const mapToSupportedRole = (role: string): "admin" | "viewer" | "instructor" | "student" | "super_admin" => {
     switch(role) {
+      case "super_admin":
+        return "super_admin";
       case "admin":
-      case "super_admin": // Map super_admin to admin
         return "admin";
       case "instructor":
       case "professor":  // Map professor to instructor
@@ -64,7 +65,7 @@ const UserTable = ({ users, onEditUser, onDeleteUser }: UserTableProps) => {
                     variant="ghost"
                     size="icon"
                     onClick={() => onDeleteUser(user.id)}
-                    disabled={mapToSupportedRole(user.role) === "admin" && users.filter((u) => mapToSupportedRole(u.role) === "admin").length === 1}
+                    disabled={["admin", "super_admin"].includes(mapToSupportedRole(user.role)) && users.filter((u) => ["admin", "super_admin"].includes(mapToSupportedRole(u.role))).length === 1}
                   >
                     <Trash className="h-4 w-4" />
                   </Button>
