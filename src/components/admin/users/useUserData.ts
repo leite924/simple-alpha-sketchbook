@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { User } from "../types";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,8 +18,9 @@ export const useUserData = (isAuthenticated: boolean = true, initialUsers: User[
   
   const fetchUsersFromSupabase = async () => {
     try {
-      console.log("Buscando usuários do Supabase...");
+      console.log("🔍 Buscando usuários do Supabase...");
       setLoading(true);
+      setError(null);
       
       // Buscar perfis com suas funções
       const { data: profilesData, error: profilesError } = await supabase
@@ -32,14 +34,14 @@ export const useUserData = (isAuthenticated: boolean = true, initialUsers: User[
         `);
         
       if (profilesError) {
-        console.error("Erro ao buscar perfis:", profilesError);
+        console.error("❌ Erro ao buscar perfis:", profilesError);
         throw profilesError;
       }
       
-      console.log("Perfis encontrados:", profilesData?.length || 0);
+      console.log("✅ Perfis encontrados:", profilesData?.length || 0);
       
       if (!profilesData || profilesData.length === 0) {
-        console.log("Nenhum perfil encontrado");
+        console.log("⚠️ Nenhum perfil encontrado");
         setUsers([]);
         setLoading(false);
         return;
@@ -51,20 +53,20 @@ export const useUserData = (isAuthenticated: boolean = true, initialUsers: User[
         .select('user_id, role');
         
       if (rolesError) {
-        console.error("Erro ao buscar funções:", rolesError);
+        console.error("⚠️ Erro ao buscar funções:", rolesError);
         // Não falha se não conseguir buscar funções, usa 'viewer' como padrão
       }
       
-      console.log("Funções encontradas:", rolesData?.length || 0);
+      console.log("✅ Funções encontradas:", rolesData?.length || 0);
       
       // Combinar dados de perfis com funções
       const usersWithRoles: User[] = profilesData.map((profile, index) => {
         const userRole = rolesData?.find(role => role.user_id === profile.id);
-        const role = userRole?.role || 'viewer';
+        const role = userRole?.role || 'user';
         
-        // Mapear roles do banco para roles do frontend - CORRIGIDO
+        // Mapear roles do banco para roles do frontend
         const roleMapping: Record<string, User["role"]> = {
-          'super_admin': 'super_admin',  // Mapeamento correto
+          'super_admin': 'super_admin',
           'admin': 'admin',
           'instructor': 'instructor',
           'student': 'student',
@@ -84,11 +86,12 @@ export const useUserData = (isAuthenticated: boolean = true, initialUsers: User[
         };
       });
       
-      console.log("Usuários processados:", usersWithRoles.length);
+      console.log("✅ Usuários processados:", usersWithRoles.length);
+      console.log("👥 Lista de usuários:", usersWithRoles);
       setUsers(usersWithRoles);
       
     } catch (err) {
-      console.error("Erro ao buscar usuários:", err);
+      console.error("❌ Erro ao buscar usuários:", err);
       setError(err instanceof Error ? err : new Error('Erro desconhecido'));
     } finally {
       setLoading(false);
@@ -96,9 +99,11 @@ export const useUserData = (isAuthenticated: boolean = true, initialUsers: User[
   };
   
   useEffect(() => {
+    console.log("🔄 useUserData effect - isAuthenticated:", isAuthenticated);
     if (isAuthenticated) {
       fetchUsersFromSupabase();
     } else {
+      console.log("⚠️ Usuário não autenticado, não buscando usuários");
       setLoading(false);
     }
   }, [isAuthenticated]);
@@ -124,6 +129,7 @@ export const useUserData = (isAuthenticated: boolean = true, initialUsers: User[
   
   // Função para recarregar os dados
   const refreshUsers = () => {
+    console.log("🔄 Recarregando usuários...");
     if (isAuthenticated) {
       fetchUsersFromSupabase();
     }

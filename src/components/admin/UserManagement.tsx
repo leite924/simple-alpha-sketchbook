@@ -29,9 +29,11 @@ const UserManagement = () => {
     refreshUsers
   } = useUserManagement();
 
-  return (
-    <div className="space-y-6">
-      {!isAuthenticated && (
+  console.log("🏠 UserManagement render - isAuthenticated:", isAuthenticated, "isLoading:", isLoading, "users:", filteredUsers.length);
+
+  if (!isAuthenticated) {
+    return (
+      <div className="space-y-6">
         <Alert variant="destructive" className="mb-6">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Autenticação necessária</AlertTitle>
@@ -39,8 +41,12 @@ const UserManagement = () => {
             Você precisa estar logado para gerenciar usuários.
           </AlertDescription>
         </Alert>
-      )}
+      </div>
+    );
+  }
 
+  return (
+    <div className="space-y-6">
       <div className="flex justify-between items-center">
         <UserSearchBar
           searchTerm={searchTerm}
@@ -78,6 +84,7 @@ const UserManagement = () => {
 
       {isLoading ? (
         <div className="space-y-4">
+          <div className="text-center text-gray-600">Carregando usuários...</div>
           {[1, 2, 3].map((i) => (
             <Skeleton key={i} className="w-full h-16" />
           ))}
