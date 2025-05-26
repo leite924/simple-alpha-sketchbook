@@ -85,24 +85,31 @@ export const useUserEditing = () => {
         }
       }
       
-      // Verificar se uma senha real foi fornecida - CORRIGIDO
-      const passwordProvided = values.hasOwnProperty('password') && 
-                              values.password !== undefined && 
-                              values.password !== null && 
-                              values.password.trim() !== '' &&
-                              values.password.trim().length > 0 &&
-                              !values.password.match(/^[•]+$/); // Não é apenas pontos/placeholder
+      // Verificar se o usuário realmente pretende alterar a senha
+      const intentToChangePassword = values.hasOwnProperty('password');
       
-      console.log("Password provided?", passwordProvided);
-      console.log("Password value:", values.password);
+      console.log("Intent to change password?", intentToChangePassword);
       console.log("Values keys:", Object.keys(values));
       
       // Mostrar mensagem apropriada
       if (isSpecialAdmin) {
         toast.success("Super administrador atualizado com sucesso!");
-      } else if (passwordProvided) {
-        toast.warning("Perfil atualizado, mas a senha não pôde ser alterada. Entre em contato com o administrador do sistema para alteração de senhas.");
+      } else if (intentToChangePassword) {
+        // Se há intenção de alterar senha, verificar se foi fornecida uma senha real
+        const passwordProvided = values.password && 
+                                values.password.trim() !== '' &&
+                                !values.password.match(/^[•]+$/);
+        
+        console.log("Password provided?", passwordProvided);
+        console.log("Password value:", values.password);
+        
+        if (passwordProvided) {
+          toast.warning("Perfil atualizado, mas a senha não pôde ser alterada. Entre em contato com o administrador do sistema para alteração de senhas.");
+        } else {
+          toast.success("Usuário atualizado com sucesso!");
+        }
       } else {
+        // Usuário não quis alterar senha - sucesso simples
         toast.success("Usuário atualizado com sucesso!");
       }
       
