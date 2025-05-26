@@ -4,7 +4,6 @@ import MainLayout from "@/components/layout/MainLayout";
 import AdminAccess from "@/components/admin/AdminAccess";
 import AdminHeader from "@/components/admin/AdminHeader";
 import AdminContent from "@/components/admin/AdminContent";
-import AdminErrorDisplay from "@/components/admin/AdminErrorDisplay";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { toast } from "sonner";
 

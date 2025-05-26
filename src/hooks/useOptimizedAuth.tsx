@@ -22,6 +22,13 @@ export const useOptimizedAuth = () => {
 
         if (error) {
           console.error("❌ Auth error:", error);
+          if (isMounted) {
+            setSession(null);
+            setUser(null);
+            setUserRole('viewer');
+            setLoading(false);
+          }
+          return;
         }
 
         console.log("✅ Session retrieved:", session ? "Found" : "None");
@@ -98,6 +105,7 @@ export const useOptimizedAuth = () => {
           setUserRole('viewer');
         }
 
+        // Sempre definir loading como false após mudanças de estado
         if (isMounted) {
           setLoading(false);
         }
