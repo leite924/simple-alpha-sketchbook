@@ -83,10 +83,13 @@ export const useUserEditing = () => {
         }
       }
       
+      // Determinar se uma senha foi realmente fornecida
+      const passwordProvided = values.password && values.password.trim() !== '';
+      
       // Mostrar mensagem apropriada
       if (isSpecialAdmin) {
         toast.success("Super administrador atualizado com sucesso!");
-      } else if (values.password && values.password.trim() !== '') {
+      } else if (passwordProvided) {
         toast.warning("Perfil atualizado, mas a senha não pôde ser alterada. Entre em contato com o administrador do sistema para alteração de senhas.");
       } else {
         toast.success("Usuário atualizado com sucesso!");

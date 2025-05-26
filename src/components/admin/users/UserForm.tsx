@@ -32,6 +32,11 @@ const UserForm = ({ defaultValues, onSubmit, onCancel, isEditing }: UserFormProp
         delete submitValues.password;
       }
       
+      // Se estamos editando e o campo password está vazio ou só tem espaços, remover
+      if (isEditing && submitValues.password && submitValues.password.trim() === '') {
+        delete submitValues.password;
+      }
+      
       const success = await onSubmit(submitValues);
       if (success) {
         form.reset();
