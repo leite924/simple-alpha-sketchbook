@@ -26,21 +26,23 @@ const UserForm = ({ defaultValues, onSubmit, onCancel, isEditing }: UserFormProp
   const handleSubmit = async (values: UserFormValues) => {
     setIsSubmitting(true);
     try {
-      // Se estamos editando e não queremos alterar a senha, remover o campo password
-      const submitValues = { ...values };
+      console.log("Form submitted with values:", values);
+      console.log("Change password?", changePassword);
+      console.log("Is editing?", isEditing);
+      
+      // Se estamos editando e não queremos alterar a senha, remover completamente o campo password
+      let submitValues: any = { ...values };
+      
       if (isEditing && !changePassword) {
-        // Remover completamente o campo password se não queremos alterá-lo
+        // Remover completamente o campo password
         const { password, ...valuesWithoutPassword } = submitValues;
-        const success = await onSubmit(valuesWithoutPassword as UserFormValues);
-        if (success) {
-          form.reset();
-        }
-      } else {
-        // Se não estamos editando ou queremos alterar a senha, enviar normalmente
-        const success = await onSubmit(submitValues);
-        if (success) {
-          form.reset();
-        }
+        submitValues = valuesWithoutPassword;
+        console.log("Password field removed. Final values:", submitValues);
+      }
+      
+      const success = await onSubmit(submitValues);
+      if (success) {
+        form.reset();
       }
     } finally {
       setIsSubmitting(false);

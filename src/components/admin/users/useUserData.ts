@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { User } from "../types";
 import { supabase } from "@/integrations/supabase/client";
@@ -63,9 +62,9 @@ export const useUserData = (isAuthenticated: boolean = true, initialUsers: User[
         const userRole = rolesData?.find(role => role.user_id === profile.id);
         const role = userRole?.role || 'viewer';
         
-        // Mapear roles do banco para roles do frontend
+        // Mapear roles do banco para roles do frontend - CORRIGIDO
         const roleMapping: Record<string, User["role"]> = {
-          'super_admin': 'admin',
+          'super_admin': 'super_admin',  // Mapeamento correto
           'admin': 'admin',
           'instructor': 'instructor',
           'student': 'student',

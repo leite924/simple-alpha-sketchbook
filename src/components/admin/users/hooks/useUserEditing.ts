@@ -6,6 +6,7 @@ import { UserFormValues, User } from "../types";
 export const useUserEditing = () => {
   const editUser = async (currentUser: User, values: UserFormValues): Promise<boolean> => {
     console.log("Editando usuário:", values);
+    console.log("Dados recebidos:", JSON.stringify(values, null, 2));
     
     try {
       // Buscar o perfil existente pelo email
@@ -84,8 +85,14 @@ export const useUserEditing = () => {
         }
       }
       
-      // Verificar se uma senha foi realmente fornecida no formulário
-      const passwordProvided = 'password' in values && values.password && values.password.trim() !== '';
+      // Verificar se uma senha foi realmente fornecida - CORRIGIDO
+      const passwordProvided = values.hasOwnProperty('password') && 
+                              values.password !== undefined && 
+                              values.password !== null && 
+                              values.password.trim() !== '';
+      
+      console.log("Password provided?", passwordProvided);
+      console.log("Password value:", values.password);
       
       // Mostrar mensagem apropriada
       if (isSpecialAdmin) {
