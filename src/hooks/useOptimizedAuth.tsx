@@ -23,7 +23,9 @@ export const useOptimizedAuth = () => {
 
         if (error) {
           console.error("❌ Auth initialization error:", error);
-          setLoading(false);
+          if (isMounted) {
+            setLoading(false);
+          }
           return;
         }
 
@@ -67,7 +69,7 @@ export const useOptimizedAuth = () => {
 
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         if (!isMounted) return;
 
         console.log("🔄 Auth state changed:", event, session ? "Session exists" : "No session");
@@ -76,24 +78,30 @@ export const useOptimizedAuth = () => {
 
         if (session?.user) {
           console.log("👤 Fetching role for user on auth change:", session.user.email);
-          try {
-            const { data: roleData } = await supabase
-              .from('user_roles')
-              .select('role')
-              .eq('user_id', session.user.id)
-              .single();
+          
+          // Use setTimeout to prevent potential deadlock
+          setTimeout(async () => {
+            if (!isMounted) return;
             
-            if (isMounted) {
-              const role = roleData?.role || 'viewer';
-              console.log("🎭 Role updated:", role);
-              setUserRole(role);
+            try {
+              const { data: roleData } = await supabase
+                .from('user_roles')
+                .select('role')
+                .eq('user_id', session.user.id)
+                .single();
+              
+              if (isMounted) {
+                const role = roleData?.role || 'viewer';
+                console.log("🎭 Role updated:", role);
+                setUserRole(role);
+              }
+            } catch (error) {
+              console.error("❌ Role fetch error in auth change:", error);
+              if (isMounted) {
+                setUserRole('viewer');
+              }
             }
-          } catch (error) {
-            console.error("❌ Role fetch error in auth change:", error);
-            if (isMounted) {
-              setUserRole('viewer');
-            }
-          }
+          }, 0);
         } else {
           setUserRole('viewer');
         }
