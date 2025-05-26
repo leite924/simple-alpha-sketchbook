@@ -11,6 +11,7 @@ export const useOptimizedAuth = () => {
 
   useEffect(() => {
     let isMounted = true;
+    let sessionInitialized = false;
     
     console.log("🔄 Initializing auth...");
 
@@ -37,68 +38,63 @@ export const useOptimizedAuth = () => {
       }
     };
 
-    // Set up auth state listener first
+    // Function to handle session changes
+    const handleSessionChange = async (newSession: Session | null, source: string) => {
+      if (!isMounted) return;
+      
+      console.log(`🔄 Session change from ${source}:`, newSession ? "Found" : "None");
+      
+      setSession(newSession);
+      setUser(newSession?.user ?? null);
+
+      if (newSession?.user) {
+        await fetchUserRole(newSession.user.id);
+      } else {
+        setUserRole('viewer');
+      }
+
+      // Only set loading to false if this is the initial session check
+      if (!sessionInitialized) {
+        sessionInitialized = true;
+        setLoading(false);
+        console.log("✅ Auth initialization complete");
+      }
+    };
+
+    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (!isMounted) return;
-
         console.log("🔄 Auth state changed:", event);
-        
-        setSession(session);
-        setUser(session?.user ?? null);
-
-        if (session?.user) {
-          await fetchUserRole(session.user.id);
-        } else {
-          setUserRole('viewer');
-        }
-
-        // Always set loading to false after handling auth state change
-        setLoading(false);
+        await handleSessionChange(session, "auth state change");
       }
     );
 
     // Get initial session
-    const getInitialSession = async () => {
+    const initializeSession = async () => {
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
         
-        if (!isMounted) return;
-
         if (error) {
           console.error("❌ Initial session error:", error);
-          setSession(null);
-          setUser(null);
-          setUserRole('viewer');
-          setLoading(false);
+          if (isMounted) {
+            await handleSessionChange(null, "initial session error");
+          }
           return;
         }
 
-        console.log("✅ Initial session retrieved:", session ? "Found" : "None");
-        setSession(session);
-        setUser(session?.user ?? null);
-
-        if (session?.user) {
-          await fetchUserRole(session.user.id);
-        } else {
-          setUserRole('viewer');
+        if (isMounted) {
+          await handleSessionChange(session, "initial session");
         }
-
-        setLoading(false);
-        console.log("✅ Auth initialization complete");
       } catch (error) {
         console.error("❌ Auth initialization error:", error);
         if (isMounted) {
-          setSession(null);
-          setUser(null);
-          setUserRole('viewer');
-          setLoading(false);
+          await handleSessionChange(null, "initialization error");
         }
       }
     };
 
     // Initialize session
-    getInitialSession();
+    initializeSession();
 
     return () => {
       isMounted = false;
