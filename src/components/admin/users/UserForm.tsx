@@ -34,21 +34,17 @@ const UserForm = ({ defaultValues, onSubmit, onCancel, isEditing }: UserFormProp
     setIsSubmitting(true);
     try {
       console.log("Form submitted with values:", values);
-      console.log("Change password?", changePassword);
+      console.log("Change password checkbox?", changePassword);
       console.log("Is editing?", isEditing);
       
-      // Incluir a flag _changePassword para indicar a intenção do usuário
+      // LÓGICA SIMPLIFICADA PARA A FLAG
       let submitValues: any = { 
         ...values,
-        _changePassword: isEditing ? changePassword : true // Se não está editando, sempre tem intenção de definir senha
+        _changePassword: isEditing ? changePassword : false // Se não está editando, não há intenção de alterar senha existente
       };
       
-      // Se estamos editando e não queremos alterar a senha, remover o campo password
-      if (isEditing && !changePassword) {
-        const { password, ...valuesWithoutPassword } = submitValues;
-        submitValues = valuesWithoutPassword;
-        console.log("Password field removed. Final values:", submitValues);
-      }
+      console.log("Final _changePassword flag:", submitValues._changePassword);
+      console.log("Final submit values:", submitValues);
       
       const success = await onSubmit(submitValues);
       if (success) {
@@ -100,6 +96,7 @@ const UserForm = ({ defaultValues, onSubmit, onCancel, isEditing }: UserFormProp
               id="changePassword" 
               checked={changePassword}
               onCheckedChange={(checked) => {
+                console.log("Checkbox changePassword alterado para:", checked);
                 setChangePassword(checked as boolean);
                 if (!checked) {
                   form.setValue('password', '');

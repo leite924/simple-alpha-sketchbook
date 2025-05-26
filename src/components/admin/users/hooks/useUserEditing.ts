@@ -7,6 +7,7 @@ export const useUserEditing = () => {
   const editUser = async (currentUser: User, values: UserFormValues & { _changePassword?: boolean }): Promise<boolean> => {
     console.log("Editando usuário:", values);
     console.log("Dados recebidos:", JSON.stringify(values, null, 2));
+    console.log("Flag _changePassword:", values._changePassword);
     
     try {
       // Buscar o perfil existente pelo email
@@ -85,23 +86,23 @@ export const useUserEditing = () => {
         }
       }
       
-      // Usar a flag _changePassword para determinar a intenção do usuário
-      const intentToChangePassword = values._changePassword === true;
+      // LÓGICA SIMPLIFICADA PARA MENSAGENS
+      console.log("Verificando mensagem a exibir...");
       
-      console.log("Intent to change password?", intentToChangePassword);
-      console.log("_changePassword flag:", values._changePassword);
-      
-      // Mostrar mensagem apropriada
       if (isSpecialAdmin) {
+        console.log("É super admin - mostrando mensagem especial");
         toast.success("Super administrador atualizado com sucesso!");
-      } else if (intentToChangePassword) {
-        // Se há intenção de alterar senha, verificar se foi fornecida uma senha real
+      } else if (values._changePassword === false) {
+        // Usuário NÃO quis alterar senha - sucesso simples sempre
+        console.log("Usuário não quis alterar senha - sucesso simples");
+        toast.success("Usuário atualizado com sucesso!");
+      } else if (values._changePassword === true) {
+        // Usuário QUIS alterar senha - verificar se foi fornecida
         const passwordProvided = values.password && 
                                 values.password.trim() !== '' &&
                                 !values.password.match(/^[•]+$/);
         
-        console.log("Password provided?", passwordProvided);
-        console.log("Password value:", values.password);
+        console.log("Usuário quis alterar senha. Senha fornecida?", passwordProvided);
         
         if (passwordProvided) {
           toast.warning("Perfil atualizado, mas a senha não pôde ser alterada. Entre em contato com o administrador do sistema para alteração de senhas.");
@@ -109,7 +110,8 @@ export const useUserEditing = () => {
           toast.success("Usuário atualizado com sucesso!");
         }
       } else {
-        // Usuário não quis alterar senha - sucesso simples
+        // Fallback para casos não previstos
+        console.log("Caso não previsto - usando sucesso padrão");
         toast.success("Usuário atualizado com sucesso!");
       }
       
