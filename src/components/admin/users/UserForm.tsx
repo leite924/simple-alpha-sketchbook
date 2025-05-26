@@ -5,22 +5,37 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { UserFormValues } from "./types";
+import { useState } from "react";
 
 interface UserFormProps {
   defaultValues: UserFormValues;
-  onSubmit: (values: UserFormValues) => void;
+  onSubmit: (values: UserFormValues) => Promise<boolean>;
   onCancel: () => void;
   isEditing: boolean;
 }
 
 const UserForm = ({ defaultValues, onSubmit, onCancel, isEditing }: UserFormProps) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
   const form = useForm<UserFormValues>({
     defaultValues
   });
 
+  const handleSubmit = async (values: UserFormValues) => {
+    setIsSubmitting(true);
+    try {
+      const success = await onSubmit(values);
+      if (success) {
+        form.reset();
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
         <FormField
           control={form.control}
           name="name"
@@ -78,11 +93,11 @@ const UserForm = ({ defaultValues, onSubmit, onCancel, isEditing }: UserFormProp
         />
 
         <div className="flex justify-end gap-2">
-          <Button type="button" variant="outline" onClick={onCancel}>
+          <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
             Cancelar
           </Button>
-          <Button type="submit">
-            {isEditing ? "Salvar" : "Adicionar"}
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? "Salvando..." : (isEditing ? "Salvar" : "Adicionar")}
           </Button>
         </div>
       </form>

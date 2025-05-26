@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { UserFormValues, User } from "./types";
 import { supabase } from "@/integrations/supabase/client";
@@ -174,15 +173,15 @@ export function useUserActions(users: User[], setUsers: React.Dispatch<React.Set
           throw error;
         }
       }
+      
+      // Fechar o diálogo e resetar estado
+      handleDialogClose();
+      return true; // Retornar true em caso de sucesso
     } catch (error: any) {
       console.error("Erro ao gerenciar usuário:", error);
       toast.error(`Erro ao criar conta: ${error.message || 'Database error saving new user'}`);
       return false;
-    } finally {
-      handleDialogClose();
     }
-    
-    return true;
   };
 
   const handleEditUser = (user: User) => {
