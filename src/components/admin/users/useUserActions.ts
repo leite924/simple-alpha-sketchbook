@@ -18,7 +18,7 @@ export function useUserActions(users: User[], setUsers: React.Dispatch<React.Set
     
     try {
       if (isEditingUser && currentUser) {
-        // Buscar o perfil pelo email primeiro
+        // Lógica de edição existente
         const { data: existingProfile, error: searchError } = await supabase
           .from('profiles')
           .select('id')
@@ -89,97 +89,101 @@ export function useUserActions(users: User[], setUsers: React.Dispatch<React.Set
         );
         toast.success("Usuário atualizado com sucesso!");
       } else {
-        try {
-          // Gerar um UUID para o novo perfil
-          const profileId = crypto.randomUUID();
+        // Lógica de criação de novo usuário
+        console.log("Criando novo usuário:", values);
+        
+        // Verificar se já existe um usuário com este email
+        const { data: existingProfile, error: checkError } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('email', values.email)
+          .maybeSingle();
           
-          // Verificar se já existe um usuário com este email
-          const { data: existingProfile, error: checkError } = await supabase
-            .from('profiles')
-            .select('id')
-            .eq('email', values.email)
-            .single();
-            
-          if (checkError && checkError.code !== 'PGRST116') {
-            console.error("Erro ao verificar perfil existente:", checkError);
-            throw new Error(`Erro ao verificar perfil: ${checkError.message}`);
-          }
-          
-          if (existingProfile) {
-            throw new Error('Já existe um usuário com este email');
-          }
-          
-          console.log("Criando perfil com ID:", profileId, "para email:", values.email);
-          
-          // Criar um perfil no Supabase com UUID gerado
-          const { data, error } = await supabase
-            .from('profiles')
-            .insert({
-              id: profileId,
-              first_name: values.name.split(' ')[0],
-              last_name: values.name.split(' ').slice(1).join(' '),
-              email: values.email
-            })
-            .select();
-          
-          if (error) {
-            console.error('Erro ao criar perfil:', error);
-            throw new Error(`Erro ao salvar perfil: ${error.message}`);
-          }
-          
-          console.log("Perfil criado com sucesso:", data);
-          
-          // Adicionar papel/função usando o UUID do perfil
-          console.log("Atribuindo função:", values.role, "para usuário ID:", profileId);
-          
-          // Mapeamento de roles do frontend para roles do banco
-          const roleMapping: Record<string, Database["public"]["Enums"]["user_role"]> = {
-            "admin": "admin",
-            "viewer": "user",
-            "instructor": "instructor",
-            "student": "student"
-          };
-          
-          const dbRole = roleMapping[values.role] || "user";
-          
-          const { error: roleError } = await supabase
-            .from('user_roles')
-            .insert({
-              user_id: profileId,
-              role: dbRole
-            });
-            
-          if (roleError) {
-            console.error('Erro ao atribuir função:', roleError);
-            throw new Error(`Erro ao atribuir função: ${roleError.message}`);
-          }
-          
-          console.log("Função atribuída com sucesso");
-          
-          // Adicionar ao estado local
-          const newUser: User = {
-            id: Math.max(0, ...users.map((user) => user.id)) + 1,
-            name: values.name,
-            email: values.email,
-            role: values.role,
-            status: "active",
-            createdAt: new Date(),
-            lastLogin: new Date()
-          };
-          setUsers([...users, newUser]);
-          toast.success("Usuário adicionado com sucesso!");
-        } catch (error: any) {
-          console.error("Erro específico ao criar usuário:", error);
-          throw error;
+        if (checkError) {
+          console.error("Erro ao verificar perfil existente:", checkError);
+          throw new Error(`Erro ao verificar perfil: ${checkError.message}`);
         }
+        
+        if (existingProfile) {
+          throw new Error('Já existe um usuário com este email');
+        }
+        
+        // Gerar um UUID para o novo perfil
+        const profileId = crypto.randomUUID();
+        console.log("Criando perfil com ID:", profileId, "para email:", values.email);
+        
+        // Criar um perfil no Supabase
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert({
+            id: profileId,
+            first_name: values.name.split(' ')[0],
+            last_name: values.name.split(' ').slice(1).join(' '),
+            email: values.email
+          });
+        
+        if (profileError) {
+          console.error('Erro ao criar perfil:', profileError);
+          toast.error(`Erro ao criar perfil: ${profileError.message}`);
+          return false;
+        }
+        
+        console.log("Perfil criado com sucesso");
+        
+        // Mapeamento de roles do frontend para roles do banco
+        const roleMapping: Record<string, Database["public"]["Enums"]["user_role"]> = {
+          "admin": "admin",
+          "viewer": "user",
+          "instructor": "instructor",
+          "student": "student"
+        };
+        
+        const dbRole = roleMapping[values.role] || "user";
+        console.log("Atribuindo função:", dbRole, "para usuário ID:", profileId);
+        
+        // Adicionar papel/função usando o UUID do perfil
+        const { error: roleError } = await supabase
+          .from('user_roles')
+          .insert({
+            user_id: profileId,
+            role: dbRole
+          });
+          
+        if (roleError) {
+          console.error('Erro ao atribuir função:', roleError);
+          
+          // Se falhou ao criar a função, remover o perfil criado
+          await supabase
+            .from('profiles')
+            .delete()
+            .eq('id', profileId);
+            
+          toast.error(`Erro ao atribuir função: ${roleError.message}`);
+          return false;
+        }
+        
+        console.log("Função atribuída com sucesso");
+        
+        // Adicionar ao estado local
+        const newUser: User = {
+          id: Math.max(0, ...users.map((user) => user.id)) + 1,
+          name: values.name,
+          email: values.email,
+          role: values.role,
+          status: "active",
+          createdAt: new Date(),
+          lastLogin: new Date()
+        };
+        setUsers([...users, newUser]);
+        toast.success("Usuário criado com sucesso!");
       }
       
       // Fechar o diálogo e resetar estado
       handleDialogClose();
-      return true; // Retornar true em caso de sucesso
+      return true;
     } catch (error: any) {
       console.error("Erro ao gerenciar usuário:", error);
-      toast.error(`Erro ao criar conta: ${error.message || 'Database error saving new user'}`);
+      toast.error(error.message || 'Erro inesperado ao gerenciar usuário');
       return false;
     }
   };
