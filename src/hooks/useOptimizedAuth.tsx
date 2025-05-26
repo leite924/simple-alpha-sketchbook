@@ -14,7 +14,6 @@ export const useOptimizedAuth = () => {
 
     const initializeAuth = async () => {
       try {
-        // Get initial session
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (!isMounted) return;
@@ -28,7 +27,6 @@ export const useOptimizedAuth = () => {
         setSession(session);
         setUser(session?.user ?? null);
 
-        // Fetch user role if authenticated
         if (session?.user) {
           try {
             const { data: roleData } = await supabase
@@ -59,7 +57,6 @@ export const useOptimizedAuth = () => {
 
     initializeAuth();
 
-    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!isMounted) return;
@@ -68,7 +65,6 @@ export const useOptimizedAuth = () => {
         setSession(session);
         setUser(session?.user ?? null);
 
-        // Fetch role for authenticated users
         if (session?.user) {
           try {
             const { data: roleData } = await supabase

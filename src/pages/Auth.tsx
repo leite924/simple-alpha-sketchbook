@@ -26,7 +26,6 @@ const Auth = () => {
     }
   }, [isAuthenticated, loading, navigate]);
 
-  // Show loading while checking authentication
   if (loading) {
     return (
       <MainLayout>
@@ -40,7 +39,6 @@ const Auth = () => {
     );
   }
 
-  // Don't render auth form if user is already authenticated
   if (isAuthenticated) {
     return null;
   }

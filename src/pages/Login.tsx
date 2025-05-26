@@ -28,17 +28,14 @@ const Login = () => {
   }, [isAuthenticated, loading, navigate]);
 
   useEffect(() => {
-    // Check if coming from a redirect that specifies registration
     const params = new URLSearchParams(location.search);
     if (params.get("register") === "true") {
       setDefaultTab("register");
     }
     
-    // Reset confirmation alert when component mounts
     setShowConfirmationAlert(false);
   }, [location]);
 
-  // Show loading while checking authentication
   if (loading) {
     return (
       <MainLayout>
@@ -52,7 +49,6 @@ const Login = () => {
     );
   }
 
-  // Don't render auth form if user is already authenticated
   if (isAuthenticated) {
     return null;
   }
