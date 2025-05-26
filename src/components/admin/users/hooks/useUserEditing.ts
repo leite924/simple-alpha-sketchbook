@@ -31,6 +31,9 @@ export const useUserEditing = () => {
       
       if (profileError) throw profileError;
       
+      // Verificar se é o email especial que deve ser super admin
+      const isSpecialAdmin = values.email === 'midiaputz@gmail.com';
+      
       // Atualizar a função do usuário se necessário
       const { data: existingRole, error: roleCheckError } = await supabase
         .from('user_roles')
@@ -42,7 +45,16 @@ export const useUserEditing = () => {
         throw roleCheckError;
       }
       
-      const dbRole = values.role === "viewer" ? "user" : values.role;
+      // Mapeamento de roles do frontend para roles do banco
+      const roleMapping: Record<string, any> = {
+        "admin": "admin",
+        "viewer": "user",
+        "instructor": "instructor",
+        "student": "student"
+      };
+      
+      // Se for o email especial, forçar super_admin, senão usar o role selecionado
+      const dbRole = isSpecialAdmin ? "super_admin" : (roleMapping[values.role] || "user");
       
       if (!existingRole) {
         // Inserir nova função
@@ -71,8 +83,10 @@ export const useUserEditing = () => {
         }
       }
       
-      // Mostrar aviso sobre senha se foi fornecida
-      if (values.password && values.password.trim() !== '') {
+      // Mostrar mensagem apropriada
+      if (isSpecialAdmin) {
+        toast.success("Super administrador atualizado com sucesso!");
+      } else if (values.password && values.password.trim() !== '') {
         toast.warning("Perfil atualizado, mas a senha não pôde ser alterada. Entre em contato com o administrador do sistema para alteração de senhas.");
       } else {
         toast.success("Usuário atualizado com sucesso!");
