@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { UserFormValues } from "./types";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 
 interface UserFormProps {
@@ -22,6 +22,13 @@ const UserForm = ({ defaultValues, onSubmit, onCancel, isEditing }: UserFormProp
   const form = useForm<UserFormValues>({
     defaultValues
   });
+
+  // Limpar o campo de senha quando o checkbox é desmarcado
+  useEffect(() => {
+    if (isEditing && !changePassword) {
+      form.setValue('password', '');
+    }
+  }, [changePassword, isEditing, form]);
 
   const handleSubmit = async (values: UserFormValues) => {
     setIsSubmitting(true);
@@ -43,6 +50,7 @@ const UserForm = ({ defaultValues, onSubmit, onCancel, isEditing }: UserFormProp
       const success = await onSubmit(submitValues);
       if (success) {
         form.reset();
+        setChangePassword(false); // Reset checkbox state
       }
     } finally {
       setIsSubmitting(false);
@@ -88,7 +96,12 @@ const UserForm = ({ defaultValues, onSubmit, onCancel, isEditing }: UserFormProp
             <Checkbox 
               id="changePassword" 
               checked={changePassword}
-              onCheckedChange={(checked) => setChangePassword(checked as boolean)}
+              onCheckedChange={(checked) => {
+                setChangePassword(checked as boolean);
+                if (!checked) {
+                  form.setValue('password', '');
+                }
+              }}
             />
             <label htmlFor="changePassword" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
               Alterar senha
@@ -109,7 +122,8 @@ const UserForm = ({ defaultValues, onSubmit, onCancel, isEditing }: UserFormProp
                   <Input 
                     type="password" 
                     placeholder={isEditing ? "Digite a nova senha" : "Digite a senha"} 
-                    {...field} 
+                    {...field}
+                    value={field.value || ''}
                   />
                 </FormControl>
                 <FormMessage />

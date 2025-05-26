@@ -85,12 +85,13 @@ export const useUserEditing = () => {
         }
       }
       
-      // Verificar se uma senha foi realmente fornecida - CORRIGIDO
+      // Verificar se uma senha real foi fornecida - CORRIGIDO
       const passwordProvided = values.hasOwnProperty('password') && 
                               values.password !== undefined && 
                               values.password !== null && 
                               values.password.trim() !== '' &&
-                              values.password.trim().length > 0;
+                              values.password.trim().length > 0 &&
+                              !values.password.match(/^[•]+$/); // Não é apenas pontos/placeholder
       
       console.log("Password provided?", passwordProvided);
       console.log("Password value:", values.password);
