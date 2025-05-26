@@ -11,7 +11,6 @@ export const useOptimizedAuth = () => {
 
   useEffect(() => {
     let isMounted = true;
-    let sessionInitialized = false;
     
     console.log("🔄 Initializing auth...");
 
@@ -38,67 +37,92 @@ export const useOptimizedAuth = () => {
       }
     };
 
-    // Function to handle session changes
-    const handleSessionChange = async (newSession: Session | null, source: string) => {
-      if (!isMounted) return;
-      
-      console.log(`🔄 Session change from ${source}:`, newSession ? "Found" : "None");
-      
-      setSession(newSession);
-      setUser(newSession?.user ?? null);
-
-      if (newSession?.user) {
-        await fetchUserRole(newSession.user.id);
-      } else {
-        setUserRole('viewer');
-      }
-
-      // Only set loading to false if this is the initial session check
-      if (!sessionInitialized) {
-        sessionInitialized = true;
-        setLoading(false);
-        console.log("✅ Auth initialization complete");
-      }
-    };
-
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log("🔄 Auth state changed:", event);
-        await handleSessionChange(session, "auth state change");
-      }
-    );
-
-    // Get initial session
-    const initializeSession = async () => {
+    // Initialize authentication state
+    const initializeAuth = async () => {
       try {
+        // Step 1: Get current session
+        console.log("📋 Getting initial session...");
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
-          console.error("❌ Initial session error:", error);
+          console.error("❌ Session error:", error);
           if (isMounted) {
-            await handleSessionChange(null, "initial session error");
+            setSession(null);
+            setUser(null);
+            setUserRole('viewer');
+            setLoading(false);
           }
           return;
         }
 
-        if (isMounted) {
-          await handleSessionChange(session, "initial session");
+        if (!isMounted) return;
+
+        // Step 2: Set session and user
+        console.log("✅ Session found:", session ? "Yes" : "No");
+        setSession(session);
+        setUser(session?.user ?? null);
+
+        // Step 3: Fetch role if user exists
+        if (session?.user) {
+          await fetchUserRole(session.user.id);
+        } else {
+          setUserRole('viewer');
         }
+
+        // Step 4: Mark initialization as complete
+        setLoading(false);
+        console.log("✅ Auth initialization complete");
+
       } catch (error) {
         console.error("❌ Auth initialization error:", error);
         if (isMounted) {
-          await handleSessionChange(null, "initialization error");
+          setSession(null);
+          setUser(null);
+          setUserRole('viewer');
+          setLoading(false);
         }
       }
     };
 
-    // Initialize session
-    initializeSession();
+    // Step 5: Set up listener for future auth changes (after initialization)
+    const setupAuthListener = () => {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(
+        async (event, newSession) => {
+          if (!isMounted) return;
+          
+          console.log("🔄 Auth state changed:", event);
+          
+          setSession(newSession);
+          setUser(newSession?.user ?? null);
+
+          if (newSession?.user) {
+            await fetchUserRole(newSession.user.id);
+          } else {
+            setUserRole('viewer');
+          }
+          
+          // Don't set loading here - it's only for initial load
+          console.log("✅ Auth state updated");
+        }
+      );
+
+      return subscription;
+    };
+
+    // Execute initialization then set up listener
+    let subscription: any;
+    
+    initializeAuth().then(() => {
+      if (isMounted) {
+        subscription = setupAuthListener();
+      }
+    });
 
     return () => {
       isMounted = false;
-      subscription.unsubscribe();
+      if (subscription) {
+        subscription.unsubscribe();
+      }
     };
   }, []);
 
