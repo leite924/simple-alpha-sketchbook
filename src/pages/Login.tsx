@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import LoginForm from "@/components/auth/LoginForm";
 import RegisterForm from "@/components/auth/RegisterForm";
 import AlertMessages from "@/components/auth/AlertMessages";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 const Login = () => {
   const [email, setEmail] = useState("midiaputz@gmail.com");
@@ -17,31 +17,17 @@ const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [defaultTab, setDefaultTab] = useState("login");
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  
+  const { isAuthenticated, loading } = useAuth();
 
   useEffect(() => {
-    // Check if user is already authenticated
-    const checkAuth = async () => {
-      try {
-        console.log("Checking authentication status on login page...");
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (session) {
-          console.log("User already authenticated, redirecting to admin");
-          navigate("/admin", { replace: true });
-          return;
-        }
-        
-        console.log("User not authenticated, staying on login page");
-      } catch (error) {
-        console.error("Error checking auth:", error);
-      } finally {
-        setIsCheckingAuth(false);
-      }
-    };
-    
-    checkAuth();
+    if (isAuthenticated && !loading) {
+      console.log("User authenticated, redirecting to admin");
+      navigate("/admin", { replace: true });
+    }
+  }, [isAuthenticated, loading, navigate]);
 
+  useEffect(() => {
     // Check if coming from a redirect that specifies registration
     const params = new URLSearchParams(location.search);
     if (params.get("register") === "true") {
@@ -50,22 +36,10 @@ const Login = () => {
     
     // Reset confirmation alert when component mounts
     setShowConfirmationAlert(false);
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log("Auth state changed on login page:", event, !!session);
-      
-      if (session && !isCheckingAuth) {
-        console.log("Session detected, redirecting to admin");
-        navigate("/admin", { replace: true });
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [location, navigate, isCheckingAuth]);
+  }, [location]);
 
   // Show loading while checking authentication
-  if (isCheckingAuth) {
+  if (loading) {
     return (
       <MainLayout>
         <div className="container mx-auto flex items-center justify-center py-16">
@@ -76,6 +50,11 @@ const Login = () => {
         </div>
       </MainLayout>
     );
+  }
+
+  // Don't render auth form if user is already authenticated
+  if (isAuthenticated) {
+    return null;
   }
 
   return (

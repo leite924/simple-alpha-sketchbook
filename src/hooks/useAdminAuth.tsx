@@ -1,145 +1,15 @@
 
-import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { assignHighestAdminRole } from "@/components/admin/services/roleService";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 export const useAdminAuth = () => {
-  const [authenticated, setAuthenticated] = useState(false);
-  const [userRole, setUserRole] = useState('viewer');
-  const [isLoading, setIsLoading] = useState(true);
-  const [userId, setUserId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    console.log("Admin auth hook initialized at", new Date().toISOString());
-
-    const checkAuth = async () => {
-      try {
-        console.log("Admin page - checking authentication");
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        
-        if (sessionError) {
-          console.error("Session error:", sessionError);
-          setError("Erro ao obter sessão");
-          return;
-        }
-        
-        const isAuthenticated = !!session?.user;
-        
-        console.log("Session found:", !!session, "User ID:", session?.user?.id);
-        setAuthenticated(isAuthenticated);
-        
-        if (session?.user) {
-          console.log("User authenticated:", session.user.email);
-          setUserId(session.user.id);
-          
-          // Verificar se existe algum usuário na tabela user_roles
-          const { count: roleCount, error: countError } = await supabase
-            .from('user_roles')
-            .select('*', { count: 'exact', head: true });
-            
-          if (countError) {
-            console.error("Erro ao verificar contagem de funções:", countError);
-            setUserRole('viewer');
-          } else {
-            console.log("Total roles count:", roleCount);
-            
-            if (roleCount === 0) {
-              console.log("Nenhuma função encontrada, configurando primeiro usuário como administrador");
-              
-              try {
-                // Se não existe nenhum usuário com função, o primeiro usuário se torna admin
-                await assignHighestAdminRole(session.user.id);
-                setUserRole('super_admin');
-                console.log("Usuário definido como super_admin");
-              } catch (assignError) {
-                console.error("Erro ao atribuir função de admin:", assignError);
-                setUserRole('viewer');
-              }
-            } else {
-              // Fetch the user's role from the user_roles table
-              const { data: roleData, error: roleError } = await supabase
-                .from('user_roles')
-                .select('role')
-                .eq('user_id', session.user.id)
-                .single();
-                
-              if (roleError && roleError.code !== 'PGRST116') {
-                console.error("Erro ao buscar função do usuário:", roleError);
-                setUserRole('viewer');
-              } else {
-                // Set the user role (default to viewer if not found)
-                const role = roleData?.role || 'viewer';
-                console.log("Função do usuário definida como:", role);
-                setUserRole(role);
-              }
-            }
-          }
-        } else {
-          console.log("User not authenticated");
-          setUserId(null);
-          setUserRole('viewer');
-        }
-      } catch (error) {
-        console.error("Erro na verificação de autenticação:", error);
-        setError("Erro ao verificar autenticação");
-        toast.error("Erro ao verificar autenticação");
-      } finally {
-        console.log("Finalizando verificação de auth, isLoading = false");
-        setIsLoading(false);
-      }
-    };
-    
-    checkAuth();
-    
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("Auth state changed:", event, "Has session:", !!session);
-      const isAuthenticated = !!session?.user;
-      setAuthenticated(isAuthenticated);
-      
-      if (session?.user) {
-        setUserId(session.user.id);
-        
-        // Use setTimeout to avoid blocking the auth state change
-        setTimeout(async () => {
-          try {
-            // Fetch the user's role from the user_roles table
-            const { data: roleData, error: roleError } = await supabase
-              .from('user_roles')
-              .select('role')
-              .eq('user_id', session.user.id)
-              .single();
-              
-            if (roleError && roleError.code !== 'PGRST116') {
-              console.error("Erro ao buscar função do usuário:", roleError);
-              setUserRole('viewer');
-            } else {
-              const role = roleData?.role || 'viewer';
-              console.log("Role updated to:", role);
-              setUserRole(role);
-            }
-          } catch (error) {
-            console.error("Erro ao buscar função na alteração de autenticação:", error);
-            setUserRole('viewer');
-          }
-        }, 0);
-      } else {
-        setUserId(null);
-        setUserRole('viewer');
-      }
-    });
-    
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
+  const { user, session, loading, userRole, isAuthenticated } = useAuth();
 
   return {
-    authenticated,
+    authenticated: isAuthenticated,
     userRole,
-    isLoading,
-    userId,
-    error,
+    isLoading: loading,
+    userId: user?.id || null,
+    error: null,
+    session
   };
 };

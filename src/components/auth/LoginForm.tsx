@@ -45,27 +45,19 @@ const LoginForm = ({
       if (error) {
         console.error("Login error:", error);
         
-        if (error.message.includes("Email not confirmed") || 
-            (error.status === 400 && error.code === "email_not_confirmed")) {
+        if (error.message.includes("Email not confirmed")) {
           setShowConfirmationAlert(true);
-          setErrorMessage("");
           toast.error("É necessário confirmar o email antes de fazer login");
         } else if (error.message.includes("Invalid login credentials")) {
           setErrorMessage("Email ou senha incorretos. Verifique suas credenciais e tente novamente.");
           toast.error("Credenciais inválidas");
-        } else if (error.message.includes("Email provider is not enabled") || 
-                  error.message.includes("Email logins are disabled")) {
-          setErrorMessage("O login por email está desativado no Supabase. Ative-o nas configurações de autenticação.");
-          toast.error("Login por email desativado no Supabase");
         } else {
           setErrorMessage(`Erro ao fazer login: ${error.message}`);
           toast.error(`Erro ao fazer login: ${error.message}`);
         }
       } else if (data.session) {
-        console.log("Login successful, session:", data.session);
+        console.log("Login successful");
         toast.success("Login realizado com sucesso!");
-        
-        // Use navigate instead of window.location.href to avoid page reload
         navigate("/admin", { replace: true });
       }
     } catch (error: any) {
