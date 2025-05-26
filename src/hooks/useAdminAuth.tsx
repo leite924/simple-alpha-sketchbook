@@ -19,6 +19,8 @@ export const useAdminAuth = () => {
         console.log("Admin page - checking authentication");
         const { data: { session } } = await supabase.auth.getSession();
         const isAuthenticated = !!session?.user;
+        
+        console.log("Session found:", !!session, "User ID:", session?.user?.id);
         setAuthenticated(isAuthenticated);
         
         if (session?.user) {
@@ -59,6 +61,8 @@ export const useAdminAuth = () => {
           }
         } else {
           console.log("User not authenticated");
+          setUserId(null);
+          setUserRole('viewer');
         }
       } catch (error) {
         console.error("Erro na verificação de autenticação:", error);
@@ -72,7 +76,7 @@ export const useAdminAuth = () => {
     checkAuth();
     
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("Auth state changed:", event);
+      console.log("Auth state changed:", event, "Has session:", !!session);
       const isAuthenticated = !!session?.user;
       setAuthenticated(isAuthenticated);
       
@@ -91,7 +95,9 @@ export const useAdminAuth = () => {
           }
           
           // Set the user role (default to viewer if not found)
-          setUserRole(roleData?.role || 'viewer');
+          const role = roleData?.role || 'viewer';
+          console.log("Role updated to:", role);
+          setUserRole(role);
         } catch (error) {
           console.error("Erro ao buscar função na alteração de autenticação:", error);
         }

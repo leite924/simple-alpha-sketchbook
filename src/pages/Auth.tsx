@@ -16,18 +16,26 @@ const Auth = () => {
   const [errorMessage, setErrorMessage] = useState("");
   const navigate = useNavigate();
   const [defaultTab, setDefaultTab] = useState("login");
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   useEffect(() => {
     // Check if user is already authenticated
     const checkAuth = async () => {
       try {
+        console.log("Checking authentication status...");
         const { data: { session } } = await supabase.auth.getSession();
+        
         if (session) {
           console.log("User already authenticated, redirecting to admin");
-          window.location.href = "/admin";
+          navigate("/admin", { replace: true });
+          return;
         }
+        
+        console.log("User not authenticated, staying on auth page");
       } catch (error) {
         console.error("Error checking auth:", error);
+      } finally {
+        setIsCheckingAuth(false);
       }
     };
     
@@ -35,15 +43,30 @@ const Auth = () => {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log("Auth state changed:", event, session);
-      if (session) {
+      console.log("Auth state changed:", event, !!session);
+      
+      if (session && !isCheckingAuth) {
         console.log("Session detected, redirecting to admin");
-        window.location.href = "/admin";
+        navigate("/admin", { replace: true });
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [navigate, isCheckingAuth]);
+
+  // Show loading while checking authentication
+  if (isCheckingAuth) {
+    return (
+      <MainLayout>
+        <div className="container mx-auto flex items-center justify-center py-16">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
+            <p>Verificando autenticação...</p>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
