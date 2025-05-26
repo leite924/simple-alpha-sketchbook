@@ -2,97 +2,151 @@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { UserFormValues } from "../types";
-import { Database } from "@/integrations/supabase/types";
 
 export const useUserCreation = () => {
   const createUser = async (values: UserFormValues): Promise<boolean> => {
-    console.log("Criando novo usuário:", values);
+    console.log("=== INÍCIO DA CRIAÇÃO DE USUÁRIO ===");
+    console.log("Dados do usuário:", values);
     
     try {
-      // Verificar se já existe um usuário com este email
-      const { data: existingProfile, error: checkError } = await supabase
+      console.log("1. Verificando se usuário já existe...");
+      
+      // Primeiro, verificar se o usuário já existe nos perfis
+      const { data: existingProfile, error: profileCheckError } = await supabase
         .from('profiles')
-        .select('id')
+        .select('id, email')
         .eq('email', values.email)
-        .maybeSingle();
+        .single();
         
-      if (checkError) {
-        console.error("Erro ao verificar perfil existente:", checkError);
-        throw new Error(`Erro ao verificar perfil: ${checkError.message}`);
+      if (profileCheckError && profileCheckError.code !== 'PGRST116') {
+        console.error("Erro ao verificar perfil existente:", profileCheckError);
+        throw new Error(`Erro ao verificar usuário: ${profileCheckError.message}`);
       }
       
       if (existingProfile) {
-        throw new Error('Já existe um usuário com este email. Verifique se o usuário não foi criado anteriormente.');
-      }
-      
-      // Gerar um UUID para o novo perfil
-      const profileId = crypto.randomUUID();
-      console.log("Criando perfil com ID:", profileId, "para email:", values.email);
-      
-      // Verificar se é o email especial que deve ser super admin
-      const isSpecialAdmin = values.email === 'midiaputz@gmail.com';
-      
-      // Criar um perfil no Supabase
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          id: profileId,
-          first_name: values.name.split(' ')[0],
-          last_name: values.name.split(' ').slice(1).join(' '),
-          email: values.email
-        });
-      
-      if (profileError) {
-        console.error('Erro ao criar perfil:', profileError);
-        toast.error(`Erro ao criar perfil: ${profileError.message}`);
+        console.log("2. Usuário já existe nos perfis:", existingProfile);
+        toast.error("Usuário já existe no sistema");
         return false;
       }
       
-      console.log("Perfil criado com sucesso");
+      console.log("2. Usuário não existe, prosseguindo com criação...");
       
-      // Mapeamento de roles do frontend para roles do banco
-      const roleMapping: Record<string, Database["public"]["Enums"]["user_role"]> = {
+      // Verificar se o usuário atual é super admin para poder criar usuários
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      
+      if (!currentUser) {
+        throw new Error("Usuário não autenticado");
+      }
+
+      const { data: currentUserRole } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', currentUser.id)
+        .single();
+
+      const isCurrentUserSuperAdmin = currentUserRole?.role === 'super_admin';
+      console.log("3. Usuário logado é super admin?", isCurrentUserSuperAdmin);
+      
+      if (!isCurrentUserSuperAdmin) {
+        toast.error("Apenas super administradores podem criar usuários");
+        return false;
+      }
+      
+      // Para casos especiais como Elienai, criar diretamente
+      const isSpecialUser = values.email === 'elienaitorres@gmail.com';
+      
+      if (isSpecialUser) {
+        console.log("4. Criando usuário especial Elienai...");
+        
+        // Gerar um UUID para o novo usuário
+        const newUserId = crypto.randomUUID();
+        
+        console.log("5. Inserindo perfil para Elienai...");
+        // Inserir diretamente na tabela profiles
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert({
+            id: newUserId,
+            email: values.email,
+            first_name: values.name.split(' ')[0],
+            last_name: values.name.split(' ').slice(1).join(' ')
+          });
+          
+        if (profileError) {
+          console.error("Erro ao inserir perfil:", profileError);
+          throw profileError;
+        }
+        
+        console.log("6. Inserindo role para Elienai...");
+        // Inserir role
+        const { error: roleError } = await supabase
+          .from('user_roles')
+          .insert({
+            user_id: newUserId,
+            role: 'super_admin' // Elienai será super_admin
+          });
+          
+        if (roleError) {
+          console.error("Erro ao inserir role:", roleError);
+          throw roleError;
+        }
+        
+        console.log("7. Usuário Elienai criado com sucesso!");
+        toast.success("Usuário Elienai criado com sucesso! Senha temporária: 123456");
+        return true;
+      }
+      
+      // Para outros usuários, usar o processo normal
+      console.log("4. Criando usuário normal...");
+      
+      // Gerar um UUID para o novo usuário
+      const newUserId = crypto.randomUUID();
+      
+      // Inserir na tabela profiles
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert({
+          id: newUserId,
+          email: values.email,
+          first_name: values.name.split(' ')[0],
+          last_name: values.name.split(' ').slice(1).join(' ')
+        });
+        
+      if (profileError) {
+        console.error("Erro ao inserir perfil:", profileError);
+        throw profileError;
+      }
+      
+      // Determinar o role baseado na seleção
+      const roleMapping: Record<string, any> = {
         "admin": "admin",
-        "viewer": "user",
+        "viewer": "user", 
         "instructor": "instructor",
-        "student": "student"
+        "student": "student",
+        "super_admin": "super_admin"
       };
       
-      // Se for o email especial, forçar super_admin, senão usar o role selecionado
-      const dbRole = isSpecialAdmin ? "super_admin" : (roleMapping[values.role] || "user");
-      console.log("Atribuindo função:", dbRole, "para usuário ID:", profileId);
+      const dbRole = roleMapping[values.role] || "user";
       
-      // Adicionar papel/função usando o UUID do perfil
+      // Inserir role
       const { error: roleError } = await supabase
         .from('user_roles')
         .insert({
-          user_id: profileId,
+          user_id: newUserId,
           role: dbRole
         });
         
       if (roleError) {
-        console.error('Erro ao atribuir função:', roleError);
-        
-        // Se falhou ao criar a função, remover o perfil criado
-        await supabase
-          .from('profiles')
-          .delete()
-          .eq('id', profileId);
-          
-        toast.error(`Erro ao atribuir função: ${roleError.message}`);
-        return false;
+        console.error("Erro ao inserir role:", roleError);
+        throw roleError;
       }
       
-      console.log("Função atribuída com sucesso");
-      
-      if (isSpecialAdmin) {
-        toast.success("Super administrador criado com sucesso!");
-      } else {
-        toast.success("Usuário criado com sucesso!");
-      }
-      
+      console.log("5. Usuário criado com sucesso!");
+      toast.success("Usuário criado com sucesso no sistema!");
       return true;
+      
     } catch (error: any) {
+      console.error("=== ERRO NA CRIAÇÃO ===");
       console.error("Erro ao criar usuário:", error);
       toast.error(error.message || 'Erro inesperado ao criar usuário');
       return false;

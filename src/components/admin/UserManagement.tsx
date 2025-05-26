@@ -1,12 +1,13 @@
 
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, RefreshCw } from "lucide-react";
+import { Plus, RefreshCw, Search } from "lucide-react";
 import { User } from "./types";
 import UserSearchBar from "./users/UserSearchBar";
 import UserTable from "./users/UserTable";
 import UserDialog from "./users/UserDialog";
 import { useUserManagement } from "./users/useUserManagement";
+import { useUserDiagnostics } from "./users/hooks/useUserDiagnostics";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -28,6 +29,8 @@ const UserManagement = () => {
     handleAddUser,
     refreshUsers
   } = useUserManagement();
+
+  const { checkUserConsistency } = useUserDiagnostics();
 
   console.log("🏠 UserManagement render - isAuthenticated:", isAuthenticated, "isLoading:", isLoading, "users:", filteredUsers.length);
 
@@ -54,6 +57,16 @@ const UserManagement = () => {
         />
 
         <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            onClick={checkUserConsistency} 
+            className="gap-2"
+            disabled={isLoading}
+          >
+            <Search className="h-4 w-4" />
+            Verificar
+          </Button>
+          
           <Button 
             variant="outline" 
             onClick={refreshUsers} 
