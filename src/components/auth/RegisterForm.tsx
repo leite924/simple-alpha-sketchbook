@@ -39,14 +39,17 @@ const RegisterForm = ({
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/login`
+          emailRedirectTo: `${window.location.origin}/admin`
         }
       });
       
       if (error) {
         console.error("Signup error:", error);
         
-        if (error.message.includes("Email provider is not enabled") || 
+        if (error.message.includes("User already registered")) {
+          setErrorMessage("Este email já está cadastrado. Tente fazer login.");
+          toast.error("Email já cadastrado");
+        } else if (error.message.includes("Email provider is not enabled") || 
             error.message.includes("Email logins are disabled")) {
           setErrorMessage("O registro por email está desativado no Supabase. Ative-o nas configurações de autenticação.");
           toast.error("Registro por email desativado no Supabase");
@@ -61,10 +64,12 @@ const RegisterForm = ({
           // Email confirmation is required
           setShowConfirmationAlert(true);
           toast.success("Cadastro realizado! Verifique seu email para confirmar sua conta.");
-        } else {
+        } else if (data?.session) {
           // No email confirmation needed, user is signed in
+          console.log("Registration successful, redirecting to admin");
           toast.success("Cadastro realizado com sucesso!");
-          navigate("/admin");
+          // Force navigation with replace to ensure clean redirect
+          window.location.href = "/admin";
         }
       }
     } catch (error: any) {

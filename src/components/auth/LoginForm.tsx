@@ -62,9 +62,10 @@ const LoginForm = ({
           toast.error(`Erro ao fazer login: ${error.message}`);
         }
       } else if (data.session) {
-        console.log("Login successful");
+        console.log("Login successful, redirecting to admin");
         toast.success("Login realizado com sucesso!");
-        navigate("/admin");
+        // Force navigation with replace to ensure clean redirect
+        window.location.href = "/admin";
       }
     } catch (error: any) {
       console.error("Erro completo:", error);

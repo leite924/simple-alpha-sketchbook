@@ -20,9 +20,14 @@ const Auth = () => {
   useEffect(() => {
     // Check if user is already authenticated
     const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        navigate("/");
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          console.log("User already authenticated, redirecting to admin");
+          window.location.href = "/admin";
+        }
+      } catch (error) {
+        console.error("Error checking auth:", error);
       }
     };
     
@@ -30,8 +35,10 @@ const Auth = () => {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("Auth state changed:", event, session);
       if (session) {
-        navigate("/");
+        console.log("Session detected, redirecting to admin");
+        window.location.href = "/admin";
       }
     });
 

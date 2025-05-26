@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import LoginForm from "@/components/auth/LoginForm";
 import RegisterForm from "@/components/auth/RegisterForm";
 import AlertMessages from "@/components/auth/AlertMessages";
+import { supabase } from "@/integrations/supabase/client";
 
 const Login = () => {
   const [email, setEmail] = useState("midiaputz@gmail.com");
@@ -18,6 +19,21 @@ const Login = () => {
   const [defaultTab, setDefaultTab] = useState("login");
 
   useEffect(() => {
+    // Check if user is already authenticated
+    const checkAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          console.log("User already authenticated, redirecting to admin");
+          window.location.href = "/admin";
+        }
+      } catch (error) {
+        console.error("Error checking auth:", error);
+      }
+    };
+    
+    checkAuth();
+
     // Check if coming from a redirect that specifies registration
     const params = new URLSearchParams(location.search);
     if (params.get("register") === "true") {
@@ -26,7 +42,18 @@ const Login = () => {
     
     // Reset confirmation alert when component mounts
     setShowConfirmationAlert(false);
-  }, [location]);
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("Auth state changed:", event, session);
+      if (session) {
+        console.log("Session detected, redirecting to admin");
+        window.location.href = "/admin";
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [location, navigate]);
 
   return (
     <MainLayout>
