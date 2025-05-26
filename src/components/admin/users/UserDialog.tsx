@@ -8,6 +8,7 @@ const UserDialog = ({ currentUser, isEditing, onSubmit, onOpenChange }: UserDial
   const defaultValues: UserFormValues = {
     name: currentUser?.name || "",
     email: currentUser?.email || "",
+    password: "",
     role: (currentUser?.role as "admin" | "viewer" | "instructor" | "student") || "viewer",
   };
 

@@ -12,6 +12,7 @@ export type User = {
 export interface UserFormValues {
   name: string;
   email: string;
+  password: string;
   role: "admin" | "viewer" | "instructor" | "student";
 }
 

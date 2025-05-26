@@ -64,6 +64,26 @@ const UserForm = ({ defaultValues, onSubmit, onCancel, isEditing }: UserFormProp
           )}
         />
 
+        {!isEditing && (
+          <FormField
+            control={form.control}
+            name="password"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Senha</FormLabel>
+                <FormControl>
+                  <Input 
+                    type="password" 
+                    placeholder="Digite a senha" 
+                    {...field} 
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
+
         <FormField
           control={form.control}
           name="role"
