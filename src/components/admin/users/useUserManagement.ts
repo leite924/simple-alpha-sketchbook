@@ -4,11 +4,11 @@ import { useUserAuth } from "./useUserAuth";
 import { useUserData } from "./useUserData";
 import { useUserActions } from "./useUserActions";
 
-export const useUserManagement = (initialUsers: User[] = []) => {
+export const useUserManagement = () => {
   // Manage authentication
   const { isAuthenticated, currentUserId } = useUserAuth();
   
-  // Manage user data
+  // Manage user data - removendo dados mocados iniciais
   const { 
     users, 
     setUsers, 
@@ -17,7 +17,7 @@ export const useUserManagement = (initialUsers: User[] = []) => {
     setSearchTerm, 
     isLoading,
     refreshUsers
-  } = useUserData(isAuthenticated, initialUsers);
+  } = useUserData(isAuthenticated, []); // Array vazio em vez de dados mocados
   
   // Manage user actions
   const {

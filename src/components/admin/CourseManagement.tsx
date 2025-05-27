@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,39 +26,8 @@ interface Course {
   image: string;
 }
 
-// Mock courses data
-const initialCourses: Course[] = [
-  {
-    id: 1,
-    title: "Fotografia Básica",
-    slug: "fotografia-basica",
-    category: "Fotografia",
-    duration: "20 horas",
-    level: "Iniciante",
-    description: "Curso introdutório para quem deseja aprender fotografia do zero.",
-    image: "https://images.unsplash.com/photo-1452378174528-3090a4bba7b2?ixlib=rb-4.0.3",
-  },
-  {
-    id: 2,
-    title: "Fotografia de Retrato",
-    slug: "fotografia-retrato",
-    category: "Fotografia",
-    duration: "25 horas",
-    level: "Intermediário",
-    description: "Técnicas avançadas para fotografar pessoas e criar retratos impactantes.",
-    image: "https://images.unsplash.com/photo-1441057206919-63d19fac2369?ixlib=rb-4.0.3",
-  },
-  {
-    id: 3,
-    title: "Pós-produção e Edição",
-    slug: "pos-producao-edicao",
-    category: "Edição",
-    duration: "30 horas",
-    level: "Avançado",
-    description: "Aprenda a editar suas fotos com técnicas profissionais.",
-    image: "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?ixlib=rb-4.0.3",
-  },
-];
+// Dados mocados removidos - agora começa com array vazio
+const initialCourses: Course[] = [];
 
 // Form schema for validation
 const formSchema = z.object({

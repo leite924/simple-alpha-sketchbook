@@ -6,48 +6,8 @@ import { DateRange } from "react-day-picker";
 import { toast } from "sonner";
 
 export const useTransactions = () => {
-  const [transactions] = useState<PaymentTransaction[]>([
-    {
-      id: 1,
-      userName: "João Silva",
-      description: "Matrícula - Curso de Fotografia Básica",
-      amount: 299.90,
-      date: new Date("2024-02-01"),
-      status: "completed",
-      paymentMethod: "Cartão de Crédito",
-      userId: "1",
-    },
-    {
-      id: 2,
-      userName: "Maria Santos",
-      description: "Matrícula - Workshop de Edição",
-      amount: 150.00,
-      date: new Date("2024-01-28"),
-      status: "completed",
-      paymentMethod: "PIX",
-      userId: "2",
-    },
-    {
-      id: 3,
-      userName: "Carlos Oliveira",
-      description: "Matrícula - Curso Avançado",
-      amount: 599.00,
-      date: new Date("2024-01-25"),
-      status: "pending",
-      paymentMethod: "Boleto",
-      userId: "3",
-    },
-    {
-      id: 4,
-      userName: "Ana Costa",
-      description: "Workshop de Iluminação",
-      amount: 199.90,
-      date: new Date("2024-01-20"),
-      status: "failed",
-      paymentMethod: "Cartão de Crédito",
-      userId: "4",
-    }
-  ]);
+  // Removendo dados mocados - agora usa array vazio
+  const [transactions] = useState<PaymentTransaction[]>([]);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
