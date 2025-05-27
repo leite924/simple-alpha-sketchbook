@@ -9,7 +9,7 @@ import UserDialog from "./users/UserDialog";
 import { useUserManagement } from "./users/useUserManagement";
 import { useUserDiagnostics } from "./users/hooks/useUserDiagnostics";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Info } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const UserManagement = () => {
@@ -50,6 +50,17 @@ const UserManagement = () => {
 
   return (
     <div className="space-y-6">
+      <Alert className="mb-6">
+        <Info className="h-4 w-4" />
+        <AlertTitle>Instruções importantes</AlertTitle>
+        <AlertDescription>
+          Após limpar a base de dados, você precisa:
+          <br />1. Excluir manualmente os usuários no painel de Autenticação do Supabase
+          <br />2. Criar os usuários novamente pelo painel ou pelo formulário
+          <br />3. A Elienai será configurada automaticamente como admin
+        </AlertDescription>
+      </Alert>
+
       <div className="flex justify-between items-center">
         <UserSearchBar
           searchTerm={searchTerm}
@@ -64,7 +75,7 @@ const UserManagement = () => {
             disabled={isLoading}
           >
             <Search className="h-4 w-4" />
-            Verificar
+            Verificar Base
           </Button>
           
           <Button 
