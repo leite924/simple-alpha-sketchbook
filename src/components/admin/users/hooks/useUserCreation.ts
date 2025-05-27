@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { UserFormValues } from "../types";
@@ -21,7 +20,7 @@ export const useUserCreation = () => {
       
       const existingAuthUser = allUsers.users.find(user => user.email === values.email);
       
-      if (existingAuthUser && existingAuthUser.email) {
+      if (existingAuthUser) {
         console.log("2. Usuário já existe na autenticação:", existingAuthUser.email);
         toast.error("Usuário já existe no sistema de autenticação");
         return false;
