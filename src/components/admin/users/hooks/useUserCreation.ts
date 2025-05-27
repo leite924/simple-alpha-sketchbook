@@ -55,16 +55,36 @@ export const useUserCreation = () => {
         return false;
       }
       
-      // Gerar um UUID para o novo usuário
-      const newUserId = crypto.randomUUID();
-      console.log("5. UUID gerado para novo usuário:", newUserId);
+      console.log("5. Criando usuário no sistema de autenticação...");
       
-      console.log("6. Inserindo perfil...");
-      // Inserir diretamente na tabela profiles
+      // Criar usuário no sistema de autenticação do Supabase
+      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+        email: values.email,
+        password: values.password,
+        email_confirm: true, // Confirma o email automaticamente
+        user_metadata: {
+          first_name: values.name.split(' ')[0],
+          last_name: values.name.split(' ').slice(1).join(' ')
+        }
+      });
+
+      if (authError) {
+        console.error("Erro ao criar usuário na autenticação:", authError);
+        throw new Error(`Erro ao criar usuário: ${authError.message}`);
+      }
+
+      if (!authData.user) {
+        throw new Error("Falha ao criar usuário no sistema de autenticação");
+      }
+
+      console.log("6. Usuário criado na autenticação com ID:", authData.user.id);
+      
+      console.log("7. Inserindo perfil...");
+      // Inserir diretamente na tabela profiles com o ID do usuário criado
       const { error: profileError } = await supabase
         .from('profiles')
         .insert({
-          id: newUserId,
+          id: authData.user.id,
           email: values.email,
           first_name: values.name.split(' ')[0],
           last_name: values.name.split(' ').slice(1).join(' ')
@@ -72,6 +92,8 @@ export const useUserCreation = () => {
         
       if (profileError) {
         console.error("Erro ao inserir perfil:", profileError);
+        // Se falhar ao criar o perfil, excluir o usuário da autenticação
+        await supabase.auth.admin.deleteUser(authData.user.id);
         throw profileError;
       }
       
@@ -92,26 +114,28 @@ export const useUserCreation = () => {
         finalRole = 'super_admin';
       }
       
-      console.log("7. Inserindo role:", finalRole);
+      console.log("8. Inserindo role:", finalRole);
       // Inserir role
       const { error: roleError } = await supabase
         .from('user_roles')
         .insert({
-          user_id: newUserId,
+          user_id: authData.user.id,
           role: finalRole
         });
         
       if (roleError) {
         console.error("Erro ao inserir role:", roleError);
+        // Se falhar ao criar o role, excluir o usuário e perfil
+        await supabase.auth.admin.deleteUser(authData.user.id);
         throw roleError;
       }
       
-      console.log("8. Usuário criado com sucesso!");
+      console.log("9. Usuário criado com sucesso!");
       
       if (values.email === 'elienaitorres@gmail.com') {
-        toast.success("Usuário Elienai criado como admin! Agora precisa ser criado no painel de autenticação do Supabase.");
+        toast.success("Usuário Elienai criado como admin com sucesso!");
       } else if (values.email === 'midiaputz@gmail.com') {
-        toast.success("Super Admin criado com sucesso! Agora precisa ser criado no painel de autenticação do Supabase.");
+        toast.success("Super Admin criado com sucesso!");
       } else {
         toast.success("Usuário criado com sucesso no sistema!");
       }
