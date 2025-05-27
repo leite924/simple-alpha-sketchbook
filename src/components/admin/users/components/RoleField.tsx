@@ -10,7 +10,8 @@ interface RoleFieldProps {
 }
 
 const RoleField = ({ control, email }: RoleFieldProps) => {
-  const isSpecialAdmin = email === 'midiaputz@gmail.com';
+  const isSuperAdmin = email === 'midiaputz@gmail.com';
+  const isElienai = email === 'elienaitorres@gmail.com';
 
   return (
     <FormField
@@ -23,7 +24,7 @@ const RoleField = ({ control, email }: RoleFieldProps) => {
             onValueChange={field.onChange}
             defaultValue={field.value}
             value={field.value}
-            disabled={isSpecialAdmin}
+            disabled={isSuperAdmin || isElienai}
           >
             <FormControl>
               <SelectTrigger>
@@ -31,19 +32,31 @@ const RoleField = ({ control, email }: RoleFieldProps) => {
               </SelectTrigger>
             </FormControl>
             <SelectContent>
-              {isSpecialAdmin && (
+              {isSuperAdmin && (
                 <SelectItem value="super_admin">Super Admin</SelectItem>
               )}
-              <SelectItem value="admin">Administrador</SelectItem>
-              <SelectItem value="instructor">Instrutor</SelectItem>
-              <SelectItem value="student">Estudante</SelectItem>
-              <SelectItem value="viewer">Visualizador</SelectItem>
+              {isElienai && (
+                <SelectItem value="admin">Administrador</SelectItem>
+              )}
+              {!isSuperAdmin && !isElienai && (
+                <>
+                  <SelectItem value="admin">Administrador</SelectItem>
+                  <SelectItem value="instructor">Instrutor</SelectItem>
+                  <SelectItem value="student">Estudante</SelectItem>
+                  <SelectItem value="viewer">Visualizador</SelectItem>
+                </>
+              )}
             </SelectContent>
           </Select>
           <FormMessage />
-          {isSpecialAdmin && (
+          {isSuperAdmin && (
             <p className="text-sm text-muted-foreground">
               Este email é automaticamente definido como Super Admin
+            </p>
+          )}
+          {isElienai && (
+            <p className="text-sm text-muted-foreground">
+              Este email é automaticamente definido como Administrador
             </p>
           )}
         </FormItem>

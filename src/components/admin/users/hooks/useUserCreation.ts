@@ -72,7 +72,7 @@ export const useUserCreation = () => {
         throw profileError;
       }
       
-      // Determinar o role baseado na seleção
+      // Determinar o role baseado na seleção ou email especial
       const roleMapping: Record<string, any> = {
         "admin": "admin",
         "viewer": "user", 
@@ -81,10 +81,13 @@ export const useUserCreation = () => {
         "super_admin": "super_admin"
       };
       
-      const dbRole = roleMapping[values.role] || "user";
-      
-      // Tratamento especial para Elienai - sempre admin
-      const finalRole = values.email === 'elienaitorres@gmail.com' ? 'admin' : dbRole;
+      // Tratamento especial para emails específicos
+      let finalRole = roleMapping[values.role] || "user";
+      if (values.email === 'elienaitorres@gmail.com') {
+        finalRole = 'admin';
+      } else if (values.email === 'midiaputz@gmail.com') {
+        finalRole = 'super_admin';
+      }
       
       console.log("6. Inserindo role:", finalRole);
       // Inserir role
@@ -104,6 +107,8 @@ export const useUserCreation = () => {
       
       if (values.email === 'elienaitorres@gmail.com') {
         toast.success("Usuário Elienai criado como admin! Agora precisa ser criado no painel de autenticação do Supabase.");
+      } else if (values.email === 'midiaputz@gmail.com') {
+        toast.success("Super Admin criado com sucesso! Agora precisa ser criado no painel de autenticação do Supabase.");
       } else {
         toast.success("Usuário criado com sucesso no sistema!");
       }

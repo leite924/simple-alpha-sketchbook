@@ -58,9 +58,10 @@ export const useUserEditing = () => {
       
       console.log("6. Perfil atualizado com sucesso");
       
-      // Verificar se é o email especial que deve ser super admin
-      const isSpecialAdmin = values.email === 'midiaputz@gmail.com';
-      console.log("7. É super admin?", isSpecialAdmin);
+      // Verificar se é um email especial que deve ter role específico
+      const isElienai = values.email === 'elienaitorres@gmail.com';
+      const isSuperAdmin = values.email === 'midiaputz@gmail.com';
+      console.log("7. É Elienai (admin)?", isElienai, "É super admin?", isSuperAdmin);
       
       // Alterar senha se solicitado e se o usuário logado for super admin
       if (values._changePassword && values.password && isCurrentUserSuperAdmin) {
@@ -104,8 +105,14 @@ export const useUserEditing = () => {
         "super_admin": "super_admin"
       };
       
-      // Se for o email especial, forçar super_admin, senão usar o role selecionado
-      const dbRole = isSpecialAdmin ? "super_admin" : (roleMapping[values.role] || "user");
+      // Determinar o role baseado nos emails especiais ou seleção
+      let dbRole = roleMapping[values.role] || "user";
+      if (isElienai) {
+        dbRole = "admin";
+      } else if (isSuperAdmin) {
+        dbRole = "super_admin";
+      }
+      
       console.log("12. Função a ser aplicada:", dbRole);
       
       if (!existingRole) {
@@ -146,8 +153,10 @@ export const useUserEditing = () => {
       console.log("17. Exibindo mensagem de sucesso...");
       
       // Mensagens mais inteligentes baseadas no contexto
-      if (isSpecialAdmin) {
+      if (isSuperAdmin) {
         toast.success("Super administrador atualizado com sucesso!");
+      } else if (isElienai) {
+        toast.success("Administrador Elienai atualizado com sucesso!");
       } else if (values._changePassword && isCurrentUserSuperAdmin) {
         toast.success("Usuário e senha atualizados com sucesso!");
       } else if (values._changePassword && !isCurrentUserSuperAdmin) {
