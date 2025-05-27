@@ -32,20 +32,23 @@ export const useUserCreation = () => {
       console.log("2. Usuário não existe, prosseguindo com criação...");
       
       // Verificar se o usuário atual é admin ou super admin para poder criar usuários
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
       
-      if (!currentUser) {
-        throw new Error("Usuário não autenticado");
+      if (!session?.user) {
+        console.error("3. Nenhuma sessão ativa encontrada");
+        throw new Error("Você precisa estar logado para criar usuários");
       }
+
+      console.log("3. Sessão encontrada para usuário:", session.user.email);
 
       const { data: currentUserRole } = await supabase
         .from('user_roles')
         .select('role')
-        .eq('user_id', currentUser.id)
+        .eq('user_id', session.user.id)
         .single();
 
       const canCreateUsers = currentUserRole?.role === 'super_admin' || currentUserRole?.role === 'admin';
-      console.log("3. Usuário logado pode criar usuários?", canCreateUsers, "Role:", currentUserRole?.role);
+      console.log("4. Usuário logado pode criar usuários?", canCreateUsers, "Role:", currentUserRole?.role);
       
       if (!canCreateUsers) {
         toast.error("Apenas administradores podem criar usuários");
@@ -54,9 +57,9 @@ export const useUserCreation = () => {
       
       // Gerar um UUID para o novo usuário
       const newUserId = crypto.randomUUID();
-      console.log("4. UUID gerado para novo usuário:", newUserId);
+      console.log("5. UUID gerado para novo usuário:", newUserId);
       
-      console.log("5. Inserindo perfil...");
+      console.log("6. Inserindo perfil...");
       // Inserir diretamente na tabela profiles
       const { error: profileError } = await supabase
         .from('profiles')
@@ -89,7 +92,7 @@ export const useUserCreation = () => {
         finalRole = 'super_admin';
       }
       
-      console.log("6. Inserindo role:", finalRole);
+      console.log("7. Inserindo role:", finalRole);
       // Inserir role
       const { error: roleError } = await supabase
         .from('user_roles')
@@ -103,7 +106,7 @@ export const useUserCreation = () => {
         throw roleError;
       }
       
-      console.log("7. Usuário criado com sucesso!");
+      console.log("8. Usuário criado com sucesso!");
       
       if (values.email === 'elienaitorres@gmail.com') {
         toast.success("Usuário Elienai criado como admin! Agora precisa ser criado no painel de autenticação do Supabase.");
