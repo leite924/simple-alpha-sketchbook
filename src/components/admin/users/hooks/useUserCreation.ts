@@ -21,7 +21,7 @@ export const useUserCreation = () => {
       
       const existingAuthUser = allUsers.users.find(user => user.email === values.email);
       
-      if (existingAuthUser) {
+      if (existingAuthUser && existingAuthUser.email) {
         console.log("2. Usuário já existe na autenticação:", existingAuthUser.email);
         toast.error("Usuário já existe no sistema de autenticação");
         return false;
@@ -114,7 +114,7 @@ export const useUserCreation = () => {
       }
       
       // Determinar o role
-      const roleMapping: Record<string, any> = {
+      const roleMapping: Record<string, "admin" | "instructor" | "student" | "super_admin" | "user"> = {
         "admin": "admin",
         "viewer": "user", 
         "instructor": "instructor",
