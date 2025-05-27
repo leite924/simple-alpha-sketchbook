@@ -11,7 +11,21 @@ export const useUserCreation = () => {
     try {
       console.log("1. Verificando se usuário já existe...");
       
-      // Primeiro, verificar se o usuário já existe nos perfis
+      // Verificar se já existe na autenticação
+      const { data: existingAuthUser, error: authCheckError } = await supabase.auth.admin.getUserByEmail(values.email);
+      
+      if (authCheckError && authCheckError.status !== 404) {
+        console.error("Erro ao verificar usuário na autenticação:", authCheckError);
+        throw new Error(`Erro ao verificar usuário: ${authCheckError.message}`);
+      }
+      
+      if (existingAuthUser?.user) {
+        console.log("2. Usuário já existe na autenticação:", existingAuthUser.user.email);
+        toast.error("Usuário já existe no sistema de autenticação");
+        return false;
+      }
+      
+      // Verificar se existe nos perfis
       const { data: existingProfile, error: profileCheckError } = await supabase
         .from('profiles')
         .select('id, email')
@@ -31,7 +45,7 @@ export const useUserCreation = () => {
       
       console.log("2. Usuário não existe, prosseguindo com criação...");
       
-      // Verificar se o usuário atual é admin ou super admin para poder criar usuários
+      // Verificar permissões do usuário atual
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session?.user) {
@@ -61,7 +75,7 @@ export const useUserCreation = () => {
       const { data: authData, error: authError } = await supabase.auth.admin.createUser({
         email: values.email,
         password: values.password,
-        email_confirm: true, // Confirma o email automaticamente
+        email_confirm: true,
         user_metadata: {
           first_name: values.name.split(' ')[0],
           last_name: values.name.split(' ').slice(1).join(' ')
@@ -80,7 +94,7 @@ export const useUserCreation = () => {
       console.log("6. Usuário criado na autenticação com ID:", authData.user.id);
       
       console.log("7. Inserindo perfil...");
-      // Inserir diretamente na tabela profiles com o ID do usuário criado
+      // Inserir perfil
       const { error: profileError } = await supabase
         .from('profiles')
         .insert({
@@ -97,7 +111,7 @@ export const useUserCreation = () => {
         throw profileError;
       }
       
-      // Determinar o role baseado na seleção ou email especial
+      // Determinar o role
       const roleMapping: Record<string, any> = {
         "admin": "admin",
         "viewer": "user", 
@@ -106,7 +120,6 @@ export const useUserCreation = () => {
         "super_admin": "super_admin"
       };
       
-      // Tratamento especial para emails específicos
       let finalRole = roleMapping[values.role] || "user";
       if (values.email === 'elienaitorres@gmail.com') {
         finalRole = 'admin';

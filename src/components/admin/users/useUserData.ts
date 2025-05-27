@@ -22,7 +22,24 @@ export const useUserData = (isAuthenticated: boolean = true, initialUsers: User[
       setLoading(true);
       setError(null);
       
-      // Buscar perfis com suas funções
+      // Primeiro, buscar todos os usuários da autenticação
+      const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
+      
+      if (authError) {
+        console.error("❌ Erro ao buscar usuários da autenticação:", authError);
+        throw authError;
+      }
+      
+      console.log("✅ Usuários da autenticação encontrados:", authUsers.users.length);
+      
+      if (!authUsers.users || authUsers.users.length === 0) {
+        console.log("⚠️ Nenhum usuário encontrado na autenticação");
+        setUsers([]);
+        setLoading(false);
+        return;
+      }
+      
+      // Buscar perfis correspondentes
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
         .select(`
@@ -35,17 +52,10 @@ export const useUserData = (isAuthenticated: boolean = true, initialUsers: User[
         
       if (profilesError) {
         console.error("❌ Erro ao buscar perfis:", profilesError);
-        throw profilesError;
+        // Não falha se não conseguir buscar perfis, continua com dados da auth
       }
       
       console.log("✅ Perfis encontrados:", profilesData?.length || 0);
-      
-      if (!profilesData || profilesData.length === 0) {
-        console.log("⚠️ Nenhum perfil encontrado");
-        setUsers([]);
-        setLoading(false);
-        return;
-      }
       
       // Buscar funções dos usuários
       const { data: rolesData, error: rolesError } = await supabase
@@ -59,9 +69,10 @@ export const useUserData = (isAuthenticated: boolean = true, initialUsers: User[
       
       console.log("✅ Funções encontradas:", rolesData?.length || 0);
       
-      // Combinar dados de perfis com funções
-      const usersWithRoles: User[] = profilesData.map((profile, index) => {
-        const userRole = rolesData?.find(role => role.user_id === profile.id);
+      // Combinar dados de autenticação, perfis e funções
+      const usersWithRoles: User[] = authUsers.users.map((authUser, index) => {
+        const profile = profilesData?.find(p => p.id === authUser.id);
+        const userRole = rolesData?.find(role => role.user_id === authUser.id);
         const role = userRole?.role || 'user';
         
         // Mapear roles do banco para roles do frontend
@@ -75,14 +86,18 @@ export const useUserData = (isAuthenticated: boolean = true, initialUsers: User[
         
         const mappedRole = roleMapping[role] || 'viewer';
         
+        // Usar dados do perfil se disponível, senão usar dados da autenticação
+        const firstName = profile?.first_name || authUser.user_metadata?.first_name || authUser.email?.split('@')[0] || 'Usuário';
+        const lastName = profile?.last_name || authUser.user_metadata?.last_name || '';
+        
         return {
           id: index + 1, // ID sequencial para a interface
-          name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Usuário',
-          email: profile.email || '',
+          name: `${firstName} ${lastName}`.trim(),
+          email: profile?.email || authUser.email || '',
           role: mappedRole,
           status: 'active' as const,
-          createdAt: new Date(profile.created_at || new Date()),
-          lastLogin: new Date() // Placeholder - não temos esta informação
+          createdAt: new Date(profile?.created_at || authUser.created_at),
+          lastLogin: authUser.last_sign_in_at ? new Date(authUser.last_sign_in_at) : new Date()
         };
       });
       

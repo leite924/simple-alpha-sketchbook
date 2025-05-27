@@ -1,13 +1,14 @@
 
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, RefreshCw, Search } from "lucide-react";
+import { Plus, RefreshCw, Search, Sync } from "lucide-react";
 import { User } from "./types";
 import UserSearchBar from "./users/UserSearchBar";
 import UserTable from "./users/UserTable";
 import UserDialog from "./users/UserDialog";
 import { useUserManagement } from "./users/useUserManagement";
 import { useUserDiagnostics } from "./users/hooks/useUserDiagnostics";
+import { useUserSync } from "./users/hooks/useUserSync";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, Info } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -31,6 +32,14 @@ const UserManagement = () => {
   } = useUserManagement();
 
   const { checkUserConsistency } = useUserDiagnostics();
+  const { syncAllUsers, cleanOrphanedProfiles } = useUserSync();
+
+  const handleFullSync = async () => {
+    console.log("🔄 Iniciando sincronização completa...");
+    await cleanOrphanedProfiles();
+    await syncAllUsers();
+    await refreshUsers();
+  };
 
   console.log("🏠 UserManagement render - isAuthenticated:", isAuthenticated, "isLoading:", isLoading, "users:", filteredUsers.length);
 
@@ -52,12 +61,10 @@ const UserManagement = () => {
     <div className="space-y-6">
       <Alert className="mb-6">
         <Info className="h-4 w-4" />
-        <AlertTitle>Instruções importantes</AlertTitle>
+        <AlertTitle>Sistema de Sincronização Automática</AlertTitle>
         <AlertDescription>
-          Após limpar a base de dados, você precisa:
-          <br />1. Excluir manualmente os usuários no painel de Autenticação do Supabase
-          <br />2. Criar os usuários novamente pelo painel ou pelo formulário
-          <br />3. A Elienai será configurada automaticamente como admin
+          O sistema agora sincroniza automaticamente os usuários entre a autenticação do Supabase e as tabelas do sistema.
+          <br />Use o botão "Sincronizar Todos" para resolver qualquer inconsistência.
         </AlertDescription>
       </Alert>
 
@@ -68,6 +75,16 @@ const UserManagement = () => {
         />
 
         <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            onClick={handleFullSync} 
+            className="gap-2"
+            disabled={isLoading}
+          >
+            <Sync className="h-4 w-4" />
+            Sincronizar Todos
+          </Button>
+          
           <Button 
             variant="outline" 
             onClick={checkUserConsistency} 
