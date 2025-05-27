@@ -11,16 +11,18 @@ export const useUserCreation = () => {
     try {
       console.log("1. Verificando se usuário já existe...");
       
-      // Verificar se já existe na autenticação
-      const { data: existingAuthUser, error: authCheckError } = await supabase.auth.admin.getUserByEmail(values.email);
+      // Verificar se já existe na autenticação - usando listUsers e filtrando
+      const { data: allUsers, error: authCheckError } = await supabase.auth.admin.listUsers();
       
-      if (authCheckError && authCheckError.status !== 404) {
-        console.error("Erro ao verificar usuário na autenticação:", authCheckError);
+      if (authCheckError) {
+        console.error("Erro ao verificar usuários na autenticação:", authCheckError);
         throw new Error(`Erro ao verificar usuário: ${authCheckError.message}`);
       }
       
-      if (existingAuthUser?.user) {
-        console.log("2. Usuário já existe na autenticação:", existingAuthUser.user.email);
+      const existingAuthUser = allUsers.users.find(user => user.email === values.email);
+      
+      if (existingAuthUser) {
+        console.log("2. Usuário já existe na autenticação:", existingAuthUser.email);
         toast.error("Usuário já existe no sistema de autenticação");
         return false;
       }

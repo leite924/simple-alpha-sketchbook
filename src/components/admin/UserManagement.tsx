@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, RefreshCw, Search, Sync } from "lucide-react";
+import { Plus, RefreshCw, Search, RotateCcw } from "lucide-react";
 import { User } from "./types";
 import UserSearchBar from "./users/UserSearchBar";
 import UserTable from "./users/UserTable";
@@ -81,7 +81,7 @@ const UserManagement = () => {
             className="gap-2"
             disabled={isLoading}
           >
-            <Sync className="h-4 w-4" />
+            <RotateCcw className="h-4 w-4" />
             Sincronizar Todos
           </Button>
           

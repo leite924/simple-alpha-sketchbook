@@ -78,7 +78,7 @@ export const useUserSync = () => {
           console.log(`7. Criando função para ${authUser.email}`);
           
           // Determinar a função baseada no email
-          let role = 'user';
+          let role: "admin" | "instructor" | "student" | "super_admin" | "user" = 'user';
           if (authUser.email === 'midiaputz@gmail.com') {
             role = 'super_admin';
           } else if (authUser.email === 'elienaitorres@gmail.com') {
