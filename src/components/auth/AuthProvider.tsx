@@ -25,14 +25,24 @@ export const useAuth = () => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const auth = useOptimizedAuth();
 
-  // Debug log para verificar estados
-  console.log("🏠 AuthProvider state:", {
+  // Debug log melhorado para verificar estados
+  console.log("🏠 AuthProvider render com estados:", {
     user: auth.user?.email || null,
     loading: auth.loading,
     userRole: auth.userRole,
     isAuthenticated: auth.isAuthenticated,
-    hasSession: !!auth.session
+    hasSession: !!auth.session,
+    timestamp: new Date().toISOString()
   });
+
+  // Log adicional se estiver carregando por muito tempo
+  if (auth.loading) {
+    console.log("⏳ AuthProvider ainda carregando...", {
+      tempoDecorrido: Date.now(),
+      user: auth.user?.email,
+      session: !!auth.session
+    });
+  }
 
   return (
     <AuthContext.Provider value={auth}>

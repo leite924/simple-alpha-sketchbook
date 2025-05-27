@@ -12,7 +12,8 @@ export const useOptimizedAuth = () => {
   useEffect(() => {
     let isMounted = true;
     
-    console.log("🔄 === INICIALIZANDO AUTH ===");
+    console.log("🔄 === INICIALIZANDO AUTH (VERSÃO MELHORADA) ===");
+    console.log("⏰ Timestamp inicial:", new Date().toISOString());
 
     // Function to fetch user role
     const fetchUserRole = async (userId: string) => {
@@ -45,7 +46,12 @@ export const useOptimizedAuth = () => {
     const initializeAuth = async () => {
       try {
         console.log("📋 Obtendo sessão inicial...");
+        const startTime = Date.now();
+        
         const { data: { session }, error } = await supabase.auth.getSession();
+        
+        const endTime = Date.now();
+        console.log(`⏱️ Tempo para obter sessão: ${endTime - startTime}ms`);
         
         if (error) {
           console.error("❌ Erro ao obter sessão:", error);
@@ -58,12 +64,16 @@ export const useOptimizedAuth = () => {
           return;
         }
 
-        if (!isMounted) return;
+        if (!isMounted) {
+          console.log("🚫 Componente desmontado durante inicialização");
+          return;
+        }
 
         console.log("🔍 Sessão obtida:", {
           existe: !!session,
           userId: session?.user?.id || 'N/A',
-          email: session?.user?.email || 'N/A'
+          email: session?.user?.email || 'N/A',
+          expiresAt: session?.expires_at || 'N/A'
         });
 
         setSession(session);
@@ -78,7 +88,7 @@ export const useOptimizedAuth = () => {
         }
 
         setLoading(false);
-        console.log("✅ Inicialização de auth completa");
+        console.log("✅ Inicialização de auth completa em", Date.now() - startTime, "ms");
 
       } catch (error) {
         console.error("❌ Erro na inicialização de auth:", error);
@@ -96,12 +106,16 @@ export const useOptimizedAuth = () => {
       console.log("👂 Configurando listener de auth...");
       const { data: { subscription } } = supabase.auth.onAuthStateChange(
         async (event, newSession) => {
-          if (!isMounted) return;
+          if (!isMounted) {
+            console.log("🚫 Listener ignorado - componente desmontado");
+            return;
+          }
           
           console.log("🔄 Auth state changed:", {
             event,
             hasSession: !!newSession,
-            userId: newSession?.user?.id || 'N/A'
+            userId: newSession?.user?.id || 'N/A',
+            timestamp: new Date().toISOString()
           });
           
           setSession(newSession);
@@ -125,13 +139,22 @@ export const useOptimizedAuth = () => {
     // Execute initialization then set up listener
     let subscription: any;
     
-    initializeAuth().then(() => {
+    const startInitialization = async () => {
+      await initializeAuth();
       if (isMounted) {
         subscription = setupAuthListener();
+      }
+    };
+
+    startInitialization().catch((error) => {
+      console.error("💥 Erro crítico na inicialização:", error);
+      if (isMounted) {
+        setLoading(false);
       }
     });
 
     return () => {
+      console.log("🧹 Limpando useOptimizedAuth...");
       isMounted = false;
       if (subscription) {
         console.log("🛑 Removendo subscription de auth");

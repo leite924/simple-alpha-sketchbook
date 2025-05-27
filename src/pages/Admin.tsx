@@ -11,7 +11,32 @@ const Admin = () => {
   const [showDiagnostics, setShowDiagnostics] = useState(false);
   const { isAuthenticated, userRole, loading } = useAuth();
   
-  console.log("🔍 Admin page state:", { isAuthenticated, userRole, loading });
+  console.log("🔍 Admin page render:", {
+    isAuthenticated,
+    userRole,
+    loading,
+    timestamp: new Date().toISOString(),
+    url: window.location.href
+  });
+
+  // Log adicional para detectar quando fica travado no loading
+  useEffect(() => {
+    if (loading) {
+      console.log("⏳ Admin page detectou loading=true");
+      
+      // Timeout para detectar se fica muito tempo carregando
+      const timeoutId = setTimeout(() => {
+        if (loading) {
+          console.error("🚨 Admin page travado no loading por mais de 10 segundos!");
+          toast.error("Carregamento demorado detectado. Verifique o console.");
+        }
+      }, 10000);
+      
+      return () => clearTimeout(timeoutId);
+    } else {
+      console.log("✅ Admin page finalizou loading");
+    }
+  }, [loading]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -29,17 +54,23 @@ const Admin = () => {
   }, []);
 
   if (loading) {
+    console.log("🔄 Admin page renderizando loading state");
     return (
       <MainLayout>
         <div className="container mx-auto flex items-center justify-center py-16">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
             <p>Carregando painel administrativo...</p>
+            <p className="text-sm text-gray-500 mt-2">
+              Se demorar muito, verifique o console (F12)
+            </p>
           </div>
         </div>
       </MainLayout>
     );
   }
+
+  console.log("🏁 Admin page renderizando conteúdo final");
 
   return (
     <MainLayout>
