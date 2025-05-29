@@ -20,8 +20,8 @@ export const useUserCreation = () => {
       
       const existingAuthUser = authUsersData?.users?.find(user => user.email === values.email);
       
-      if (existingAuthUser) {
-        console.log("2. Usuário já existe na autenticação:", existingAuthUser.email ?? 'email não encontrado');
+      if (existingAuthUser && existingAuthUser.email) {
+        console.log("2. Usuário já existe na autenticação:", existingAuthUser.email);
         toast.error("Usuário já existe no sistema de autenticação");
         return false;
       }
