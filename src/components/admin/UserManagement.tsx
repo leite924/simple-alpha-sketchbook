@@ -1,19 +1,23 @@
-
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, RefreshCw, Search, RotateCcw } from "lucide-react";
+import { Plus, RefreshCw, Search, RotateCcw, Key, UserCheck } from "lucide-react";
 import { User } from "./types";
 import UserSearchBar from "./users/UserSearchBar";
 import UserTable from "./users/UserTable";
 import UserDialog from "./users/UserDialog";
 import { useUserManagement } from "./users/useUserManagement";
 import { useUserDiagnostics } from "./users/hooks/useUserDiagnostics";
+import { useUserCredentialsDiagnostics } from "./users/hooks/useUserCredentialsDiagnostics";
 import { useUserSync } from "./users/hooks/useUserSync";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, Info } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
+import { useState } from "react";
 
 const UserManagement = () => {
+  const [emailToCheck, setEmailToCheck] = useState("elienaitorres@gmail.com");
+  
   const {
     filteredUsers,
     searchTerm,
@@ -32,6 +36,7 @@ const UserManagement = () => {
   } = useUserManagement();
 
   const { checkUserConsistency } = useUserDiagnostics();
+  const { checkUserCredentials, resetUserPassword } = useUserCredentialsDiagnostics();
   const { syncAllUsers, cleanOrphanedProfiles } = useUserSync();
 
   const handleFullSync = async () => {
@@ -71,6 +76,45 @@ const UserManagement = () => {
           O sistema agora sincroniza automaticamente os usuários entre a autenticação do Supabase e as tabelas do sistema.
           <br />Use o botão "Sincronizar Todos" para resolver qualquer inconsistência.
           <br /><strong>Total de usuários encontrados: {filteredUsers.length}</strong>
+        </AlertDescription>
+      </Alert>
+
+      {/* Seção de Diagnóstico de Credenciais */}
+      <Alert className="mb-6 bg-yellow-50 border-yellow-200">
+        <UserCheck className="h-4 w-4 text-yellow-600" />
+        <AlertTitle className="text-yellow-800">Diagnóstico de Credenciais</AlertTitle>
+        <AlertDescription className="text-yellow-700">
+          <div className="mt-2 space-y-2">
+            <div className="flex gap-2 items-center">
+              <Input
+                placeholder="Email para verificar (ex: elienaitorres@gmail.com)"
+                value={emailToCheck}
+                onChange={(e) => setEmailToCheck(e.target.value)}
+                className="flex-1"
+              />
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => checkUserCredentials(emailToCheck)}
+                className="gap-2 bg-yellow-100 hover:bg-yellow-200"
+              >
+                <UserCheck className="h-4 w-4" />
+                Verificar
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => resetUserPassword(emailToCheck)}
+                className="gap-2 bg-blue-100 hover:bg-blue-200"
+              >
+                <Key className="h-4 w-4" />
+                Reset Senha
+              </Button>
+            </div>
+            <p className="text-xs">
+              Use esta ferramenta para verificar se um usuário existe no sistema e diagnosticar problemas de login.
+            </p>
+          </div>
         </AlertDescription>
       </Alert>
 
