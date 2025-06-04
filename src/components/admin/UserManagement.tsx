@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, RefreshCw, Search, RotateCcw, Key, UserCheck } from "lucide-react";
@@ -9,6 +10,7 @@ import { useUserManagement } from "./users/useUserManagement";
 import { useUserDiagnostics } from "./users/hooks/useUserDiagnostics";
 import { useUserCredentialsDiagnostics } from "./users/hooks/useUserCredentialsDiagnostics";
 import { useUserSync } from "./users/hooks/useUserSync";
+import AdminPasswordReset from "./users/components/AdminPasswordReset";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, Info } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -78,6 +80,9 @@ const UserManagement = () => {
           <br /><strong>Total de usuários encontrados: {filteredUsers.length}</strong>
         </AlertDescription>
       </Alert>
+
+      {/* Nova seção de Reset Administrativo */}
+      <AdminPasswordReset />
 
       {/* Seção de Diagnóstico de Credenciais */}
       <Alert className="mb-6 bg-yellow-50 border-yellow-200">
