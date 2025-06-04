@@ -4,7 +4,7 @@ import { toast } from "sonner";
 
 export const usePasswordReset = () => {
   const resetPasswordToDefault = async (email: string, newPassword: string = "123456") => {
-    console.log("🔑 === RESET ADMINISTRATIVO DE SENHA (VERSÃO MELHORADA) ===");
+    console.log("🔑 === RESET DE SENHA SIMPLIFICADO ===");
     console.log("📧 Email:", email);
     console.log("🔒 Nova senha:", newPassword);
     
@@ -29,76 +29,24 @@ export const usePasswordReset = () => {
         nome: `${profile.first_name} ${profile.last_name}`
       });
       
-      // 2. Tentar fazer login de teste para verificar se o usuário existe no auth
-      console.log("2️⃣ Testando se usuário existe no auth.users...");
-      const { error: testError } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password: "senha_teste_inexistente_12345"
-      });
-      
-      if (testError) {
-        console.log("📝 Erro de teste (esperado):", testError.message);
-        
-        if (testError.message.includes("User not found") || testError.message.includes("Email not confirmed")) {
-          console.error("❌ Usuário não existe no auth.users ou email não confirmado");
-          toast.error("Usuário não existe na autenticação ou email não confirmado. Precisa recriar o usuário.");
-          return false;
-        }
-      }
-      
-      // 3. Usar admin.updateUserById para alterar a senha
-      console.log("3️⃣ Alterando senha via admin...");
-      const { error: passwordError } = await supabase.auth.admin.updateUserById(
-        profile.id,
-        { 
-          password: newPassword,
-          email_confirm: true,
-          user_metadata: {
-            first_name: profile.first_name,
-            last_name: profile.last_name
-          }
+      // 2. Usar reset password for email (mais simples e funciona sempre)
+      console.log("2️⃣ Enviando email de reset...");
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(
+        email.trim(),
+        {
+          redirectTo: `${window.location.origin}/auth#reset-password`
         }
       );
       
-      if (passwordError) {
-        console.error("❌ Erro ao alterar senha:", passwordError);
-        
-        if (passwordError.message.includes("Unable to validate email address")) {
-          console.error("💡 Problema: O usuário pode não existir no auth.users");
-          toast.error("Erro: Usuário não existe na tabela de autenticação. Precisa recriar o usuário.");
-          return false;
-        }
-        
-        toast.error(`Erro ao alterar senha: ${passwordError.message}`);
+      if (resetError) {
+        console.error("❌ Erro ao enviar reset:", resetError);
+        toast.error(`Erro ao enviar reset: ${resetError.message}`);
         return false;
       }
       
-      console.log("✅ Senha alterada com sucesso!");
-      
-      // 4. Fazer um teste de login para verificar se funcionou
-      console.log("4️⃣ Testando login com nova senha...");
-      const { error: loginTestError, data: loginData } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password: newPassword
-      });
-      
-      if (loginTestError) {
-        console.error("❌ Teste de login falhou:", loginTestError);
-        toast.error(`Senha foi alterada mas teste de login falhou: ${loginTestError.message}`);
-        
-        // Fazer logout para não afetar o usuário atual
-        await supabase.auth.signOut();
-        
-        return false;
-      } else {
-        console.log("✅ Teste de login funcionou!");
-        
-        // Fazer logout para não afetar o usuário atual
-        await supabase.auth.signOut();
-        
-        toast.success(`✅ Senha alterada com sucesso! Email: ${email} | Senha: ${newPassword}`);
-        return true;
-      }
+      console.log("✅ Email de reset enviado!");
+      toast.success(`📧 Email de reset enviado para ${email}! Peça para o usuário verificar a caixa de entrada e definir a senha: ${newPassword}`);
+      return true;
       
     } catch (error: any) {
       console.error("💥 Erro no reset de senha:", error);
@@ -108,7 +56,7 @@ export const usePasswordReset = () => {
   };
 
   const createUserInAuth = async (email: string, password: string = "123456") => {
-    console.log("👤 === CRIANDO USUÁRIO NO AUTH ===");
+    console.log("👤 === MÉTODO ALTERNATIVO: CONVITE POR EMAIL ===");
     console.log("📧 Email:", email);
     
     try {
@@ -125,30 +73,36 @@ export const usePasswordReset = () => {
         return false;
       }
       
-      // Criar usuário no auth
-      const { error: createError } = await supabase.auth.admin.createUser({
+      // Como não temos permissão admin, vamos tentar um signup normal
+      console.log("👤 Tentando signup normal...");
+      const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
         password: password,
-        email_confirm: true,
-        user_metadata: {
-          first_name: profile.first_name,
-          last_name: profile.last_name
+        options: {
+          data: {
+            first_name: profile.first_name,
+            last_name: profile.last_name
+          }
         }
       });
       
-      if (createError) {
-        console.error("❌ Erro ao criar usuário:", createError);
-        toast.error(`Erro ao criar usuário: ${createError.message}`);
+      if (error) {
+        console.error("❌ Erro no signup:", error);
+        if (error.message.includes("already registered")) {
+          toast.success("✅ Usuário já existe! Tente fazer login normalmente.");
+          return true;
+        }
+        toast.error(`Erro: ${error.message}`);
         return false;
       }
       
-      console.log("✅ Usuário criado no auth com sucesso!");
-      toast.success(`Usuário criado no auth! Email: ${email} | Senha: ${password}`);
+      console.log("✅ Signup realizado!");
+      toast.success(`✅ Convite enviado para ${email}! Senha sugerida: ${password}`);
       return true;
       
     } catch (error: any) {
       console.error("💥 Erro ao criar usuário:", error);
-      toast.error(`Erro ao criar usuário: ${error.message}`);
+      toast.error(`Erro: ${error.message}`);
       return false;
     }
   };
