@@ -129,12 +129,12 @@ export const useOptimizedAuth = () => {
             setUserRole('viewer');
           }
           
-          // Importante: sempre definir loading como false após processar mudança de auth
+          // SEMPRE definir loading como false após processar mudança de auth
           if (isMounted) {
             setLoading(false);
           }
           
-          console.log("✅ Auth state atualizado");
+          console.log("✅ Auth state atualizado, loading definido como false");
         }
       );
 
@@ -187,7 +187,9 @@ export const useOptimizedAuth = () => {
       setSession(null);
       setUser(null);
       setUserRole('viewer');
-      setLoading(false);
+      
+      // Loading será definido como false pelo listener onAuthStateChange
+      console.log("🔄 Aguardando listener processar logout...");
       
     } catch (error) {
       console.error("❌ Erro no logout:", error);
