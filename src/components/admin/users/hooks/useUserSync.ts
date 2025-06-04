@@ -4,107 +4,55 @@ import { toast } from "sonner";
 
 export const useUserSync = () => {
   const syncAllUsers = async (): Promise<boolean> => {
-    console.log("=== INÍCIO DA SINCRONIZAÇÃO COMPLETA ===");
+    console.log("=== SINCRONIZAÇÃO USANDO APENAS BANCO DE DADOS ===");
     
     try {
-      // 1. Buscar todos os usuários da autenticação do Supabase
-      console.log("1. Buscando usuários do auth.users...");
-      const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
+      // Verificar usuários que existem nos perfis mas não têm role
+      console.log("1. Verificando usuários sem role...");
       
-      if (authError) {
-        console.error("Erro ao buscar usuários da autenticação:", authError);
-        throw authError;
-      }
-      
-      console.log("2. Usuários encontrados no auth:", authUsers.users.length);
-      
-      // 2. Buscar todos os perfis existentes
-      const { data: existingProfiles, error: profilesError } = await supabase
+      const { data: profilesWithoutRoles, error: profilesError } = await supabase
         .from('profiles')
-        .select('id, email');
+        .select(`
+          id,
+          email,
+          user_roles(role)
+        `)
+        .is('user_roles.role', null);
         
       if (profilesError) {
-        console.error("Erro ao buscar perfis:", profilesError);
+        console.error("Erro ao buscar perfis sem roles:", profilesError);
         throw profilesError;
       }
       
-      console.log("3. Perfis existentes:", existingProfiles?.length || 0);
+      console.log("2. Perfis sem roles encontrados:", profilesWithoutRoles?.length || 0);
       
-      // 3. Buscar todas as funções existentes
-      const { data: existingRoles, error: rolesError } = await supabase
-        .from('user_roles')
-        .select('user_id, role');
+      // Atribuir roles para usuários que não têm
+      for (const profile of profilesWithoutRoles || []) {
+        console.log(`3. Atribuindo role para ${profile.email}`);
         
-      if (rolesError) {
-        console.error("Erro ao buscar funções:", rolesError);
-        throw rolesError;
-      }
-      
-      console.log("4. Funções existentes:", existingRoles?.length || 0);
-      
-      // 4. Sincronizar cada usuário
-      for (const authUser of authUsers.users) {
-        console.log(`5. Processando usuário: ${authUser.email}`);
-        
-        // Verificar se o perfil existe
-        const profileExists = existingProfiles?.find(p => p.id === authUser.id);
-        
-        if (!profileExists) {
-          console.log(`6. Criando perfil para ${authUser.email}`);
-          
-          // Criar perfil
-          const { error: createProfileError } = await supabase
-            .from('profiles')
-            .insert({
-              id: authUser.id,
-              email: authUser.email,
-              first_name: authUser.user_metadata?.first_name || authUser.email?.split('@')[0] || 'Usuário',
-              last_name: authUser.user_metadata?.last_name || ''
-            });
-            
-          if (createProfileError) {
-            console.error(`Erro ao criar perfil para ${authUser.email}:`, createProfileError);
-          } else {
-            console.log(`✅ Perfil criado para ${authUser.email}`);
-          }
-        } else {
-          console.log(`✅ Perfil já existe para ${authUser.email}`);
+        let role: "admin" | "instructor" | "student" | "super_admin" | "user" = 'user';
+        if (profile.email === 'midiaputz@gmail.com') {
+          role = 'super_admin';
+        } else if (profile.email === 'elienaitorres@gmail.com') {
+          role = 'admin';
         }
         
-        // Verificar se a função existe
-        const roleExists = existingRoles?.find(r => r.user_id === authUser.id);
-        
-        if (!roleExists) {
-          console.log(`7. Criando função para ${authUser.email}`);
+        const { error: createRoleError } = await supabase
+          .from('user_roles')
+          .insert({
+            user_id: profile.id,
+            role: role
+          });
           
-          // Determinar a função baseada no email
-          let role: "admin" | "instructor" | "student" | "super_admin" | "user" = 'user';
-          if (authUser.email === 'midiaputz@gmail.com') {
-            role = 'super_admin';
-          } else if (authUser.email === 'elienaitorres@gmail.com') {
-            role = 'admin';
-          }
-          
-          // Criar função
-          const { error: createRoleError } = await supabase
-            .from('user_roles')
-            .insert({
-              user_id: authUser.id,
-              role: role
-            });
-            
-          if (createRoleError) {
-            console.error(`Erro ao criar função para ${authUser.email}:`, createRoleError);
-          } else {
-            console.log(`✅ Função ${role} criada para ${authUser.email}`);
-          }
+        if (createRoleError) {
+          console.error(`Erro ao criar role para ${profile.email}:`, createRoleError);
         } else {
-          console.log(`✅ Função já existe para ${authUser.email}: ${roleExists.role}`);
+          console.log(`✅ Role ${role} criada para ${profile.email}`);
         }
       }
       
       console.log("=== SINCRONIZAÇÃO CONCLUÍDA ===");
-      toast.success(`Sincronização concluída! ${authUsers.users.length} usuários processados.`);
+      toast.success(`Sincronização concluída! ${profilesWithoutRoles?.length || 0} usuários processados.`);
       return true;
       
     } catch (error: any) {
@@ -115,49 +63,43 @@ export const useUserSync = () => {
   };
 
   const cleanOrphanedProfiles = async (): Promise<boolean> => {
-    console.log("=== LIMPANDO PERFIS ÓRFÃOS ===");
+    console.log("=== VERIFICANDO CONSISTÊNCIA DO BANCO ===");
     
     try {
-      // Buscar perfis que não têm usuário correspondente na autenticação
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, email');
+      // Verificar se há roles órfãos
+      const { data: orphanedRoles, error: rolesError } = await supabase
+        .from('user_roles')
+        .select(`
+          user_id,
+          role,
+          profiles(email)
+        `)
+        .is('profiles.email', null);
         
-      if (profilesError) throw profilesError;
+      if (rolesError) throw rolesError;
       
-      const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
-      if (authError) throw authError;
+      console.log("Roles órfãos encontrados:", orphanedRoles?.length || 0);
       
-      const authUserIds = authUsers.users.map(u => u.id);
-      const orphanedProfiles = profiles?.filter(p => !authUserIds.includes(p.id)) || [];
-      
-      console.log("Perfis órfãos encontrados:", orphanedProfiles.length);
-      
-      for (const profile of orphanedProfiles) {
-        console.log(`Removendo perfil órfão: ${profile.email}`);
+      for (const orphanedRole of orphanedRoles || []) {
+        console.log(`Removendo role órfão: ${orphanedRole.user_id}`);
         
-        // Remover função primeiro
         await supabase
           .from('user_roles')
           .delete()
-          .eq('user_id', profile.id);
-          
-        // Remover perfil
-        await supabase
-          .from('profiles')
-          .delete()
-          .eq('id', profile.id);
+          .eq('user_id', orphanedRole.user_id);
       }
       
-      if (orphanedProfiles.length > 0) {
-        toast.success(`${orphanedProfiles.length} perfis órfãos removidos`);
+      if ((orphanedRoles?.length || 0) > 0) {
+        toast.success(`${orphanedRoles?.length} roles órfãos removidos`);
+      } else {
+        toast.info("Banco de dados consistente - nenhuma limpeza necessária");
       }
       
       return true;
       
     } catch (error: any) {
-      console.error("Erro ao limpar perfis órfãos:", error);
-      toast.error(`Erro ao limpar perfis órfãos: ${error.message}`);
+      console.error("Erro ao verificar consistência:", error);
+      toast.error(`Erro ao verificar consistência: ${error.message}`);
       return false;
     }
   };

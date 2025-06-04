@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { User } from "../types";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,14 +16,14 @@ export const useUserData = (isAuthenticated: boolean = true, initialUsers: User[
     user.role.toLowerCase().includes(searchTerm.toLowerCase())
   );
   
-  const fetchUsersFromSupabase = async () => {
+  const fetchUsersFromDatabase = async () => {
     try {
-      console.log("🔍 === INICIANDO BUSCA DETALHADA DE USUÁRIOS ===");
+      console.log("🔍 === BUSCANDO USUÁRIOS DO BANCO DE DADOS ===");
       console.log("📝 Parâmetros:", { isAuthenticated });
       setLoading(true);
       setError(null);
       
-      // Primeiro verificar se o usuário tem permissão para buscar usuários
+      // Verificar se o usuário tem permissão
       const { data: { session } } = await supabase.auth.getSession();
       console.log("🔐 Sessão atual:", { 
         hasSession: !!session, 
@@ -46,69 +47,44 @@ export const useUserData = (isAuthenticated: boolean = true, initialUsers: User[
         
       console.log("👤 Role do usuário atual:", currentUserRole?.role, roleError ? `(erro: ${roleError.message})` : '');
       
-      // Buscar usuários da autenticação
-      console.log("🔍 Buscando usuários da autenticação...");
-      const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
-      
-      if (authError) {
-        console.error("❌ Erro ao buscar usuários da autenticação:", authError);
-        throw authError;
-      }
-      
-      console.log("✅ Usuários da autenticação encontrados:", authUsers.users.length);
-      console.log("📋 Lista de emails:", authUsers.users.map(u => u.email));
-      
-      if (!authUsers.users || authUsers.users.length === 0) {
-        console.log("⚠️ Nenhum usuário encontrado na autenticação");
-        setUsers([]);
-        setLoading(false);
-        return;
-      }
-      
-      // Buscar perfis correspondentes
-      console.log("👥 Buscando perfis...");
-      const { data: profilesData, error: profilesError } = await supabase
+      // Buscar todos os perfis com suas respectivas roles
+      console.log("👥 Buscando perfis e roles...");
+      const { data: profilesWithRoles, error: profilesError } = await supabase
         .from('profiles')
         .select(`
           id,
           email,
           first_name,
           last_name,
-          created_at
+          created_at,
+          user_roles!inner(role)
         `);
         
       if (profilesError) {
         console.error("❌ Erro ao buscar perfis:", profilesError);
-      } else {
-        console.log("✅ Perfis encontrados:", profilesData?.length || 0);
-        console.log("📋 Perfis por email:", profilesData?.map(p => p.email));
+        throw profilesError;
       }
       
-      // Buscar funções dos usuários
-      console.log("🎭 Buscando roles...");
-      const { data: rolesData, error: rolesError } = await supabase
-        .from('user_roles')
-        .select('user_id, role');
-        
-      if (rolesError) {
-        console.error("⚠️ Erro ao buscar funções:", rolesError);
-      } else {
-        console.log("✅ Roles encontradas:", rolesData?.length || 0);
-        console.log("📋 Roles por usuário:", rolesData?.map(r => ({ userId: r.user_id, role: r.role })));
+      console.log("✅ Perfis encontrados:", profilesWithRoles?.length || 0);
+      console.log("📋 Dados brutos:", profilesWithRoles);
+      
+      if (!profilesWithRoles || profilesWithRoles.length === 0) {
+        console.log("⚠️ Nenhum perfil encontrado no banco");
+        setUsers([]);
+        setLoading(false);
+        return;
       }
       
-      // Combinar dados de autenticação, perfis e funções
-      const usersWithRoles: User[] = authUsers.users.map((authUser, index) => {
-        const profile = profilesData?.find(p => p.id === authUser.id);
-        const userRole = rolesData?.find(role => role.user_id === authUser.id);
+      // Mapear os dados para o formato esperado
+      const usersWithRoles: User[] = profilesWithRoles.map((profile, index) => {
+        const userRole = Array.isArray(profile.user_roles) ? profile.user_roles[0] : profile.user_roles;
         const role = userRole?.role || 'user';
         
         console.log(`👤 Processando usuário ${index + 1}:`, {
-          authEmail: authUser.email,
-          profileEmail: profile?.email,
+          email: profile.email,
           role: role,
-          hasProfile: !!profile,
-          hasRole: !!userRole
+          firstName: profile.first_name,
+          lastName: profile.last_name
         });
         
         // Mapear roles do banco para roles do frontend
@@ -122,18 +98,17 @@ export const useUserData = (isAuthenticated: boolean = true, initialUsers: User[
         
         const mappedRole = roleMapping[role] || 'viewer';
         
-        // Usar dados do perfil se disponível, senão usar dados da autenticação
-        const firstName = profile?.first_name || authUser.user_metadata?.first_name || authUser.email?.split('@')[0] || 'Usuário';
-        const lastName = profile?.last_name || authUser.user_metadata?.last_name || '';
+        const firstName = profile.first_name || 'Usuário';
+        const lastName = profile.last_name || '';
         
         return {
           id: index + 1, // ID sequencial para a interface
           name: `${firstName} ${lastName}`.trim(),
-          email: profile?.email || authUser.email || '',
+          email: profile.email || '',
           role: mappedRole,
           status: 'active' as const,
-          createdAt: new Date(profile?.created_at || authUser.created_at),
-          lastLogin: authUser.last_sign_in_at ? new Date(authUser.last_sign_in_at) : new Date()
+          createdAt: new Date(profile.created_at),
+          lastLogin: new Date() // Placeholder já que não temos essa info
         };
       });
       
@@ -158,7 +133,7 @@ export const useUserData = (isAuthenticated: boolean = true, initialUsers: User[
   useEffect(() => {
     console.log("🔄 useUserData effect - isAuthenticated:", isAuthenticated);
     if (isAuthenticated) {
-      fetchUsersFromSupabase();
+      fetchUsersFromDatabase();
     } else {
       console.log("⚠️ Usuário não autenticado, não buscando usuários");
       setLoading(false);
@@ -188,7 +163,7 @@ export const useUserData = (isAuthenticated: boolean = true, initialUsers: User[
   const refreshUsers = () => {
     console.log("🔄 Recarregando usuários...");
     if (isAuthenticated) {
-      fetchUsersFromSupabase();
+      fetchUsersFromDatabase();
     }
   };
   
