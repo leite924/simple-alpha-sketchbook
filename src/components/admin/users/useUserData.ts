@@ -36,78 +36,73 @@ export const useUserData = (isAuthenticated: boolean = true, initialUsers: User[
         return;
       }
       
-      // Buscar perfis primeiro
-      console.log("👥 Buscando todos os perfis...");
-      const { data: profiles, error: profilesError } = await supabase
+      // Buscar perfis com roles em uma única query usando JOIN
+      console.log("👥 Buscando perfis com roles...");
+      const { data: profilesWithRoles, error: profilesError } = await supabase
         .from('profiles')
-        .select('*');
+        .select(`
+          id,
+          email,
+          first_name,
+          last_name,
+          created_at,
+          user_roles(role)
+        `);
         
       if (profilesError) {
         console.error("❌ Erro ao buscar perfis:", profilesError);
         throw profilesError;
       }
       
-      console.log("✅ Perfis encontrados:", profiles?.length || 0);
-      console.log("📋 Dados dos perfis:", profiles);
+      console.log("✅ Perfis com roles encontrados:", profilesWithRoles?.length || 0);
+      console.log("📋 Dados dos perfis:", profilesWithRoles);
       
-      if (!profiles || profiles.length === 0) {
+      if (!profilesWithRoles || profilesWithRoles.length === 0) {
         console.log("⚠️ Nenhum perfil encontrado no banco");
         setUsers([]);
         setLoading(false);
         return;
       }
       
-      // Buscar roles separadamente
-      console.log("🎭 Buscando roles...");
-      const { data: roles, error: rolesError } = await supabase
-        .from('user_roles')
-        .select('*');
-        
-      if (rolesError) {
-        console.error("❌ Erro ao buscar roles:", rolesError);
-        throw rolesError;
-      }
-      
-      console.log("✅ Roles encontradas:", roles?.length || 0);
-      console.log("📋 Dados das roles:", roles);
-      
-      // Combinar perfis com roles
-      const usersWithRoles: User[] = profiles.map((profile, index) => {
-        const userRole = roles?.find(r => r.user_id === profile.id);
-        const role = userRole?.role || 'user';
-        
-        console.log(`👤 Processando usuário ${index + 1}:`, {
-          email: profile.email,
-          role: role,
-          firstName: profile.first_name,
-          lastName: profile.last_name,
-          userId: profile.id
+      // Processar os usuários
+      const usersWithRoles: User[] = profilesWithRoles
+        .filter(profile => profile.email) // Só incluir perfis com email
+        .map((profile, index) => {
+          // Obter a primeira role (deveria ter apenas uma por usuário agora)
+          const userRole = profile.user_roles?.[0]?.role || 'user';
+          
+          console.log(`👤 Processando usuário ${index + 1}:`, {
+            email: profile.email,
+            role: userRole,
+            firstName: profile.first_name,
+            lastName: profile.last_name,
+            userId: profile.id
+          });
+          
+          // Mapear roles do banco para roles do frontend
+          const roleMapping: Record<string, User["role"]> = {
+            'super_admin': 'super_admin',
+            'admin': 'admin',
+            'instructor': 'instructor',
+            'student': 'student',
+            'user': 'viewer'
+          };
+          
+          const mappedRole = roleMapping[userRole] || 'viewer';
+          
+          const firstName = profile.first_name || 'Usuário';
+          const lastName = profile.last_name || '';
+          
+          return {
+            id: index + 1, // ID sequencial para a interface
+            name: `${firstName} ${lastName}`.trim(),
+            email: profile.email || '',
+            role: mappedRole,
+            status: 'active' as const,
+            createdAt: new Date(profile.created_at),
+            lastLogin: new Date() // Placeholder já que não temos essa info
+          };
         });
-        
-        // Mapear roles do banco para roles do frontend
-        const roleMapping: Record<string, User["role"]> = {
-          'super_admin': 'super_admin',
-          'admin': 'admin',
-          'instructor': 'instructor',
-          'student': 'student',
-          'user': 'viewer'
-        };
-        
-        const mappedRole = roleMapping[role] || 'viewer';
-        
-        const firstName = profile.first_name || 'Usuário';
-        const lastName = profile.last_name || '';
-        
-        return {
-          id: index + 1, // ID sequencial para a interface
-          name: `${firstName} ${lastName}`.trim(),
-          email: profile.email || '',
-          role: mappedRole,
-          status: 'active' as const,
-          createdAt: new Date(profile.created_at),
-          lastLogin: new Date() // Placeholder já que não temos essa info
-        };
-      });
       
       console.log("✅ === USUÁRIOS PROCESSADOS FINAL ===");
       console.log("📊 Total de usuários:", usersWithRoles.length);
