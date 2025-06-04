@@ -36,41 +36,52 @@ export const useUserData = (isAuthenticated: boolean = true, initialUsers: User[
         return;
       }
       
-      // Buscar perfis com roles em uma única query usando JOIN
-      console.log("👥 Buscando perfis com roles...");
-      const { data: profilesWithRoles, error: profilesError } = await supabase
+      // Buscar perfis primeiro
+      console.log("👥 Buscando perfis...");
+      const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select(`
-          id,
-          email,
-          first_name,
-          last_name,
-          created_at,
-          user_roles(role)
-        `);
+        .select('id, email, first_name, last_name, created_at');
         
       if (profilesError) {
         console.error("❌ Erro ao buscar perfis:", profilesError);
         throw profilesError;
       }
       
-      console.log("✅ Perfis com roles encontrados:", profilesWithRoles?.length || 0);
-      console.log("📋 Dados dos perfis:", profilesWithRoles);
+      console.log("✅ Perfis encontrados:", profiles?.length || 0);
       
-      if (!profilesWithRoles || profilesWithRoles.length === 0) {
+      if (!profiles || profiles.length === 0) {
         console.log("⚠️ Nenhum perfil encontrado no banco");
         setUsers([]);
         setLoading(false);
         return;
       }
       
+      // Buscar roles para cada perfil
+      console.log("🎭 Buscando roles para cada perfil...");
+      const profilesWithRoles = await Promise.all(
+        profiles.map(async (profile) => {
+          const { data: userRoles, error: roleError } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', profile.id);
+            
+          if (roleError) {
+            console.error(`Erro ao buscar role para ${profile.email}:`, roleError);
+            return { ...profile, user_roles: [] };
+          }
+          
+          return { ...profile, user_roles: userRoles || [] };
+        })
+      );
+      
+      console.log("📋 Dados dos perfis com roles:", profilesWithRoles);
+      
       // Processar os usuários
       const usersWithRoles: User[] = profilesWithRoles
         .filter(profile => profile.email) // Só incluir perfis com email
         .map((profile, index) => {
           // Obter a primeira role (deveria ter apenas uma por usuário agora)
-          const userRoles = profile.user_roles as Array<{ role: string }> | null;
-          const userRole = userRoles?.[0]?.role || 'user';
+          const userRole = profile.user_roles?.[0]?.role || 'user';
           
           console.log(`👤 Processando usuário ${index + 1}:`, {
             email: profile.email,
