@@ -31,7 +31,8 @@ export const useUserDiagnostics = () => {
       if (profilesWithRoles && profilesWithRoles.length > 0) {
         console.log("\n👥 PERFIS DETALHADOS (PÓS-LIMPEZA):");
         profilesWithRoles.forEach((profile, index) => {
-          const userRole = profile.user_roles?.[0]?.role || 'SEM ROLE';
+          const userRoles = profile.user_roles as Array<{ role: string }> | null;
+          const userRole = userRoles?.[0]?.role || 'SEM ROLE';
           console.log(`${index + 1}. ${profile.email}`);
           console.log(`   - Nome: ${profile.first_name} ${profile.last_name}`);
           console.log(`   - ID: ${profile.id}`);
@@ -65,12 +66,14 @@ export const useUserDiagnostics = () => {
         console.log("Midiaputz existe?", midiaBusca ? "SIM" : "NÃO");
         
         if (elienaiBusca) {
-          const elienaiRole = elienaiBusca.user_roles?.[0]?.role || "SEM ROLE";
+          const elienaiRoles = elienaiBusca.user_roles as Array<{ role: string }> | null;
+          const elienaiRole = elienaiRoles?.[0]?.role || "SEM ROLE";
           console.log("Role da Elienai:", elienaiRole);
         }
         
         if (midiaBusca) {
-          const midiaRole = midiaBusca.user_roles?.[0]?.role || "SEM ROLE";
+          const midiaRoles = midiaBusca.user_roles as Array<{ role: string }> | null;
+          const midiaRole = midiaRoles?.[0]?.role || "SEM ROLE";
           console.log("Role do Midiaputz:", midiaRole);
         }
         

@@ -69,7 +69,8 @@ export const useUserData = (isAuthenticated: boolean = true, initialUsers: User[
         .filter(profile => profile.email) // Só incluir perfis com email
         .map((profile, index) => {
           // Obter a primeira role (deveria ter apenas uma por usuário agora)
-          const userRole = profile.user_roles?.[0]?.role || 'user';
+          const userRoles = profile.user_roles as Array<{ role: string }> | null;
+          const userRole = userRoles?.[0]?.role || 'user';
           
           console.log(`👤 Processando usuário ${index + 1}:`, {
             email: profile.email,
