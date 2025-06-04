@@ -38,7 +38,7 @@ export const assignDefaultAdminRole = async (userId: string): Promise<boolean> =
  */
 export const assignHighestAdminRole = async (userId: string): Promise<boolean> => {
   try {
-    console.log("Nenhum papel existe, atribuindo papel de admin ao primeiro usuário");
+    console.log("Atribuindo papel de super_admin ao usuário");
     
     // Atualizar para super_admin
     const { error: roleError } = await supabase
@@ -49,16 +49,16 @@ export const assignHighestAdminRole = async (userId: string): Promise<boolean> =
       });
     
     if (roleError) {
-      console.error("Erro ao atribuir função de administrador:", roleError);
-      toast.error("Não foi possível definir papel de administrador");
+      console.error("Erro ao atribuir função de super administrador:", roleError);
+      toast.error("Não foi possível definir papel de super administrador");
       return false;
     }
     
-    toast.success("Função de administrador atribuída com sucesso");
+    toast.success("Função de super administrador atribuída com sucesso");
     return true;
   } catch (error) {
-    console.error("Erro ao atribuir função de administrador máximo:", error);
-    toast.error("Erro ao definir papel de administrador");
+    console.error("Erro ao atribuir função de super administrador:", error);
+    toast.error("Erro ao definir papel de super administrador");
     return false;
   }
 };
