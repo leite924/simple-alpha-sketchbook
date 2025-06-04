@@ -41,7 +41,12 @@ const UserManagement = () => {
     await refreshUsers();
   };
 
-  console.log("🏠 UserManagement render - isAuthenticated:", isAuthenticated, "isLoading:", isLoading, "users:", filteredUsers.length);
+  console.log("🏠 === ESTADO ATUAL DO UserManagement ===");
+  console.log("🔐 isAuthenticated:", isAuthenticated);
+  console.log("⏳ isLoading:", isLoading);
+  console.log("👥 Total de usuários:", filteredUsers.length);
+  console.log("🔍 Termo de busca:", searchTerm);
+  console.log("📋 Lista de usuários:", filteredUsers.map(u => ({ name: u.name, email: u.email, role: u.role })));
 
   if (!isAuthenticated) {
     return (
@@ -65,6 +70,7 @@ const UserManagement = () => {
         <AlertDescription>
           O sistema agora sincroniza automaticamente os usuários entre a autenticação do Supabase e as tabelas do sistema.
           <br />Use o botão "Sincronizar Todos" para resolver qualquer inconsistência.
+          <br /><strong>Total de usuários encontrados: {filteredUsers.length}</strong>
         </AlertDescription>
       </Alert>
 
@@ -129,6 +135,22 @@ const UserManagement = () => {
           {[1, 2, 3].map((i) => (
             <Skeleton key={i} className="w-full h-16" />
           ))}
+        </div>
+      ) : filteredUsers.length === 0 ? (
+        <div className="space-y-4">
+          <Alert className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Nenhum usuário encontrado</AlertTitle>
+            <AlertDescription>
+              Não há usuários cadastrados no sistema. Verifique o console (F12) para mais detalhes ou use o botão "Verificar Base" para diagnóstico.
+              <br />Você pode criar um novo usuário clicando no botão "Novo Usuário".
+            </AlertDescription>
+          </Alert>
+          <UserTable
+            users={filteredUsers}
+            onEditUser={handleEditUser}
+            onDeleteUser={handleDeleteUser}
+          />
         </div>
       ) : (
         <UserTable
