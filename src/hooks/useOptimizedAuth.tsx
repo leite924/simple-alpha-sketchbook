@@ -125,8 +125,13 @@ export const useOptimizedAuth = () => {
             console.log("👤 Nova sessão detectada, buscando role...");
             await fetchUserRole(newSession.user.id);
           } else {
-            console.log("👤 Sessão removida");
+            console.log("👤 Sessão removida, resetando para viewer");
             setUserRole('viewer');
+          }
+          
+          // Importante: sempre definir loading como false após processar mudança de auth
+          if (isMounted) {
+            setLoading(false);
           }
           
           console.log("✅ Auth state atualizado");
@@ -166,12 +171,26 @@ export const useOptimizedAuth = () => {
   const signOut = async () => {
     console.log("🚪 Fazendo logout...");
     setLoading(true);
+    
     try {
-      await supabase.auth.signOut();
-      console.log("✅ Logout realizado");
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.error("❌ Erro no logout:", error);
+        setLoading(false);
+        return;
+      }
+      
+      console.log("✅ Logout realizado com sucesso");
+      
+      // Resetar todos os estados imediatamente
+      setSession(null);
+      setUser(null);
+      setUserRole('viewer');
+      setLoading(false);
+      
     } catch (error) {
       console.error("❌ Erro no logout:", error);
-    } finally {
       setLoading(false);
     }
   };
