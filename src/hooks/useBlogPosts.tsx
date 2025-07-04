@@ -12,7 +12,7 @@ export const useBlogPosts = () => {
   const fetchPosts = async (): Promise<BlogPost[]> => {
     const { data, error } = await supabase
       .from('blog_posts')
-      .select('*, featured_image as image_url')
+      .select('*')
       .eq('status', 'published')
       .order('published_at', { ascending: false });
     
@@ -24,7 +24,9 @@ export const useBlogPosts = () => {
     
     return data?.map(post => ({
       ...post,
-      image_url: post.image_url || post.featured_image
+      image_url: post.featured_image,
+      author: post.author || 'Marina Silva',
+      read_time: post.read_time || '5 min'
     })) || [];
   };
   
@@ -42,7 +44,7 @@ export const useBlogPost = (slug: string | undefined) => {
       
       const { data, error } = await supabase
         .from('blog_posts')
-        .select('*, featured_image as image_url')
+        .select('*')
         .eq('slug', slug)
         .eq('status', 'published')
         .single();
@@ -59,7 +61,9 @@ export const useBlogPost = (slug: string | undefined) => {
       
       return {
         ...data,
-        image_url: data.image_url || data.featured_image
+        image_url: data.featured_image,
+        author: data.author || 'Marina Silva',
+        read_time: data.read_time || '5 min'
       };
     },
     enabled: !!slug,
@@ -95,7 +99,7 @@ export const useAdminBlogPosts = () => {
     queryFn: async (): Promise<BlogPost[]> => {
       const { data, error } = await supabase
         .from('blog_posts')
-        .select('*, featured_image as image_url')
+        .select('*')
         .order('created_at', { ascending: false });
       
       if (error) {
@@ -105,7 +109,9 @@ export const useAdminBlogPosts = () => {
       
       return data?.map(post => ({
         ...post,
-        image_url: post.image_url || post.featured_image
+        image_url: post.featured_image,
+        author: post.author || 'Marina Silva',
+        read_time: post.read_time || '5 min'
       })) || [];
     },
   });
