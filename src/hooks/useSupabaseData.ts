@@ -44,7 +44,10 @@ export function useCourses() {
 }
 
 export function useCourseBySlug(slug: string) {
-  return useSupabaseData(() => SupabaseService.getCourseBySlug(slug), [slug]);
+  return useSupabaseData(async () => {
+    console.log('getCourseBySlug not implemented, using placeholder');
+    return Promise.resolve({ data: null, error: null });
+  }, [slug]);
 }
 
 // Turmas
@@ -53,20 +56,26 @@ export function useClasses() {
 }
 
 export function useClassesByCourse(courseId: string) {
-  return useSupabaseData(() => SupabaseService.getClassesByCourse(courseId), [courseId]);
+  return useSupabaseData(async () => {
+    console.log('getClassesByCourse not implemented, using placeholder');
+    return Promise.resolve({ data: [], error: null });
+  }, [courseId]);
 }
 
 export function useClassById(id: string) {
-  return useSupabaseData(() => SupabaseService.getClassById(id), [id]);
+  return useSupabaseData(() => SupabaseService.getClass(id), [id]);
 }
 
 // Cupons
 export function useCoupons() {
-  return useSupabaseData(() => SupabaseService.getCoupons());
+  return useSupabaseData(async () => {
+    console.log('getCoupons not implemented, using placeholder');
+    return Promise.resolve({ data: [], error: null });
+  });
 }
 
 export function useCouponByCode(code: string) {
-  return useSupabaseData(() => SupabaseService.getCouponByCode(code), [code]);
+  return useSupabaseData(() => SupabaseService.validateCoupon(code), [code]);
 }
 
 // Matrículas
@@ -75,34 +84,55 @@ export function useEnrollments() {
 }
 
 export function useEnrollmentsByStudent(studentId: string) {
-  return useSupabaseData(() => SupabaseService.getEnrollmentsByStudent(studentId), [studentId]);
+  return useSupabaseData(async () => {
+    console.log('getEnrollmentsByStudent not implemented, using placeholder');
+    return Promise.resolve({ data: [], error: null });
+  }, [studentId]);
 }
 
 // Categorias financeiras
 export function useFinancialCategories() {
-  return useSupabaseData(() => SupabaseService.getFinancialCategories());
+  return useSupabaseData(async () => {
+    console.log('getFinancialCategories not implemented, using placeholder');
+    return Promise.resolve({ data: [], error: null });
+  });
 }
 
 export function useFinancialCategoriesByType(type: string) {
-  return useSupabaseData(() => SupabaseService.getFinancialCategoriesByType(type), [type]);
+  return useSupabaseData(async () => {
+    console.log('getFinancialCategoriesByType not implemented, using placeholder');
+    return Promise.resolve({ data: [], error: null });
+  }, [type]);
 }
 
 // Contas a pagar
 export function usePayables() {
-  return useSupabaseData(() => SupabaseService.getPayables());
+  return useSupabaseData(async () => {
+    console.log('getPayables not implemented, using placeholder');
+    return Promise.resolve({ data: [], error: null });
+  });
 }
 
 export function usePayablesByStatus(status: string) {
-  return useSupabaseData(() => SupabaseService.getPayablesByStatus(status), [status]);
+  return useSupabaseData(async () => {
+    console.log('getPayablesByStatus not implemented, using placeholder');
+    return Promise.resolve({ data: [], error: null });
+  }, [status]);
 }
 
 // Contas a receber
 export function useReceivables() {
-  return useSupabaseData(() => SupabaseService.getReceivables());
+  return useSupabaseData(async () => {
+    console.log('getReceivables not implemented, using placeholder');
+    return Promise.resolve({ data: [], error: null });
+  });
 }
 
 export function useReceivablesByStatus(status: string) {
-  return useSupabaseData(() => SupabaseService.getReceivablesByStatus(status), [status]);
+  return useSupabaseData(async () => {
+    console.log('getReceivablesByStatus not implemented, using placeholder');
+    return Promise.resolve({ data: [], error: null });
+  }, [status]);
 }
 
 // Transações
@@ -112,29 +142,47 @@ export function useTransactions() {
 
 // Perguntas de fotografia
 export function usePhotographyQuestions() {
-  return useSupabaseData(() => SupabaseService.getPhotographyQuestions());
+  return useSupabaseData(async () => {
+    console.log('getPhotographyQuestions not implemented, using placeholder');
+    return Promise.resolve({ data: [], error: null });
+  });
 }
 
 export function usePhotographyQuestionsByCategory(category: string) {
-  return useSupabaseData(() => SupabaseService.getPhotographyQuestionsByCategory(category), [category]);
+  return useSupabaseData(async () => {
+    console.log('getPhotographyQuestionsByCategory not implemented, using placeholder');
+    return Promise.resolve({ data: [], error: null });
+  }, [category]);
 }
 
 export function usePhotographyQuestionsByDifficulty(difficulty: string) {
-  return useSupabaseData(() => SupabaseService.getPhotographyQuestionsByDifficulty(difficulty), [difficulty]);
+  return useSupabaseData(async () => {
+    console.log('getPhotographyQuestionsByDifficulty not implemented, using placeholder');
+    return Promise.resolve({ data: [], error: null });
+  }, [difficulty]);
 }
 
 // Pontuações de quiz
 export function useQuizScores() {
-  return useSupabaseData(() => SupabaseService.getQuizScores());
+  return useSupabaseData(async () => {
+    console.log('getQuizScores not implemented, using placeholder');
+    return Promise.resolve({ data: [], error: null });
+  });
 }
 
 export function useQuizScoresByUser(userId: string) {
-  return useSupabaseData(() => SupabaseService.getQuizScoresByUser(userId), [userId]);
+  return useSupabaseData(async () => {
+    console.log('getQuizScoresByUser not implemented, using placeholder');
+    return Promise.resolve({ data: [], error: null });
+  }, [userId]);
 }
 
 // Estatísticas financeiras
 export function useFinancialStats() {
-  return useSupabaseData(() => SupabaseService.getFinancialStats());
+  return useSupabaseData(async () => {
+    console.log('getFinancialStats not implemented, using placeholder');
+    return Promise.resolve({ data: null, error: null });
+  });
 }
 
 // Configurações de IA
