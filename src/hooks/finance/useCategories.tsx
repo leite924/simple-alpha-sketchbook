@@ -1,24 +1,12 @@
 
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { FinancialCategory } from '@/types/finance';
 
-// Hook for fetching financial categories
+// Hook for fetching financial categories - placeholder since the table doesn't exist yet
 export const useCategories = () => {
-  const fetchCategories = async (): Promise<FinancialCategory[]> => {
-    const { data, error } = await supabase
-      .from('financial_categories')
-      .select('*')
-      .order('name');
-    
-    if (error) {
-      console.error('Erro ao buscar categorias:', error);
-      toast.error('Erro ao carregar categorias financeiras');
-      throw error;
-    }
-    
-    return data || [];
+  const fetchCategories = async () => {
+    console.log('Financial categories functionality not yet implemented');
+    return [];
   };
   
   return useQuery({
