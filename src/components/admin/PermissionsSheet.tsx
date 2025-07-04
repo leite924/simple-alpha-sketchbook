@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Permission } from "./users/types";
 
-type ValidRole = 'user' | 'admin' | 'super_admin' | 'instructor' | 'student';
+type ValidRole = 'viewer' | 'admin' | 'super_admin' | 'instructor' | 'student';
 
 interface PermissionsSheetProps {
   userRole: string;

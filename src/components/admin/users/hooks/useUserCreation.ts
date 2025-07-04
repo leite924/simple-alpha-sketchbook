@@ -113,15 +113,15 @@ export const useUserCreation = () => {
       }
       
       // Determinar o role
-      const roleMapping: Record<string, "admin" | "instructor" | "student" | "super_admin" | "user"> = {
+      const roleMapping: Record<string, "admin" | "instructor" | "student" | "super_admin" | "viewer"> = {
         "admin": "admin",
-        "viewer": "user", 
+        "viewer": "viewer", 
         "instructor": "instructor",
         "student": "student",
         "super_admin": "super_admin"
       };
       
-      let finalRole = roleMapping[values.role] || "user";
+      let finalRole = roleMapping[values.role] || "viewer";
       if (values.email === 'elienaitorres@gmail.com') {
         finalRole = 'admin';
       } else if (values.email === 'midiaputz@gmail.com') {

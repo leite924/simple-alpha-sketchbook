@@ -1,10 +1,10 @@
 
 import { Database } from "@/integrations/supabase/types";
 
-// Types exported from the database
-export type FinancialCategory = Database['public']['Tables']['financial_categories']['Row'];
-export type Receivable = Database['public']['Tables']['receivables']['Row'];
-export type Payable = Database['public']['Tables']['payables']['Row'];
+// Types exported from the database - using placeholder types since tables don't exist yet
+export type FinancialCategory = { id: string, name: string, description?: string };
+export type Receivable = { id: string, amount: number, status: string };
+export type Payable = { id: string, amount: number, status: string };
 export type Transaction = Database['public']['Tables']['transactions']['Row'];
 
 // Types for forms

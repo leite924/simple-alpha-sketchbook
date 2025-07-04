@@ -1,7 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 
-type ValidRole = 'user' | 'admin' | 'super_admin' | 'instructor' | 'student';
+type ValidRole = 'viewer' | 'admin' | 'super_admin' | 'instructor' | 'student';
 
 /**
  * Checks if a user has a specific role

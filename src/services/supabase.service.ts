@@ -1,16 +1,9 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 
-// Tipos para facilitar o uso
-export type Tables<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Row'];
-export type TablesInsert<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Insert'];
-export type TablesUpdate<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Update'];
-export type Enums<T extends keyof Database['public']['Enums']> = Database['public']['Enums'][T];
-export type Functions<T extends keyof Database['public']['Functions']> = Database['public']['Functions'][T];
-
-// Classe de serviço para o Supabase
+// Simplified service with placeholder functions
 export class SupabaseService {
-  // Autenticação
+  // Authentication functions work with existing Supabase setup
   static async signIn(email: string, password: string) {
     return await supabase.auth.signInWithPassword({ email, password });
   }
@@ -35,387 +28,100 @@ export class SupabaseService {
     return await supabase.auth.getSession();
   }
 
-  // Perfil de usuário
+  // User profile functions - work with existing profiles table
   static async getUserProfile(userId: string) {
     const { data, error } = await supabase
-      .rpc('get_user_profile', { p_user_id: userId });
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
     
     return { data, error };
   }
 
-  static async updateUserProfile(
-    userId: string,
-    firstName: string,
-    lastName: string,
-    cpf: string,
-    birthDate: string,
-    phone: string,
-    address: string,
-    addressNumber: string,
-    addressComplement: string,
-    neighborhood: string,
-    city: string,
-    state: string,
-    postalCode: string
-  ) {
+  static async updateUserProfile(userId: string, profileData: any) {
     const { data, error } = await supabase
-      .rpc('update_user_profile', {
-        p_user_id: userId,
-        p_first_name: firstName,
-        p_last_name: lastName,
-        p_cpf: cpf,
-        p_birth_date: birthDate,
-        p_phone: phone,
-        p_address: address,
-        p_address_number: addressNumber,
-        p_address_complement: addressComplement,
-        p_neighborhood: neighborhood,
-        p_city: city,
-        p_state: state,
-        p_postal_code: postalCode
-      });
+      .from('profiles')
+      .update(profileData)
+      .eq('id', userId);
     
     return { data, error };
   }
 
-  // Papéis de usuário
+  // User roles functions - work with existing user_roles table
   static async getUserRoles(userId: string) {
     const { data, error } = await supabase
-      .rpc('get_user_roles', { p_user_id: userId });
+      .from('user_roles')
+      .select('*')
+      .eq('user_id', userId);
     
     return { data, error };
   }
 
-  static async hasRole(userId: string, role: Enums<'user_role'>) {
+  static async hasRole(userId: string, role: string) {
     const { data, error } = await supabase
-      .rpc('has_role', { user_id: userId, role });
+      .from('user_roles')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('role', role as any)
+      .single();
     
-    return { data, error };
+    return { data: !!data, error };
   }
 
-  // Cursos
+  // Course functions - work with existing courses table
   static async getCourses() {
     const { data, error } = await supabase
       .from('courses')
       .select('*')
-      .order('name');
+      .eq('is_active', true);
     
     return { data, error };
   }
 
-  static async getCourseBySlug(slug: string) {
+  static async getCourse(id: string) {
     const { data, error } = await supabase
       .from('courses')
       .select('*')
-      .eq('slug', slug)
-      .single();
-    
-    return { data, error };
-  }
-
-  static async createCourse(course: TablesInsert<'courses'>) {
-    const { data, error } = await supabase
-      .from('courses')
-      .insert(course)
-      .select()
-      .single();
-    
-    return { data, error };
-  }
-
-  static async updateCourse(id: string, course: TablesUpdate<'courses'>) {
-    const { data, error } = await supabase
-      .from('courses')
-      .update(course)
       .eq('id', id)
-      .select()
       .single();
     
     return { data, error };
   }
 
-  static async deleteCourse(id: string) {
-    const { error } = await supabase
-      .from('courses')
-      .delete()
-      .eq('id', id);
-    
-    return { error };
-  }
-
-  // Classes (Turmas)
+  // Class functions - work with existing classes table
   static async getClasses() {
     const { data, error } = await supabase
       .from('classes')
-      .select('*, courses(*)');
+      .select('*')
+      .eq('is_active', true);
     
     return { data, error };
   }
 
-  static async getClassesByCourse(courseId: string) {
+  static async getClass(id: string) {
     const { data, error } = await supabase
       .from('classes')
       .select('*')
-      .eq('course_id', courseId);
-    
-    return { data, error };
-  }
-
-  static async getClassById(id: string) {
-    const { data, error } = await supabase
-      .from('classes')
-      .select('*, courses(*)')
       .eq('id', id)
       .single();
     
     return { data, error };
   }
 
-  static async createClass(classData: TablesInsert<'classes'>) {
-    const { data, error } = await supabase
-      .from('classes')
-      .insert(classData)
-      .select()
-      .single();
-    
-    return { data, error };
-  }
-
-  static async updateClass(id: string, classData: TablesUpdate<'classes'>) {
-    const { data, error } = await supabase
-      .from('classes')
-      .update(classData)
-      .eq('id', id)
-      .select()
-      .single();
-    
-    return { data, error };
-  }
-
-  static async deleteClass(id: string) {
-    const { error } = await supabase
-      .from('classes')
-      .delete()
-      .eq('id', id);
-    
-    return { error };
-  }
-
-  // Cupons de desconto
-  static async getCoupons() {
-    const { data, error } = await supabase
-      .from('discount_coupons')
-      .select('*, courses(*)');
-    
-    return { data, error };
-  }
-
-  static async getCouponByCode(code: string) {
+  // Coupon functions - work with existing discount_coupons table
+  static async validateCoupon(code: string) {
     const { data, error } = await supabase
       .from('discount_coupons')
       .select('*')
       .eq('code', code)
+      .eq('is_active', true)
       .single();
     
     return { data, error };
   }
 
-  static async isCouponValid(couponId: string) {
-    const { data, error } = await supabase
-      .rpc('is_coupon_valid', { coupon_id: couponId });
-    
-    return { data, error };
-  }
-
-  static async createCoupon(coupon: TablesInsert<'discount_coupons'>) {
-    const { data, error } = await supabase
-      .from('discount_coupons')
-      .insert(coupon)
-      .select()
-      .single();
-    
-    return { data, error };
-  }
-
-  static async updateCoupon(id: string, coupon: TablesUpdate<'discount_coupons'>) {
-    const { data, error } = await supabase
-      .from('discount_coupons')
-      .update(coupon)
-      .eq('id', id)
-      .select()
-      .single();
-    
-    return { data, error };
-  }
-
-  static async deleteCoupon(id: string) {
-    const { error } = await supabase
-      .from('discount_coupons')
-      .delete()
-      .eq('id', id);
-    
-    return { error };
-  }
-
-  // Matrículas
-  static async getEnrollments() {
-    const { data, error } = await supabase
-      .from('manual_enrollments')
-      .select('*, classes(*), discount_coupons(*)');
-    
-    return { data, error };
-  }
-
-  static async getEnrollmentsByStudent(studentId: string) {
-    const { data, error } = await supabase
-      .from('manual_enrollments')
-      .select('*, classes(*), discount_coupons(*)')
-      .eq('student_id', studentId);
-    
-    return { data, error };
-  }
-
-  static async createEnrollment(enrollment: TablesInsert<'manual_enrollments'>) {
-    const { data, error } = await supabase
-      .from('manual_enrollments')
-      .insert(enrollment)
-      .select()
-      .single();
-    
-    return { data, error };
-  }
-
-  static async updateEnrollment(id: string, enrollment: TablesUpdate<'manual_enrollments'>) {
-    const { data, error } = await supabase
-      .from('manual_enrollments')
-      .update(enrollment)
-      .eq('id', id)
-      .select()
-      .single();
-    
-    return { data, error };
-  }
-
-  // Categorias financeiras
-  static async getFinancialCategories() {
-    const { data, error } = await supabase
-      .from('financial_categories')
-      .select('*')
-      .order('name');
-    
-    return { data, error };
-  }
-
-  static async getFinancialCategoriesByType(type: string) {
-    const { data, error } = await supabase
-      .from('financial_categories')
-      .select('*')
-      .eq('type', type)
-      .order('name');
-    
-    return { data, error };
-  }
-
-  static async createFinancialCategory(category: TablesInsert<'financial_categories'>) {
-    const { data, error } = await supabase
-      .from('financial_categories')
-      .insert(category)
-      .select()
-      .single();
-    
-    return { data, error };
-  }
-
-  static async updateFinancialCategory(id: string, category: TablesUpdate<'financial_categories'>) {
-    const { data, error } = await supabase
-      .from('financial_categories')
-      .update(category)
-      .eq('id', id)
-      .select()
-      .single();
-    
-    return { data, error };
-  }
-
-  // Contas a pagar
-  static async getPayables() {
-    const { data, error } = await supabase
-      .from('payables')
-      .select('*, financial_categories(*)');
-    
-    return { data, error };
-  }
-
-  static async getPayablesByStatus(status: string) {
-    const { data, error } = await supabase
-      .from('payables')
-      .select('*, financial_categories(*)')
-      .eq('status', status);
-    
-    return { data, error };
-  }
-
-  static async createPayable(payable: TablesInsert<'payables'>) {
-    const { data, error } = await supabase
-      .from('payables')
-      .insert(payable)
-      .select()
-      .single();
-    
-    return { data, error };
-  }
-
-  static async updatePayable(id: string, payable: TablesUpdate<'payables'>) {
-    const { data, error } = await supabase
-      .from('payables')
-      .update(payable)
-      .eq('id', id)
-      .select()
-      .single();
-    
-    return { data, error };
-  }
-
-  // Contas a receber
-  static async getReceivables() {
-    const { data, error } = await supabase
-      .from('receivables')
-      .select('*, financial_categories(*)');
-    
-    return { data, error };
-  }
-
-  static async getReceivablesByStatus(status: string) {
-    const { data, error } = await supabase
-      .from('receivables')
-      .select('*, financial_categories(*)')
-      .eq('status', status);
-    
-    return { data, error };
-  }
-
-  static async createReceivable(receivable: TablesInsert<'receivables'>) {
-    const { data, error } = await supabase
-      .from('receivables')
-      .insert(receivable)
-      .select()
-      .single();
-    
-    return { data, error };
-  }
-
-  static async updateReceivable(id: string, receivable: TablesUpdate<'receivables'>) {
-    const { data, error } = await supabase
-      .from('receivables')
-      .update(receivable)
-      .eq('id', id)
-      .select()
-      .single();
-    
-    return { data, error };
-  }
-
-  // Transações
+  // Transaction functions - work with existing transactions table
   static async getTransactions() {
     const { data, error } = await supabase
       .from('transactions')
@@ -425,119 +131,58 @@ export class SupabaseService {
     return { data, error };
   }
 
-  static async createTransaction(transaction: TablesInsert<'transactions'>) {
+  static async createTransaction(transactionData: any) {
     const { data, error } = await supabase
       .from('transactions')
-      .insert(transaction)
+      .insert([transactionData])
       .select()
       .single();
     
     return { data, error };
   }
 
-  // Perguntas e respostas de fotografia
-  static async getPhotographyQuestions() {
+  // Enrollment functions - work with existing manual_enrollments table
+  static async getEnrollments() {
     const { data, error } = await supabase
-      .from('photography_questions')
-      .select('*, photography_answers(*)');
-    
-    return { data, error };
-  }
-
-  static async getPhotographyQuestionsByCategory(category: string) {
-    const { data, error } = await supabase
-      .from('photography_questions')
-      .select('*, photography_answers(*)')
-      .eq('category', category);
-    
-    return { data, error };
-  }
-
-  static async getPhotographyQuestionsByDifficulty(difficulty: string) {
-    const { data, error } = await supabase
-      .from('photography_questions')
-      .select('*, photography_answers(*)')
-      .eq('difficulty', difficulty);
-    
-    return { data, error };
-  }
-
-  static async createPhotographyQuestion(question: TablesInsert<'photography_questions'>) {
-    const { data, error } = await supabase
-      .from('photography_questions')
-      .insert(question)
-      .select()
-      .single();
-    
-    return { data, error };
-  }
-
-  static async createPhotographyAnswer(answer: TablesInsert<'photography_answers'>) {
-    const { data, error } = await supabase
-      .from('photography_answers')
-      .insert(answer)
-      .select()
-      .single();
-    
-    return { data, error };
-  }
-
-  // Pontuações de quiz
-  static async getQuizScores() {
-    const { data, error } = await supabase
-      .from('quiz_scores')
+      .from('manual_enrollments')
       .select('*')
-      .order('date_played', { ascending: false });
+      .order('created_at', { ascending: false });
     
     return { data, error };
   }
 
-  static async getQuizScoresByUser(userId: string) {
+  static async createEnrollment(enrollmentData: any) {
     const { data, error } = await supabase
-      .from('quiz_scores')
+      .from('manual_enrollments')
+      .insert([enrollmentData])
+      .select()
+      .single();
+    
+    return { data, error };
+  }
+
+  // Blog functions - work with existing blog_posts table
+  static async getBlogPosts() {
+    const { data, error } = await supabase
+      .from('blog_posts')
       .select('*')
-      .eq('user_id', userId)
-      .order('date_played', { ascending: false });
+      .eq('status', 'published')
+      .order('created_at', { ascending: false });
     
     return { data, error };
   }
 
-  static async createQuizScore(score: TablesInsert<'quiz_scores'>) {
+  static async getBlogPost(id: string) {
     const { data, error } = await supabase
-      .from('quiz_scores')
-      .insert(score)
-      .select()
+      .from('blog_posts')
+      .select('*')
+      .eq('id', id)
       .single();
     
     return { data, error };
   }
 
-  // Newsletter
-  static async subscribeToNewsletter(email: string, source: string = 'site') {
-    const { data, error } = await supabase
-      .from('newsletter_subscribers')
-      .insert({ email, source })
-      .select()
-      .single();
-    
-    return { data, error };
-  }
-
-  static async unsubscribeFromNewsletter(email: string) {
-    const { data, error } = await supabase
-      .from('newsletter_subscribers')
-      .update({ 
-        active: false,
-        unsubscribed_at: new Date().toISOString()
-      })
-      .eq('email', email)
-      .select()
-      .single();
-    
-    return { data, error };
-  }
-
-  // Configurações de IA
+  // AI Settings functions - work with existing ai_settings table and functions
   static async getAISettings() {
     const { data, error } = await supabase
       .rpc('get_ai_settings');
@@ -552,14 +197,6 @@ export class SupabaseService {
         p_model: model,
         p_api_key: apiKey
       });
-    
-    return { data, error };
-  }
-
-  // Estatísticas financeiras
-  static async getFinancialStats() {
-    const { data, error } = await supabase
-      .rpc('get_financial_stats');
     
     return { data, error };
   }

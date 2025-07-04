@@ -30,7 +30,7 @@ export const useUserSync = () => {
       for (const profile of profilesWithoutRoles || []) {
         console.log(`3. Atribuindo role para ${profile.email}`);
         
-        let role: "admin" | "instructor" | "student" | "super_admin" | "user" = 'user';
+        let role: "admin" | "instructor" | "student" | "super_admin" | "viewer" = 'viewer';
         if (profile.email === 'midiaputz@gmail.com') {
           role = 'super_admin';
         } else if (profile.email === 'elienaitorres@gmail.com') {

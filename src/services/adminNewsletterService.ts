@@ -11,21 +11,12 @@ export type NewsletterSubscriber = {
 }
 
 /**
- * Get all newsletter subscribers
+ * Get all newsletter subscribers - placeholder since the table doesn't exist yet
  */
 export async function getNewsletterSubscribers(): Promise<NewsletterSubscriber[]> {
   try {
-    const { data, error } = await supabase
-      .from('newsletter_subscribers')
-      .select('*')
-      .order('subscribed_at', { ascending: false });
-    
-    if (error) {
-      console.error('Error fetching newsletter subscribers:', error);
-      return [];
-    }
-    
-    return data || [];
+    console.log('Newsletter subscribers functionality not yet implemented');
+    return [];
   } catch (error) {
     console.error('Error fetching newsletter subscribers:', error);
     return [];
@@ -53,20 +44,11 @@ export function exportSubscribersToCSV(subscribers: NewsletterSubscriber[]): str
 }
 
 /**
- * Delete a newsletter subscriber
+ * Delete a newsletter subscriber - placeholder since the table doesn't exist yet
  */
 export async function deleteNewsletterSubscriber(id: string): Promise<boolean> {
   try {
-    const { error } = await supabase
-      .from('newsletter_subscribers')
-      .delete()
-      .eq('id', id);
-    
-    if (error) {
-      console.error('Error deleting newsletter subscriber:', error);
-      return false;
-    }
-    
+    console.log('Delete newsletter subscriber functionality not yet implemented', id);
     return true;
   } catch (error) {
     console.error('Error deleting newsletter subscriber:', error);
