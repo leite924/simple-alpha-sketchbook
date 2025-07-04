@@ -25,8 +25,8 @@ export const useBlogPosts = () => {
     return data?.map(post => ({
       ...post,
       image_url: post.featured_image,
-      author: post.author || 'Marina Silva',
-      read_time: post.read_time || '5 min'
+      author: 'Marina Silva', // Since author field doesn't exist in DB, use fallback
+      read_time: '5 min' // Since read_time field doesn't exist in DB, use fallback
     })) || [];
   };
   
@@ -62,8 +62,8 @@ export const useBlogPost = (slug: string | undefined) => {
       return {
         ...data,
         image_url: data.featured_image,
-        author: data.author || 'Marina Silva',
-        read_time: data.read_time || '5 min'
+        author: 'Marina Silva', // Since author field doesn't exist in DB, use fallback
+        read_time: '5 min' // Since read_time field doesn't exist in DB, use fallback
       };
     },
     enabled: !!slug,
@@ -110,8 +110,8 @@ export const useAdminBlogPosts = () => {
       return data?.map(post => ({
         ...post,
         image_url: post.featured_image,
-        author: post.author || 'Marina Silva',
-        read_time: post.read_time || '5 min'
+        author: 'Marina Silva', // Since author field doesn't exist in DB, use fallback
+        read_time: '5 min' // Since read_time field doesn't exist in DB, use fallback
       })) || [];
     },
   });
