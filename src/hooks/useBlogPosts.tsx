@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -25,8 +24,8 @@ export const useBlogPosts = () => {
     return data?.map(post => ({
       ...post,
       image_url: post.featured_image,
-      author: 'Marina Silva', // Since author field doesn't exist in DB, use fallback
-      read_time: '5 min' // Since read_time field doesn't exist in DB, use fallback
+      author: post.author || 'Marina Silva',
+      read_time: post.read_time || '5 min'
     })) || [];
   };
   
@@ -62,8 +61,8 @@ export const useBlogPost = (slug: string | undefined) => {
       return {
         ...data,
         image_url: data.featured_image,
-        author: 'Marina Silva', // Since author field doesn't exist in DB, use fallback
-        read_time: '5 min' // Since read_time field doesn't exist in DB, use fallback
+        author: data.author || 'Marina Silva',
+        read_time: data.read_time || '5 min'
       };
     },
     enabled: !!slug,
@@ -110,8 +109,8 @@ export const useAdminBlogPosts = () => {
       return data?.map(post => ({
         ...post,
         image_url: post.featured_image,
-        author: 'Marina Silva', // Since author field doesn't exist in DB, use fallback
-        read_time: '5 min' // Since read_time field doesn't exist in DB, use fallback
+        author: post.author || 'Marina Silva',
+        read_time: post.read_time || '5 min'
       })) || [];
     },
   });

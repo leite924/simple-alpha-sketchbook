@@ -38,6 +38,7 @@ export type Database = {
       }
       blog_posts: {
         Row: {
+          author: string | null
           author_id: string | null
           categories: string[] | null
           content: string | null
@@ -46,6 +47,7 @@ export type Database = {
           featured_image: string | null
           id: string
           published_at: string | null
+          read_time: string | null
           slug: string
           status: string | null
           tags: string[] | null
@@ -53,6 +55,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          author?: string | null
           author_id?: string | null
           categories?: string[] | null
           content?: string | null
@@ -61,6 +64,7 @@ export type Database = {
           featured_image?: string | null
           id?: string
           published_at?: string | null
+          read_time?: string | null
           slug: string
           status?: string | null
           tags?: string[] | null
@@ -68,6 +72,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          author?: string | null
           author_id?: string | null
           categories?: string[] | null
           content?: string | null
@@ -76,6 +81,7 @@ export type Database = {
           featured_image?: string | null
           id?: string
           published_at?: string | null
+          read_time?: string | null
           slug?: string
           status?: string | null
           tags?: string[] | null
