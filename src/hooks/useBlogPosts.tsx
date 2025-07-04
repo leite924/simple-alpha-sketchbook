@@ -12,7 +12,7 @@ export const useBlogPosts = () => {
   const fetchPosts = async (): Promise<BlogPost[]> => {
     const { data, error } = await supabase
       .from('blog_posts')
-      .select('*')
+      .select('*, featured_image as image_url')
       .eq('status', 'published')
       .order('published_at', { ascending: false });
     
@@ -22,7 +22,10 @@ export const useBlogPosts = () => {
       throw error;
     }
     
-    return data || [];
+    return data?.map(post => ({
+      ...post,
+      image_url: post.image_url || post.featured_image
+    })) || [];
   };
   
   return useQuery({
@@ -39,7 +42,7 @@ export const useBlogPost = (slug: string | undefined) => {
       
       const { data, error } = await supabase
         .from('blog_posts')
-        .select('*')
+        .select('*, featured_image as image_url')
         .eq('slug', slug)
         .eq('status', 'published')
         .single();
@@ -54,7 +57,10 @@ export const useBlogPost = (slug: string | undefined) => {
         throw error;
       }
       
-      return data;
+      return {
+        ...data,
+        image_url: data.image_url || data.featured_image
+      };
     },
     enabled: !!slug,
   });
@@ -89,7 +95,7 @@ export const useAdminBlogPosts = () => {
     queryFn: async (): Promise<BlogPost[]> => {
       const { data, error } = await supabase
         .from('blog_posts')
-        .select('*')
+        .select('*, featured_image as image_url')
         .order('created_at', { ascending: false });
       
       if (error) {
@@ -97,7 +103,10 @@ export const useAdminBlogPosts = () => {
         throw new Error(error.message);
       }
       
-      return data || [];
+      return data?.map(post => ({
+        ...post,
+        image_url: post.image_url || post.featured_image
+      })) || [];
     },
   });
 };

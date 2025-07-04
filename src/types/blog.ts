@@ -6,6 +6,7 @@ export interface BlogPost {
   excerpt?: string;
   slug: string;
   image_url?: string;
+  featured_image?: string;
   published_at?: string;
   created_at?: string;
   updated_at?: string;
