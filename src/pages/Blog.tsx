@@ -12,9 +12,12 @@ import CategoryFilter from "@/components/blog/CategoryFilter";
 import FeaturedPost from "@/components/blog/FeaturedPost";
 import NewsletterSignup from "@/components/blog/NewsletterSignup";
 
+const POSTS_PER_PAGE = 6;
+
 const Blog = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
   
   console.log("Blog component rendering");
   
@@ -48,9 +51,33 @@ const Blog = () => {
     return matchesSearch && matchesCategory;
   });
 
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredPosts.length / POSTS_PER_PAGE);
+  const startIndex = (currentPage - 1) * POSTS_PER_PAGE;
+  const endIndex = startIndex + POSTS_PER_PAGE;
+  const paginatedPosts = filteredPosts.slice(startIndex, endIndex);
+
   const resetFilters = () => {
     setSearchTerm("");
     setSelectedCategory("");
+    setCurrentPage(1);
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    // Scroll to top when changing pages
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Reset to first page when filters change
+  const handleSearchChange = (term: string) => {
+    setSearchTerm(term);
+    setCurrentPage(1);
+  };
+
+  const handleCategoryChange = (category: string) => {
+    setSelectedCategory(category);
+    setCurrentPage(1);
   };
 
   return (
@@ -63,27 +90,30 @@ const Blog = () => {
             <div className="w-full lg:w-3/4">
               <BlogSearch 
                 searchTerm={searchTerm}
-                setSearchTerm={setSearchTerm}
+                setSearchTerm={handleSearchChange}
               />
 
               <PostGrid
                 isLoading={isLoadingPosts}
                 posts={posts}
-                filteredPosts={filteredPosts}
+                filteredPosts={paginatedPosts}
                 postsError={postsError}
                 resetFilters={resetFilters}
               />
 
-              {filteredPosts.length > 0 && (
-                <BlogPagination isVisible={true} />
-              )}
+              <BlogPagination 
+                isVisible={filteredPosts.length > 0}
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
+              />
             </div>
 
             <div className="w-full lg:w-1/4">
               <CategoryFilter
                 isLoading={isLoadingCategories}
                 selectedCategory={selectedCategory}
-                setSelectedCategory={setSelectedCategory}
+                setSelectedCategory={handleCategoryChange}
                 categories={allCategories}
               />
 
