@@ -55,36 +55,81 @@ serve(async (req) => {
       throw new Error('Email e nome são obrigatórios');
     }
 
-    // Gerar ID para o novo perfil
-    const newProfileId = crypto.randomUUID();
-    console.log('🆔 Novo ID gerado:', newProfileId);
-
-    // Chamar a função SQL que existe, passando o ID do admin autenticado
-    const { data: resultUserId, error: functionError } = await supabaseAdmin
-      .rpc('admin_create_student_profile', {
-        p_admin_user_id: user.id, // ID do admin autenticado
-        p_id: newProfileId,
-        p_email: email.trim().toLowerCase(),
-        p_first_name: firstName.trim(),
-        p_last_name: lastName?.trim() || '',
-        p_cpf: profileData.cpf?.replace(/\D/g, '') || null,
-        p_birth_date: profileData.birthDate || null,
-        p_phone: profileData.phone || null,
-        p_address: profileData.address?.trim() || null,
-        p_address_number: profileData.addressNumber?.trim() || null,
-        p_address_complement: profileData.addressComplement?.trim() || null,
-        p_neighborhood: profileData.neighborhood?.trim() || null,
-        p_city: profileData.city?.trim() || null,
-        p_state: profileData.state?.trim().toUpperCase() || null,
-        p_postal_code: profileData.postalCode?.replace(/\D/g, '') || null
-      });
-
-    if (functionError) {
-      console.error('❌ Erro na função SQL:', functionError);
-      throw new Error(`Erro ao processar perfil: ${functionError.message}`);
+    // Verificar se já existe usuário com este email
+    const { data: existingProfiles, error: checkError } = await supabaseAdmin
+      .from('profiles')
+      .select('id')
+      .eq('email', email.trim().toLowerCase())
+      .limit(1);
+    
+    if (checkError) {
+      console.error('❌ Erro ao verificar perfil existente:', checkError);
+      throw new Error(`Erro ao verificar perfil: ${checkError.message}`);
     }
 
-    console.log('✅ Função SQL executada com sucesso. ID retornado:', resultUserId);
+    let resultUserId: string;
+
+    if (existingProfiles && existingProfiles.length > 0) {
+      // Usuário já existe, atualizar dados
+      resultUserId = existingProfiles[0].id;
+      console.log('ℹ️ Atualizando perfil existente:', resultUserId);
+      
+      const { error: updateError } = await supabaseAdmin
+        .from('profiles')
+        .update({
+          first_name: firstName.trim(),
+          last_name: lastName?.trim() || '',
+          cpf: profileData.cpf?.replace(/\D/g, '') || null,
+          birth_date: profileData.birthDate || null,
+          phone: profileData.phone || null,
+          address: profileData.address?.trim() || null,
+          address_number: profileData.addressNumber?.trim() || null,
+          address_complement: profileData.addressComplement?.trim() || null,
+          neighborhood: profileData.neighborhood?.trim() || null,
+          city: profileData.city?.trim() || null,
+          state: profileData.state?.trim().toUpperCase() || null,
+          postal_code: profileData.postalCode?.replace(/\D/g, '') || null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', resultUserId);
+
+      if (updateError) {
+        console.error('❌ Erro ao atualizar perfil:', updateError);
+        throw new Error(`Erro ao atualizar perfil: ${updateError.message}`);
+      }
+
+      console.log('✅ Perfil atualizado com sucesso');
+    } else {
+      // Criar novo usuário
+      resultUserId = crypto.randomUUID();
+      console.log('🆔 Criando novo perfil com ID:', resultUserId);
+      
+      const { error: insertError } = await supabaseAdmin
+        .from('profiles')
+        .insert({
+          id: resultUserId,
+          email: email.trim().toLowerCase(),
+          first_name: firstName.trim(),
+          last_name: lastName?.trim() || '',
+          cpf: profileData.cpf?.replace(/\D/g, '') || null,
+          birth_date: profileData.birthDate || null,
+          phone: profileData.phone || null,
+          address: profileData.address?.trim() || null,
+          address_number: profileData.addressNumber?.trim() || null,
+          address_complement: profileData.addressComplement?.trim() || null,
+          neighborhood: profileData.neighborhood?.trim() || null,
+          city: profileData.city?.trim() || null,
+          state: profileData.state?.trim().toUpperCase() || null,
+          postal_code: profileData.postalCode?.replace(/\D/g, '') || null
+        });
+
+      if (insertError) {
+        console.error('❌ Erro ao criar perfil:', insertError);
+        throw new Error(`Erro ao criar perfil: ${insertError.message}`);
+      }
+
+      console.log('✅ Perfil criado com sucesso');
+    }
 
     return new Response(
       JSON.stringify({ 
