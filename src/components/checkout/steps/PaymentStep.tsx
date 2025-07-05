@@ -142,8 +142,9 @@ const PaymentStep = ({ onComplete, classData, orderBump, formData }: PaymentStep
 
         await handleCardPayment(cardPaymentData, customer, totalAmount, items);
       } else {
-        // Gerar link de pagamento para PIX ou Boleto via Pagarme
-        await handleGeneratePaymentLink(customer, totalAmount, paymentMethod, items);
+        // Converter bank_slip para boleto para compatibilidade com Pagarme
+        const pagarmePaymentMethod = paymentMethod === 'bank_slip' ? 'boleto' : paymentMethod;
+        await handleGeneratePaymentLink(customer, totalAmount, pagarmePaymentMethod, items);
       }
 
       toast.success('Matrícula processada com sucesso!');
