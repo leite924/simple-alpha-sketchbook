@@ -38,7 +38,7 @@ export async function findUserByEmail(email: string): Promise<string | undefined
 }
 
 /**
- * Creates a new user profile or returns existing user ID if found
+ * Creates a new user profile or updates existing user if found
  */
 export async function createUser(
   email: string,
@@ -58,13 +58,43 @@ export async function createUser(
   }
 ): Promise<string | undefined> {
   try {
-    console.log('🚀 Iniciando criação de usuário:', { email, firstName, lastName });
+    console.log('🚀 Iniciando criação/atualização de usuário:', { email, firstName, lastName });
     console.log('📊 Profile data:', profileData);
     
     // First check if user already exists
     const existingUserId = await findUserByEmail(email);
+    
     if (existingUserId) {
-      console.log('⚠️ Usuário já existe:', existingUserId);
+      console.log('⚠️ Usuário já existe, atualizando dados:', existingUserId);
+      
+      // Update existing user with new data
+      const updateData: ProfileUpdate = {
+        first_name: firstName?.trim() || null,
+        last_name: lastName?.trim() || null,
+        cpf: profileData.cpf?.replace(/\D/g, '') || null,
+        birth_date: profileData.birthDate || null,
+        phone: profileData.phone || null,
+        address: profileData.address?.trim() || null,
+        address_number: profileData.addressNumber?.trim() || null,
+        address_complement: profileData.addressComplement?.trim() || null,
+        neighborhood: profileData.neighborhood?.trim() || null,
+        city: profileData.city?.trim() || null,
+        state: profileData.state?.trim().toUpperCase() || null,
+        postal_code: profileData.postalCode?.replace(/\D/g, '') || null,
+        updated_at: new Date().toISOString()
+      };
+
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update(updateData)
+        .eq('id', existingUserId);
+
+      if (updateError) {
+        console.error('❌ Erro ao atualizar usuário existente:', updateError);
+        throw new Error(`Erro ao atualizar dados do usuário: ${updateError.message}`);
+      }
+
+      console.log('✅ Dados do usuário atualizados com sucesso');
       return existingUserId;
     }
     
@@ -167,9 +197,6 @@ export async function getUserProfile(userId: string) {
   }
 }
 
-/**
- * Updates a user profile
- */
 export async function updateUserProfile(
   userId: string,
   profileData: {

@@ -17,8 +17,7 @@ const StudentRegistration = () => {
     try {
       // Validate required fields
       if (!data.fullName || !data.email || !data.cpf) {
-        toast.error('Preencha todos os campos obrigatórios');
-        return;
+        throw new Error('Preencha todos os campos obrigatórios');
       }
 
       // Split full name into first and last name
@@ -51,21 +50,21 @@ const StudentRegistration = () => {
       );
 
       if (userId) {
-        console.log('✅ Aluno cadastrado com sucesso:', userId);
+        console.log('✅ Aluno cadastrado/atualizado com sucesso:', userId);
         toast.success('Aluno cadastrado com sucesso!');
         navigate('/admin');
       } else {
         console.error('❌ createUser retornou undefined');
-        toast.error('Erro ao criar usuário - ID não retornado');
+        throw new Error('Erro ao processar dados do usuário');
       }
       
     } catch (error) {
       console.error('❌ Erro no cadastro de aluno:', error);
       
       if (error instanceof Error) {
-        toast.error(`Erro: ${error.message}`);
+        throw error; // Re-throw para o formulário tratar
       } else {
-        toast.error('Erro inesperado ao cadastrar aluno');
+        throw new Error('Erro inesperado ao cadastrar aluno');
       }
     } finally {
       setIsLoading(false);

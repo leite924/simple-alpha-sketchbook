@@ -27,11 +27,17 @@ const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = ({
     
     try {
       await onSubmit(data);
+      // Só resetar se não houver erro
       reset();
-      toast.success('Formulário resetado após sucesso');
+      console.log('✅ Formulário resetado após cadastro bem-sucedido');
     } catch (error) {
       console.error('❌ Erro no handleFormSubmit:', error);
-      toast.error('Erro ao processar formulário');
+      // Não resetar o formulário em caso de erro
+      if (error instanceof Error) {
+        toast.error(`Erro: ${error.message}`);
+      } else {
+        toast.error('Erro inesperado ao processar formulário');
+      }
     }
   };
 
