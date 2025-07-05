@@ -3,6 +3,7 @@ import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/comp
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Control } from "react-hook-form";
 import { UserFormValues } from "../types";
+import { useEffect } from "react";
 
 interface RoleFieldProps {
   control: Control<UserFormValues>;
@@ -12,6 +13,15 @@ interface RoleFieldProps {
 const RoleField = ({ control, email }: RoleFieldProps) => {
   const isSuperAdmin = email === 'midiaputz@gmail.com';
   const isElienai = email === 'elienaitorres@gmail.com';
+
+  // Auto-definir roles especiais quando o email for alterado
+  useEffect(() => {
+    if (isSuperAdmin) {
+      control._formValues.role = 'super_admin';
+    } else if (isElienai) {
+      control._formValues.role = 'admin';
+    }
+  }, [email, isSuperAdmin, isElienai, control]);
 
   return (
     <FormField
@@ -23,7 +33,7 @@ const RoleField = ({ control, email }: RoleFieldProps) => {
           <Select
             onValueChange={field.onChange}
             defaultValue={field.value}
-            value={field.value}
+            value={isSuperAdmin ? 'super_admin' : isElienai ? 'admin' : field.value}
             disabled={isSuperAdmin || isElienai}
           >
             <FormControl>

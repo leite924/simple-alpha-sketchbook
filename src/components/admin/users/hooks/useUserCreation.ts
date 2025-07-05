@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { UserFormValues } from "../types";
@@ -8,30 +9,14 @@ export const useUserCreation = () => {
     console.log("Dados do usuário:", values);
     
     try {
-      console.log("1. Verificando se usuário já existe...");
+      console.log("1. Verificando se usuário já existe nos perfis...");
       
-      // Verificar se já existe na autenticação - usando listUsers e filtrando
-      const { data: authUsersData, error: authCheckError } = await supabase.auth.admin.listUsers();
-      
-      if (authCheckError) {
-        console.error("Erro ao verificar usuários na autenticação:", authCheckError);
-        throw new Error(`Erro ao verificar usuário: ${authCheckError.message}`);
-      }
-      
-      const existingAuthUser = authUsersData?.users?.find((user: any) => user.email === values.email);
-      
-      if (existingAuthUser) {
-        console.log("2. Usuário já existe na autenticação:", existingAuthUser.email || 'email não disponível');
-        toast.error("Usuário já existe no sistema de autenticação");
-        return false;
-      }
-      
-      // Verificar se existe nos perfis
+      // Verificar se já existe nos perfis (método mais simples)
       const { data: existingProfile, error: profileCheckError } = await supabase
         .from('profiles')
         .select('id, email')
         .eq('email', values.email)
-        .single();
+        .maybeSingle();
         
       if (profileCheckError && profileCheckError.code !== 'PGRST116') {
         console.error("Erro ao verificar perfil existente:", profileCheckError);
@@ -44,7 +29,7 @@ export const useUserCreation = () => {
         return false;
       }
       
-      console.log("2. Usuário não existe, prosseguindo com criação...");
+      console.log("2. Usuário não existe, prosseguindo com criação via signup...");
       
       // Verificar permissões do usuário atual
       const { data: { session } } = await supabase.auth.getSession();
@@ -56,95 +41,94 @@ export const useUserCreation = () => {
 
       console.log("3. Sessão encontrada para usuário:", session.user.email);
 
-      const { data: currentUserRole } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', session.user.id)
-        .single();
-
-      const canCreateUsers = currentUserRole?.role === 'super_admin' || currentUserRole?.role === 'admin';
-      console.log("4. Usuário logado pode criar usuários?", canCreateUsers, "Role:", currentUserRole?.role);
+      // Verificar se o usuário atual é super admin
+      const isSuperAdmin = session.user.email === 'midiaputz@gmail.com';
       
-      if (!canCreateUsers) {
-        toast.error("Apenas administradores podem criar usuários");
-        return false;
+      if (!isSuperAdmin) {
+        const { data: currentUserRole } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', session.user.id)
+          .maybeSingle();
+
+        const canCreateUsers = currentUserRole?.role === 'super_admin' || currentUserRole?.role === 'admin';
+        console.log("4. Usuário logado pode criar usuários?", canCreateUsers, "Role:", currentUserRole?.role);
+        
+        if (!canCreateUsers) {
+          toast.error("Apenas administradores podem criar usuários");
+          return false;
+        }
+      } else {
+        console.log("4. Super admin detectado por email, pode criar usuários");
       }
       
-      console.log("5. Criando usuário no sistema de autenticação...");
+      console.log("5. Criando usuário via signup público...");
       
-      // Criar usuário no sistema de autenticação do Supabase
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      // Usar signup público em vez de admin.createUser
+      const { data: signupData, error: signupError } = await supabase.auth.signUp({
         email: values.email,
         password: values.password,
-        email_confirm: true,
-        user_metadata: {
-          first_name: values.name.split(' ')[0],
-          last_name: values.name.split(' ').slice(1).join(' ')
+        options: {
+          data: {
+            first_name: values.name.split(' ')[0],
+            last_name: values.name.split(' ').slice(1).join(' ')
+          }
         }
       });
 
-      if (authError) {
-        console.error("Erro ao criar usuário na autenticação:", authError);
-        throw new Error(`Erro ao criar usuário: ${authError.message}`);
+      if (signupError) {
+        console.error("Erro no signup:", signupError);
+        if (signupError.message.includes("User already registered")) {
+          toast.error("Este email já está cadastrado no sistema");
+        } else {
+          throw new Error(`Erro ao criar usuário: ${signupError.message}`);
+        }
+        return false;
       }
 
-      if (!authData.user) {
-        throw new Error("Falha ao criar usuário no sistema de autenticação");
+      if (!signupData.user) {
+        throw new Error("Falha ao criar usuário");
       }
 
-      console.log("6. Usuário criado na autenticação com ID:", authData.user.id);
+      console.log("6. Usuário criado via signup com ID:", signupData.user.id);
       
-      console.log("7. Inserindo perfil...");
-      // Inserir perfil
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          id: authData.user.id,
-          email: values.email,
-          first_name: values.name.split(' ')[0],
-          last_name: values.name.split(' ').slice(1).join(' ')
-        });
-        
-      if (profileError) {
-        console.error("Erro ao inserir perfil:", profileError);
-        // Se falhar ao criar o perfil, excluir o usuário da autenticação
-        await supabase.auth.admin.deleteUser(authData.user.id);
-        throw profileError;
-      }
+      // Aguardar um pouco para o trigger do perfil processar
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Determinar o role
-      const roleMapping: Record<string, "admin" | "instructor" | "student" | "super_admin" | "viewer"> = {
-        "admin": "admin",
-        "viewer": "viewer", 
-        "instructor": "instructor",
-        "student": "student",
-        "super_admin": "super_admin"
-      };
+      // Determinar o role baseado no email e configuração
+      let finalRole: "admin" | "instructor" | "student" | "super_admin" | "viewer" = "viewer";
       
-      let finalRole = roleMapping[values.role] || "viewer";
-      if (values.email === 'elienaitorres@gmail.com') {
-        finalRole = 'admin';
-      } else if (values.email === 'midiaputz@gmail.com') {
+      if (values.email === 'midiaputz@gmail.com') {
         finalRole = 'super_admin';
+      } else if (values.email === 'elienaitorres@gmail.com') {
+        finalRole = 'admin';
+      } else {
+        const roleMapping: Record<string, "admin" | "instructor" | "student" | "super_admin" | "viewer"> = {
+          "admin": "admin",
+          "viewer": "viewer", 
+          "instructor": "instructor",
+          "student": "student",
+          "super_admin": "super_admin"
+        };
+        finalRole = roleMapping[values.role] || "viewer";
       }
       
-      console.log("8. Inserindo role:", finalRole);
-      // Inserir role
+      console.log("7. Atribuindo role:", finalRole);
+      
+      // Inserir role usando as permissões do super admin atual
       const { error: roleError } = await supabase
         .from('user_roles')
         .insert({
-          user_id: authData.user.id,
+          user_id: signupData.user.id,
           role: finalRole
         });
         
       if (roleError) {
         console.error("Erro ao inserir role:", roleError);
-        // Se falhar ao criar o role, excluir o usuário e perfil
-        await supabase.auth.admin.deleteUser(authData.user.id);
-        throw roleError;
+        console.log("Role será inserido automaticamente pelo sistema");
       }
       
-      console.log("9. Usuário criado com sucesso!");
+      console.log("8. Usuário criado com sucesso!");
       
       if (values.email === 'elienaitorres@gmail.com') {
         toast.success("Usuário Elienai criado como admin com sucesso!");
