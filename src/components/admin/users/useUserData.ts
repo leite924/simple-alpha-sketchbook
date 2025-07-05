@@ -19,7 +19,7 @@ export const useUserData = (isAuthenticated: boolean = true, initialUsers: User[
   
   const fetchUsersFromDatabase = async () => {
     try {
-      console.log("🔍 === INICIANDO BUSCA DE USUÁRIOS (VERSÃO DEFINITIVA) ===");
+      console.log("🔍 === BUSCANDO USUÁRIOS REAIS DA BASE ===");
       setLoading(true);
       setError(null);
       
@@ -35,7 +35,7 @@ export const useUserData = (isAuthenticated: boolean = true, initialUsers: User[
       }
       
       // Buscar perfis
-      console.log("👥 Buscando perfis...");
+      console.log("👥 Buscando perfis da base...");
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('id, email, first_name, last_name, created_at')
@@ -46,16 +46,17 @@ export const useUserData = (isAuthenticated: boolean = true, initialUsers: User[
         throw profilesError;
       }
       
-      console.log("✅ Perfis encontrados:", profiles?.length || 0);
+      console.log(`✅ Perfis encontrados: ${profiles?.length || 0}`);
+      console.log("📋 Perfis:", profiles?.map(p => ({ email: p.email, nome: `${p.first_name} ${p.last_name}` })));
       
       if (!profiles || profiles.length === 0) {
-        console.log("⚠️ Nenhum perfil encontrado");
+        console.log("⚠️ Nenhum perfil encontrado na base");
         setUsers([]);
         setLoading(false);
         return;
       }
       
-      // Buscar roles com tratamento robusto de erros
+      // Buscar roles
       console.log("🎭 Buscando roles...");
       let allRoles: Array<{ user_id: string; role: string }> = [];
       
@@ -66,23 +67,15 @@ export const useUserData = (isAuthenticated: boolean = true, initialUsers: User[
           
         if (rolesError) {
           console.error("❌ Erro ao buscar roles:", rolesError);
-          
-          // Se for erro de RLS, mostrar aviso mas continuar
-          if (rolesError.message.includes('infinite recursion') || 
-              rolesError.message.includes('row-level security')) {
-            console.log("⚠️ Problema de RLS detectado, usando fallback");
-            toast.warning("Problema de permissões detectado. Usando configuração padrão.");
-          } else {
-            throw rolesError;
-          }
+          console.log("⚠️ Continuando sem roles (será usado viewer como padrão)");
         } else {
           allRoles = rolesData || [];
-          console.log("📊 Roles encontradas:", allRoles.length);
+          console.log(`📊 Roles encontradas: ${allRoles.length}`);
+          console.log("🎭 Roles:", allRoles.map(r => ({ user_id: r.user_id.substring(0, 8), role: r.role })));
         }
       } catch (rolesFetchError) {
         console.error("💥 Erro crítico ao buscar roles:", rolesFetchError);
-        console.log("🔄 Continuando com fallback de roles...");
-        allRoles = [];
+        console.log("🔄 Continuando sem roles...");
       }
       
       // Criar mapa de roles
@@ -91,36 +84,26 @@ export const useUserData = (isAuthenticated: boolean = true, initialUsers: User[
         rolesMap.set(roleEntry.user_id, roleEntry.role);
       });
       
-      // Processar usuários com roles e fallbacks garantidos
-      const usersWithRoles: User[] = profiles
-        .filter(profile => profile.email)
+      // Processar usuários reais
+      const realUsers: User[] = profiles
+        .filter(profile => profile.email) // Apenas perfis com email
         .map((profile, index) => {
-          let finalRole: User["role"] = 'viewer';
+          const userRole = rolesMap.get(profile.id) || 'viewer';
           
-          // GARANTIR que usuários especiais sempre tenham a role correta
-          if (profile.email === 'midiaputz@gmail.com') {
-            finalRole = 'super_admin';
-            console.log(`🔥 Super admin garantido: ${profile.email}`);
-          } else if (profile.email === 'elienaitorres@gmail.com') {
-            finalRole = 'admin';
-            console.log(`👑 Admin Elienai garantida: ${profile.email}`);
-          } else {
-            // Tentar usar role do banco
-            const userRole = rolesMap.get(profile.id);
-            if (userRole) {
-              const roleMapping: Record<string, User["role"]> = {
-                'super_admin': 'super_admin',
-                'admin': 'admin',
-                'instructor': 'instructor',
-                'student': 'student',
-                'viewer': 'viewer'
-              };
-              finalRole = roleMapping[userRole] || 'viewer';
-            }
-          }
+          // Mapear roles para o tipo correto
+          const roleMapping: Record<string, User["role"]> = {
+            'super_admin': 'super_admin',
+            'admin': 'admin',
+            'instructor': 'instructor',
+            'student': 'student',
+            'viewer': 'viewer'
+          };
           
+          const finalRole = roleMapping[userRole] || 'viewer';
           const firstName = profile.first_name || 'Usuário';
           const lastName = profile.last_name || '';
+          
+          console.log(`👤 Processando usuário: ${profile.email} -> Role: ${finalRole}`);
           
           return {
             id: index + 1,
@@ -133,83 +116,24 @@ export const useUserData = (isAuthenticated: boolean = true, initialUsers: User[
           };
         });
       
-      // VALIDAÇÃO FINAL: Garantir que ambos os usuários críticos estão presentes
-      const superAdmin = usersWithRoles.find(u => u.email === 'midiaputz@gmail.com');
-      const elienai = usersWithRoles.find(u => u.email === 'elienaitorres@gmail.com');
-      
-      if (!superAdmin) {
-        console.log("⚠️ Super admin não encontrado, adicionando fallback");
-        usersWithRoles.unshift({
-          id: 0,
-          name: 'Super Admin',
-          email: 'midiaputz@gmail.com',
-          role: 'super_admin',
-          status: 'active',
-          createdAt: new Date(),
-          lastLogin: new Date()
-        });
-      }
-      
-      if (!elienai) {
-        console.log("⚠️ Elienai não encontrada, adicionando fallback");
-        usersWithRoles.push({
-          id: usersWithRoles.length + 1,
-          name: 'Elienai Torres',
-          email: 'elienaitorres@gmail.com',
-          role: 'admin',
-          status: 'active',
-          createdAt: new Date(),
-          lastLogin: new Date()
-        });
-      }
-      
       console.log("✅ === RESULTADO FINAL ===");
-      console.log("📊 Total de usuários:", usersWithRoles.length);
-      console.log("👑 Super Admin presente:", !!usersWithRoles.find(u => u.role === 'super_admin'));
-      console.log("🛡️ Admin presente:", !!usersWithRoles.find(u => u.role === 'admin'));
-      console.log("📋 Lista completa:", usersWithRoles.map(u => ({ 
+      console.log(`📊 Total de usuários processados: ${realUsers.length}`);
+      console.log("📋 Lista completa:", realUsers.map(u => ({ 
         name: u.name, 
         email: u.email, 
         role: u.role 
       })));
       
-      setUsers(usersWithRoles);
-      
-      // Mostrar mensagem de sucesso
-      toast.success(`Sistema carregado com ${usersWithRoles.length} usuários`);
+      setUsers(realUsers);
+      toast.success(`${realUsers.length} usuários carregados da base de dados`);
       
     } catch (err) {
       console.error("💥 === ERRO CRÍTICO ===");
       console.error("Erro na busca de usuários:", err);
       
-      // FALLBACK DE EMERGÊNCIA: Criar usuários mínimos essenciais
-      console.log("🚨 Ativando fallback de emergência...");
-      
-      const emergencyUsers: User[] = [
-        {
-          id: 1,
-          name: 'Super Admin',
-          email: 'midiaputz@gmail.com',
-          role: 'super_admin',
-          status: 'active',
-          createdAt: new Date(),
-          lastLogin: new Date()
-        },
-        {
-          id: 2,
-          name: 'Elienai Torres',
-          email: 'elienaitorres@gmail.com',
-          role: 'admin',
-          status: 'active',
-          createdAt: new Date(),
-          lastLogin: new Date()
-        }
-      ];
-      
-      setUsers(emergencyUsers);
+      setUsers([]);
       setError(err instanceof Error ? err : new Error('Erro desconhecido'));
-      
-      toast.error("Erro ao carregar usuários. Usando configuração mínima.");
+      toast.error("Erro ao carregar usuários da base de dados");
       
     } finally {
       setLoading(false);

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -48,7 +47,7 @@ const SystemHealthMonitor = () => {
         const { data: profiles, error: profilesError } = await supabase
           .from('profiles')
           .select('id, email, first_name, last_name')
-          .limit(5);
+          .limit(10);
 
         if (profilesError) {
           checks.push({
@@ -81,7 +80,6 @@ const SystemHealthMonitor = () => {
           .eq('user_id', session.user.id);
 
         if (rolesError) {
-          // Se houver erro, ainda assim consideramos sucesso se for apenas limitação de acesso
           if (rolesError.message.includes('permission denied')) {
             checks.push({
               name: 'Sistema de Roles',
@@ -114,92 +112,44 @@ const SystemHealthMonitor = () => {
         });
       }
 
-      // Verificar usuários essenciais - CORRIGIDO
+      // Verificar usuários na base - SIMPLIFICADO
       try {
-        // Primeiro, verificar se a Elienai existe nos profiles
-        const { data: elienaiProfile, error: elienaiError } = await supabase
-          .from('profiles')
-          .select('id, email, first_name, last_name')
-          .eq('email', 'elienaitorres@gmail.com')
-          .single();
-
-        // Se não existir, criar o perfil da Elienai
-        if (elienaiError && elienaiError.code === 'PGRST116') {
-          console.log('🔄 Criando perfil da Elienai...');
-          
-          // Primeiro verificar se existe usuário auth para este email
-          try {
-            const { data: authData } = await supabase.auth.admin.listUsers();
-            const elienaiAuthUser = authData.users?.find((user: any) => user.email === 'elienaitorres@gmail.com');
-            
-            if (elienaiAuthUser) {
-              // Criar perfil usando o ID do usuário auth
-              const { error: insertError } = await supabase
-                .from('profiles')
-                .insert({
-                  id: elienaiAuthUser.id,
-                  email: 'elienaitorres@gmail.com',
-                  first_name: 'Elienai',
-                  last_name: 'Torres'
-                });
-                
-              if (!insertError) {
-                console.log('✅ Perfil da Elienai criado com sucesso');
-                
-                // Também criar a role de admin
-                await supabase
-                  .from('user_roles')
-                  .insert({
-                    user_id: elienaiAuthUser.id,
-                    role: 'admin'
-                  });
-              }
-            }
-          } catch (authError) {
-            console.log('⚠️ Erro ao buscar usuários auth:', authError);
-          }
-        }
-
-        // Agora verificar ambos os usuários essenciais
-        const { data: essentialUsers } = await supabase
+        const { data: allProfiles } = await supabase
           .from('profiles')
           .select('email, first_name, last_name')
-          .in('email', ['midiaputz@gmail.com', 'elienaitorres@gmail.com']);
+          .in('email', ['midiaputz@gmail.com', 'elienaitorres@gmail.com', 'ligiaferreiraleite@hotmail.com']);
 
-        const hasSuperAdmin = essentialUsers?.some(u => u.email === 'midiaputz@gmail.com');
-        const hasElienai = essentialUsers?.some(u => u.email === 'elienaitorres@gmail.com');
+        const foundEmails = allProfiles?.map(p => p.email) || [];
+        const totalUsers = allProfiles?.length || 0;
 
-        if (hasSuperAdmin && hasElienai) {
+        console.log('👥 Usuários encontrados na verificação:', foundEmails);
+
+        if (totalUsers >= 2) {
           checks.push({
-            name: 'Usuários Essenciais',
+            name: 'Usuários na Base',
             status: 'success',
-            message: 'Super Admin e Elienai presentes no sistema',
+            message: `${totalUsers} usuários encontrados na base de dados`,
+            details: `Emails: ${foundEmails.join(', ')}`,
           });
-        } else if (hasSuperAdmin) {
+        } else if (totalUsers === 1) {
           checks.push({
-            name: 'Usuários Essenciais',
+            name: 'Usuários na Base',
             status: 'warning',
-            message: 'Super Admin presente, verificando Elienai...',
-            details: 'Tentando criar perfil da Elienai automaticamente',
-          });
-        } else if (hasElienai) {
-          checks.push({
-            name: 'Usuários Essenciais',
-            status: 'warning',
-            message: 'Elienai presente, Super Admin não encontrado',
+            message: `Apenas ${totalUsers} usuário encontrado`,
+            details: `Email: ${foundEmails.join(', ')}`,
           });
         } else {
           checks.push({
-            name: 'Usuários Essenciais',
+            name: 'Usuários na Base',
             status: 'error',
-            message: 'Usuários essenciais não encontrados no sistema',
+            message: 'Nenhum usuário encontrado na base',
           });
         }
       } catch (error) {
         checks.push({
-          name: 'Usuários Essenciais',
+          name: 'Usuários na Base',
           status: 'warning',
-          message: 'Não foi possível verificar usuários essenciais',
+          message: 'Não foi possível verificar usuários',
           details: error instanceof Error ? error.message : String(error),
         });
       }
