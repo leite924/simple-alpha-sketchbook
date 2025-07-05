@@ -3,7 +3,8 @@ import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "@/components/auth/AuthProvider";
+import { AuthProvider, useAuth } from "@/components/auth/AuthProvider";
+import LoadingPage from "@/components/LoadingPage";
 import Index from "./pages/Index";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
@@ -27,6 +28,40 @@ import NFSeTest from "./pages/NFSeTest";
 
 const queryClient = new QueryClient();
 
+// Componente interno que usa o useAuth hook
+const AppRoutes = () => {
+  const { loading } = useAuth();
+
+  if (loading) {
+    return <LoadingPage />;
+  }
+
+  return (
+    <Routes>
+      <Route path="/" element={<Index />} />
+      <Route path="/sobre" element={<About />} />
+      <Route path="/contato" element={<Contact />} />
+      <Route path="/cursos" element={<Courses />} />
+      <Route path="/curso/:slug" element={<CourseDetail />} />
+      <Route path="/turmas" element={<Classes />} />
+      <Route path="/turma/:id" element={<ClassDetail />} />
+      <Route path="/blog" element={<Blog />} />
+      <Route path="/blog/:slug" element={<BlogPost />} />
+      <Route path="/quiz" element={<Quiz />} />
+      <Route path="/area-do-aluno" element={<StudentArea />} />
+      <Route path="/financeiro" element={<Finance />} />
+      <Route path="/admin" element={<Admin />} />
+      <Route path="/super-admin" element={<SuperAdminLogin />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/auth" element={<Auth />} />
+      <Route path="/checkout" element={<Checkout />} />
+      <Route path="/checkout/success" element={<CheckoutSuccess />} />
+      <Route path="/nfse-test" element={<NFSeTest />} />
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  );
+};
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -34,28 +69,7 @@ function App() {
         <TooltipProvider>
           <Toaster />
           <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/sobre" element={<About />} />
-              <Route path="/contato" element={<Contact />} />
-              <Route path="/cursos" element={<Courses />} />
-              <Route path="/curso/:slug" element={<CourseDetail />} />
-              <Route path="/turmas" element={<Classes />} />
-              <Route path="/turma/:id" element={<ClassDetail />} />
-              <Route path="/blog" element={<Blog />} />
-              <Route path="/blog/:slug" element={<BlogPost />} />
-              <Route path="/quiz" element={<Quiz />} />
-              <Route path="/area-do-aluno" element={<StudentArea />} />
-              <Route path="/financeiro" element={<Finance />} />
-              <Route path="/admin" element={<Admin />} />
-              <Route path="/super-admin" element={<SuperAdminLogin />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/checkout" element={<Checkout />} />
-              <Route path="/checkout/success" element={<CheckoutSuccess />} />
-              <Route path="/nfse-test" element={<NFSeTest />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+            <AppRoutes />
           </BrowserRouter>
         </TooltipProvider>
       </AuthProvider>

@@ -29,25 +29,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Verificar se é super admin baseado no email
   const isSuperAdmin = auth.user?.email === 'midiaputz@gmail.com' || auth.userRole === 'super_admin';
 
-  // Debug log melhorado para verificar estados
-  console.log("🏠 AuthProvider render com estados:", {
+  console.log("AuthProvider estado:", {
     user: auth.user?.email || null,
     loading: auth.loading,
     userRole: auth.userRole,
     isAuthenticated: auth.isAuthenticated,
-    isSuperAdmin,
-    hasSession: !!auth.session,
-    timestamp: new Date().toISOString()
+    isSuperAdmin
   });
-
-  // Log adicional se estiver carregando por muito tempo
-  if (auth.loading) {
-    console.log("⏳ AuthProvider ainda carregando...", {
-      tempoDecorrido: Date.now(),
-      user: auth.user?.email,
-      session: !!auth.session
-    });
-  }
 
   const contextValue: AuthContextType = {
     ...auth,

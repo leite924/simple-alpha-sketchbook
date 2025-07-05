@@ -3,110 +3,112 @@ import { useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
-interface OptimizedAuthReturn {
-  user: User | null;
-  session: Session | null;
-  loading: boolean;
-  userRole: string;
-  isAuthenticated: boolean;
-  signOut: () => Promise<void>;
-}
-
-export const useOptimizedAuth = (): OptimizedAuthReturn => {
+export const useOptimizedAuth = () => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [userRole, setUserRole] = useState<string>('');
-
-  const signOut = async () => {
-    await supabase.auth.signOut();
-  };
+  const [userRole, setUserRole] = useState<string>('viewer');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    // Get initial session
+    // Obter sessão inicial
     const getInitialSession = async () => {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) {
-          console.error('Error getting session:', error);
-          setLoading(false);
-          return;
-        }
-
-        setSession(session);
-        setUser(session?.user ?? null);
-
-        // Get user role if authenticated
-        if (session?.user) {
-          try {
-            const { data: roleData, error: roleError } = await supabase
+        const { data: { session: initialSession } } = await supabase.auth.getSession();
+        
+        if (initialSession?.user) {
+          setUser(initialSession.user);
+          setSession(initialSession);
+          setIsAuthenticated(true);
+          
+          // Verificar role do usuário
+          if (initialSession.user.email === 'midiaputz@gmail.com') {
+            setUserRole('super_admin');
+          } else {
+            // Buscar role do usuário na tabela user_roles
+            const { data: roleData } = await supabase
               .from('user_roles')
               .select('role')
-              .eq('user_id', session.user.id)
+              .eq('user_id', initialSession.user.id)
               .single();
             
-            if (!roleError && roleData) {
-              setUserRole(roleData.role);
-            } else if (session.user.email === 'midiaputz@gmail.com') {
-              setUserRole('super_admin');
-            }
-          } catch (error) {
-            console.error('Error fetching user role:', error);
+            setUserRole(roleData?.role || 'viewer');
           }
+        } else {
+          setUser(null);
+          setSession(null);
+          setIsAuthenticated(false);
+          setUserRole('viewer');
         }
-        
-        setLoading(false);
       } catch (error) {
-        console.error('Error in getInitialSession:', error);
+        console.error('Erro ao obter sessão inicial:', error);
+        setUser(null);
+        setSession(null);
+        setIsAuthenticated(false);
+        setUserRole('viewer');
+      } finally {
         setLoading(false);
       }
     };
 
     getInitialSession();
 
-    // Listen for auth changes
+    // Escutar mudanças de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('Auth state changed:', event, session?.user?.email);
-        setSession(session);
-        setUser(session?.user ?? null);
         
         if (session?.user) {
-          try {
-            const { data: roleData, error: roleError } = await supabase
+          setUser(session.user);
+          setSession(session);
+          setIsAuthenticated(true);
+          
+          // Verificar role do usuário
+          if (session.user.email === 'midiaputz@gmail.com') {
+            setUserRole('super_admin');
+          } else {
+            const { data: roleData } = await supabase
               .from('user_roles')
               .select('role')
               .eq('user_id', session.user.id)
               .single();
             
-            if (!roleError && roleData) {
-              setUserRole(roleData.role);
-            } else if (session.user.email === 'midiaputz@gmail.com') {
-              setUserRole('super_admin');
-            } else {
-              setUserRole('');
-            }
-          } catch (error) {
-            console.error('Error fetching user role:', error);
-            setUserRole('');
+            setUserRole(roleData?.role || 'viewer');
           }
         } else {
-          setUserRole('');
+          setUser(null);
+          setSession(null);
+          setIsAuthenticated(false);
+          setUserRole('viewer');
         }
         
         setLoading(false);
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
+
+  const signOut = async () => {
+    try {
+      await supabase.auth.signOut();
+      setUser(null);
+      setSession(null);
+      setIsAuthenticated(false);
+      setUserRole('viewer');
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error);
+    }
+  };
 
   return {
     user,
     session,
     loading,
     userRole,
-    isAuthenticated: !!user,
+    isAuthenticated,
     signOut
   };
 };
