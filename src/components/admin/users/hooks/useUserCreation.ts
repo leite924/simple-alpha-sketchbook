@@ -9,27 +9,35 @@ export const useUserCreation = () => {
     console.log("Dados do usuário:", values);
     
     try {
-      console.log("1. Verificando se usuário já existe nos perfis...");
+      console.log("1. VERIFICAÇÃO CRÍTICA: Checando se email já existe...");
       
-      // Verificar se já existe nos perfis (método mais simples)
+      // VERIFICAÇÃO RIGOROSA - Verificar se já existe nos perfis
       const { data: existingProfile, error: profileCheckError } = await supabase
         .from('profiles')
         .select('id, email')
-        .eq('email', values.email)
+        .eq('email', values.email.toLowerCase().trim())
         .maybeSingle();
         
       if (profileCheckError && profileCheckError.code !== 'PGRST116') {
-        console.error("Erro ao verificar perfil existente:", profileCheckError);
+        console.error("ERRO CRÍTICO ao verificar perfil existente:", profileCheckError);
         throw new Error(`Erro ao verificar usuário: ${profileCheckError.message}`);
       }
       
       if (existingProfile) {
-        console.log("2. Usuário já existe nos perfis:", existingProfile);
-        toast.error("Usuário já existe no sistema");
+        console.log("2. ❌ EMAIL JÁ CADASTRADO:", existingProfile);
+        
+        // Mensagens específicas para emails administrativos
+        if (values.email.toLowerCase() === 'midiaputz@gmail.com') {
+          toast.error("🚫 ERRO CRÍTICO: Este email já pertence ao Super Administrador do sistema!");
+        } else if (values.email.toLowerCase() === 'elienaitorres@gmail.com') {
+          toast.error("🚫 ERRO: Este email já pertence a um administrador do sistema!");
+        } else {
+          toast.error("⚠️ Este email já está cadastrado no sistema. Use outro email ou faça login.");
+        }
         return false;
       }
       
-      console.log("2. Usuário não existe, prosseguindo com criação via signup...");
+      console.log("2. ✅ Email disponível, prosseguindo com criação...");
       
       // Verificar permissões do usuário atual
       const { data: { session } } = await supabase.auth.getSession();
@@ -66,7 +74,7 @@ export const useUserCreation = () => {
       
       // Usar signup público em vez de admin.createUser
       const { data: signupData, error: signupError } = await supabase.auth.signUp({
-        email: values.email,
+        email: values.email.toLowerCase().trim(),
         password: values.password,
         options: {
           data: {
@@ -78,8 +86,8 @@ export const useUserCreation = () => {
 
       if (signupError) {
         console.error("Erro no signup:", signupError);
-        if (signupError.message.includes("User already registered")) {
-          toast.error("Este email já está cadastrado no sistema");
+        if (signupError.message.includes("User already registered") || signupError.message.includes("already registered")) {
+          toast.error("🚫 Este email já está cadastrado no sistema de autenticação!");
         } else {
           throw new Error(`Erro ao criar usuário: ${signupError.message}`);
         }
@@ -99,10 +107,10 @@ export const useUserCreation = () => {
       let finalRole: "admin" | "instructor" | "student" | "super_admin" | "viewer" = "viewer";
       
       // VERIFICAÇÃO PRIORITÁRIA: Super Admin sempre pelo email
-      if (values.email === 'midiaputz@gmail.com') {
+      if (values.email.toLowerCase() === 'midiaputz@gmail.com') {
         finalRole = 'super_admin';
         console.log("7. EMAIL SUPER ADMIN DETECTADO - Role definido como super_admin");
-      } else if (values.email === 'elienaitorres@gmail.com') {
+      } else if (values.email.toLowerCase() === 'elienaitorres@gmail.com') {
         finalRole = 'admin';
         console.log("7. EMAIL ADMIN ELIENAI DETECTADO - Role definido como admin");
       } else {
@@ -172,9 +180,9 @@ export const useUserCreation = () => {
       console.log("13. Usuário criado com sucesso!");
       
       // Mensagens específicas baseadas no email
-      if (values.email === 'midiaputz@gmail.com') {
+      if (values.email.toLowerCase() === 'midiaputz@gmail.com') {
         toast.success("⚡ SUPER ADMINISTRADOR criado com sucesso!");
-      } else if (values.email === 'elienaitorres@gmail.com') {
+      } else if (values.email.toLowerCase() === 'elienaitorres@gmail.com') {
         toast.success("👑 Administrador Elienai criado com sucesso!");
       } else {
         toast.success(`✅ Usuário criado com sucesso como ${finalRole}!`);

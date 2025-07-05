@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { CardContent } from '@/components/ui/card';
 import { useAuth } from './AuthProvider';
 import { Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface RegisterFormProps {
   email: string;
@@ -50,18 +51,56 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
       return;
     }
 
-    const { error } = await signUp(email, password, firstName, lastName);
-
-    if (error) {
-      if (error.message.includes('User already registered')) {
-        setErrorMessage('Este email já está cadastrado. Tente fazer login.');
-      } else if (error.message.includes('Password should be at least')) {
-        setErrorMessage('A senha deve ter pelo menos 6 caracteres');
-      } else {
-        setErrorMessage(`Erro ao criar conta: ${error.message}`);
+    try {
+      // VERIFICAÇÃO CRÍTICA: Checar se email já existe antes de tentar criar
+      console.log("🔍 Verificando se email já existe:", email);
+      
+      const { data: existingProfile, error: profileCheckError } = await supabase
+        .from('profiles')
+        .select('id, email')
+        .eq('email', email.toLowerCase().trim())
+        .maybeSingle();
+        
+      if (profileCheckError && profileCheckError.code !== 'PGRST116') {
+        console.error("Erro ao verificar perfil existente:", profileCheckError);
+        setErrorMessage('Erro ao verificar disponibilidade do email');
+        setIsLoading(false);
+        return;
       }
-    } else {
-      setShowConfirmationAlert(true);
+      
+      if (existingProfile) {
+        console.log("❌ Email já cadastrado:", existingProfile);
+        
+        // Mensagens específicas para emails administrativos
+        if (email.toLowerCase() === 'midiaputz@gmail.com') {
+          setErrorMessage('🚫 ERRO CRÍTICO: Este email já pertence ao Super Administrador do sistema!');
+        } else if (email.toLowerCase() === 'elienaitorres@gmail.com') {
+          setErrorMessage('🚫 ERRO: Este email já pertence a um administrador do sistema!');
+        } else {
+          setErrorMessage('⚠️ Este email já está cadastrado. Faça login ou use outro email.');
+        }
+        setIsLoading(false);
+        return;
+      }
+
+      console.log("✅ Email disponível, prosseguindo com cadastro...");
+
+      const { error } = await signUp(email, password, firstName, lastName);
+
+      if (error) {
+        if (error.message.includes('User already registered') || error.message.includes('already registered')) {
+          setErrorMessage('🚫 Este email já está cadastrado no sistema. Tente fazer login.');
+        } else if (error.message.includes('Password should be at least')) {
+          setErrorMessage('A senha deve ter pelo menos 6 caracteres');
+        } else {
+          setErrorMessage(`Erro ao criar conta: ${error.message}`);
+        }
+      } else {
+        setShowConfirmationAlert(true);
+      }
+    } catch (error: any) {
+      console.error("Erro no cadastro:", error);
+      setErrorMessage('Erro inesperado ao criar conta. Tente novamente.');
     }
 
     setIsLoading(false);
