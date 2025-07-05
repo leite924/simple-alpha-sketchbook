@@ -26,15 +26,17 @@ export const useAuth = () => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const auth = useOptimizedAuth();
 
-  // Verificar se é super admin baseado no email
+  // Verificar se é super admin baseado no email OU role
   const isSuperAdmin = auth.user?.email === 'midiaputz@gmail.com' || auth.userRole === 'super_admin';
 
-  console.log("AuthProvider estado:", {
-    user: auth.user?.email || null,
+  console.log("🔍 AuthProvider estado detalhado:", {
+    userEmail: auth.user?.email || null,
     loading: auth.loading,
     userRole: auth.userRole,
     isAuthenticated: auth.isAuthenticated,
-    isSuperAdmin
+    isSuperAdmin,
+    hasUser: !!auth.user,
+    hasSession: !!auth.session
   });
 
   const contextValue: AuthContextType = {
