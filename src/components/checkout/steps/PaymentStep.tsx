@@ -1,5 +1,5 @@
-
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -19,6 +19,7 @@ interface PaymentStepProps {
 }
 
 const PaymentStep = ({ onComplete, classData, orderBump, formData }: PaymentStepProps) => {
+  const navigate = useNavigate();
   const { handleCardPayment, handleGeneratePaymentLink, isProcessing } = usePagarmeIntegration();
   const [paymentMethod, setPaymentMethod] = useState<'credit_card' | 'pix' | 'bank_slip'>('credit_card');
   const [cardData, setCardData] = useState({
@@ -149,6 +150,9 @@ const PaymentStep = ({ onComplete, classData, orderBump, formData }: PaymentStep
 
       toast.success('Matrícula processada com sucesso!');
       onComplete({ paymentMethod, ...cardData });
+      
+      // Redirecionar para a página de sucesso
+      navigate('/checkout/success');
       
     } catch (error) {
       console.error('Erro no checkout:', error);
