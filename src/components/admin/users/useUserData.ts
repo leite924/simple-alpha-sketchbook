@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { User } from "../types";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,7 +17,7 @@ export const useUserData = (isAuthenticated: boolean = true, initialUsers: User[
   
   const fetchUsersFromDatabase = async () => {
     try {
-      console.log("🔍 === BUSCANDO USUÁRIOS COM CORREÇÃO DE ROLES ===");
+      console.log("🔍 === BUSCANDO USUÁRIOS APÓS INSERÇÃO DE ROLE ===");
       setLoading(true);
       setError(null);
       
@@ -38,10 +37,11 @@ export const useUserData = (isAuthenticated: boolean = true, initialUsers: User[
       }
       
       // Buscar perfis primeiro
-      console.log("👥 Buscando perfis...");
+      console.log("👥 Buscando todos os perfis...");
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('id, email, first_name, last_name, created_at');
+        .select('id, email, first_name, last_name, created_at')
+        .order('created_at', { ascending: true });
         
       if (profilesError) {
         console.error("❌ Erro ao buscar perfis:", profilesError);
@@ -49,6 +49,7 @@ export const useUserData = (isAuthenticated: boolean = true, initialUsers: User[
       }
       
       console.log("✅ Perfis encontrados:", profiles?.length || 0);
+      console.log("📋 Lista de perfis:", profiles?.map(p => ({ email: p.email, id: p.id })));
       
       if (!profiles || profiles.length === 0) {
         console.log("⚠️ Nenhum perfil encontrado no banco");
@@ -57,45 +58,44 @@ export const useUserData = (isAuthenticated: boolean = true, initialUsers: User[
         return;
       }
       
-      // Buscar roles para cada perfil
-      console.log("🎭 Buscando roles para cada perfil...");
-      const profilesWithRoles = await Promise.all(
-        profiles.map(async (profile) => {
-          const { data: userRoles, error: roleError } = await supabase
-            .from('user_roles')
-            .select('role')
-            .eq('user_id', profile.id);
-            
-          if (roleError) {
-            console.error(`Erro ao buscar role para ${profile.email}:`, roleError);
-            return { ...profile, user_roles: [] };
-          }
-          
-          return { ...profile, user_roles: userRoles || [] };
-        })
-      );
+      // Buscar todos os roles de uma vez para eficiência
+      console.log("🎭 Buscando todos os roles...");
+      const { data: allRoles, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('user_id, role');
+        
+      if (rolesError) {
+        console.error("❌ Erro ao buscar roles:", rolesError);
+      }
       
-      console.log("📋 Dados dos perfis com roles:", profilesWithRoles);
+      console.log("📊 Roles encontrados:", allRoles?.length || 0);
+      console.log("🎭 Lista de roles:", allRoles?.map(r => ({ user_id: r.user_id, role: r.role })));
+      
+      // Criar mapa de roles por user_id para lookup rápido
+      const rolesMap = new Map();
+      allRoles?.forEach(roleEntry => {
+        rolesMap.set(roleEntry.user_id, roleEntry.role);
+      });
       
       // Processar os usuários com mapeamento correto
-      const usersWithRoles: User[] = profilesWithRoles
+      const usersWithRoles: User[] = profiles
         .filter(profile => profile.email) // Só incluir perfis com email
         .map((profile, index) => {
-          // Obter a primeira role (deveria ter apenas uma por usuário agora)
-          const userRole = profile.user_roles?.[0]?.role;
+          // Obter role do mapa
+          const userRole = rolesMap.get(profile.id);
           
           console.log(`👤 Processando usuário ${index + 1}:`, {
             email: profile.email,
-            rawRole: userRole,
+            userId: profile.id,
+            roleFromMap: userRole,
             firstName: profile.first_name,
-            lastName: profile.last_name,
-            userId: profile.id
+            lastName: profile.last_name
           });
           
-          // Determinar role baseado em lógica específica
+          // Determinar role final baseado em lógica específica
           let finalRole: User["role"] = 'viewer';
           
-          // Verificar emails especiais primeiro
+          // Verificar emails especiais primeiro (prioridade máxima)
           if (profile.email === 'midiaputz@gmail.com') {
             finalRole = 'super_admin';
             console.log(`🔥 Super admin detectado por email: ${profile.email}`);
@@ -115,6 +115,8 @@ export const useUserData = (isAuthenticated: boolean = true, initialUsers: User[
             
             finalRole = roleMapping[userRole] || 'viewer';
             console.log(`🎭 Role mapeado: ${userRole} -> ${finalRole}`);
+          } else {
+            console.log(`⚠️ Nenhum role encontrado para ${profile.email}, usando 'viewer' como padrão`);
           }
           
           const firstName = profile.first_name || 'Usuário';
@@ -139,21 +141,29 @@ export const useUserData = (isAuthenticated: boolean = true, initialUsers: User[
           return processedUser;
         });
       
-      console.log("✅ === USUÁRIOS PROCESSADOS FINAL ===");
-      console.log("📊 Total de usuários:", usersWithRoles.length);
+      console.log("✅ === RESULTADO FINAL ===");
+      console.log("📊 Total de usuários processados:", usersWithRoles.length);
       console.log("👥 Lista completa:", usersWithRoles.map(u => ({ 
         name: u.name, 
         email: u.email, 
         role: u.role 
       })));
       
-      // Verificar se o super admin está presente
-      const superAdminPresent = usersWithRoles.some(u => u.role === 'super_admin');
+      // Verificações específicas
+      const superAdminPresent = usersWithRoles.find(u => u.email === 'midiaputz@gmail.com');
       const elienaiPresent = usersWithRoles.find(u => u.email === 'elienaitorres@gmail.com');
       
-      console.log("🔍 Verificação final:");
-      console.log("- Super admin presente:", superAdminPresent);
-      console.log("- Elienai presente:", !!elienaiPresent, "Role:", elienaiPresent?.role);
+      console.log("🔍 === VERIFICAÇÃO FINAL ===");
+      console.log("- Super admin (midiaputz@gmail.com):", !!superAdminPresent, "Role:", superAdminPresent?.role);
+      console.log("- Elienai (elienaitorres@gmail.com):", !!elienaiPresent, "Role:", elienaiPresent?.role);
+      
+      if (!elienaiPresent) {
+        console.error("🚨 PROBLEMA: Elienai não está na lista final!");
+      }
+      
+      if (!superAdminPresent) {
+        console.error("🚨 PROBLEMA: Super admin não está na lista final!");
+      }
       
       setUsers(usersWithRoles);
       
@@ -164,6 +174,7 @@ export const useUserData = (isAuthenticated: boolean = true, initialUsers: User[
       setLoading(false);
     }
   };
+
   
   useEffect(() => {
     console.log("🔄 useUserData effect - isAuthenticated:", isAuthenticated);
