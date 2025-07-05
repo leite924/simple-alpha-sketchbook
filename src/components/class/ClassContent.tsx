@@ -13,7 +13,22 @@ const ClassContent = ({ classData }: ClassContentProps) => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Detalhes da turma */}
           <div className="lg:col-span-2">
-            <ClassDetails classData={classData} />
+            <ClassDetails 
+              id={classData.id}
+              courseName={classData.courseName}
+              courseSlug={classData.courseSlug}
+              period={classData.period}
+              days={classData.days}
+              time={classData.time}
+              location={classData.location}
+              startDate={classData.startDate}
+              endDate={classData.endDate}
+              spotsAvailable={classData.spotsAvailable}
+              price={classData.price}
+              description={classData.description}
+              image={classData.image}
+              classData={classData}
+            />
           </div>
           
           {/* Formulário de inscrição */}
