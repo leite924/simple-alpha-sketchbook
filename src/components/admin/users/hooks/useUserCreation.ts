@@ -95,14 +95,18 @@ export const useUserCreation = () => {
       // Aguardar um pouco para o trigger do perfil processar
       await new Promise(resolve => setTimeout(resolve, 3000));
       
-      // Determinar o role baseado no email e configuração
+      // IMPORTANTE: Determinar o role SEMPRE baseado no email primeiro
       let finalRole: "admin" | "instructor" | "student" | "super_admin" | "viewer" = "viewer";
       
+      // VERIFICAÇÃO PRIORITÁRIA: Super Admin sempre pelo email
       if (values.email === 'midiaputz@gmail.com') {
         finalRole = 'super_admin';
+        console.log("7. EMAIL SUPER ADMIN DETECTADO - Role definido como super_admin");
       } else if (values.email === 'elienaitorres@gmail.com') {
         finalRole = 'admin';
+        console.log("7. EMAIL ADMIN ELIENAI DETECTADO - Role definido como admin");
       } else {
+        // Só usar a seleção do formulário se não for email especial
         const roleMapping: Record<string, "admin" | "instructor" | "student" | "super_admin" | "viewer"> = {
           "admin": "admin",
           "viewer": "viewer", 
@@ -111,12 +115,13 @@ export const useUserCreation = () => {
           "super_admin": "super_admin"
         };
         finalRole = roleMapping[values.role] || "viewer";
+        console.log("7. Role baseado na seleção do formulário:", finalRole);
       }
       
-      console.log("7. Role final determinado:", finalRole);
+      console.log("8. Role final determinado:", finalRole);
       
       // EXCLUIR TODOS os roles existentes primeiro
-      console.log("8. Removendo todos os roles existentes...");
+      console.log("9. Removendo todos os roles existentes...");
       const { error: deleteAllRolesError } = await supabase
         .from('user_roles')
         .delete()
@@ -125,14 +130,14 @@ export const useUserCreation = () => {
       if (deleteAllRolesError) {
         console.log("Aviso: Não foi possível excluir roles existentes:", deleteAllRolesError);
       } else {
-        console.log("9. Todos os roles removidos com sucesso");
+        console.log("10. Todos os roles removidos com sucesso");
       }
       
       // Aguardar um pouco antes de inserir o novo role
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       // INSERIR o role correto
-      console.log("10. Inserindo o role correto:", finalRole);
+      console.log("11. Inserindo o role correto:", finalRole);
       const { error: roleError } = await supabase
         .from('user_roles')
         .insert({
@@ -158,20 +163,21 @@ export const useUserCreation = () => {
           toast.error(`Usuário criado mas erro ao definir papel: ${retryRoleError.message}`);
           return false;
         } else {
-          console.log("11. Role inserido com sucesso na segunda tentativa");
+          console.log("12. Role inserido com sucesso na segunda tentativa");
         }
       } else {
-        console.log("11. Role correto inserido com sucesso na primeira tentativa");
+        console.log("12. Role correto inserido com sucesso na primeira tentativa");
       }
       
-      console.log("12. Usuário criado com sucesso!");
+      console.log("13. Usuário criado com sucesso!");
       
-      if (values.email === 'elienaitorres@gmail.com') {
-        toast.success("Usuário Elienai criado como admin com sucesso!");
-      } else if (values.email === 'midiaputz@gmail.com') {
-        toast.success("Super Admin criado com sucesso!");
+      // Mensagens específicas baseadas no email
+      if (values.email === 'midiaputz@gmail.com') {
+        toast.success("⚡ SUPER ADMINISTRADOR criado com sucesso!");
+      } else if (values.email === 'elienaitorres@gmail.com') {
+        toast.success("👑 Administrador Elienai criado com sucesso!");
       } else {
-        toast.success(`Usuário criado com sucesso como ${finalRole}!`);
+        toast.success(`✅ Usuário criado com sucesso como ${finalRole}!`);
       }
       
       return true;
