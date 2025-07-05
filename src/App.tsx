@@ -71,6 +71,7 @@ function App() {
             <Route path="/classes" element={<Classes />} />
             <Route path="/curso/:slug" element={<CourseDetail />} />
             <Route path="/turma/:classSlug" element={<ClassDetail />} />
+            <Route path="/turmas/:classSlug" element={<ClassDetail />} />
             
             {/* Páginas de blog */}
             <Route path="/blog" element={<Blog />} />
