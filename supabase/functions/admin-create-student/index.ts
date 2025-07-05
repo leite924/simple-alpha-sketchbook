@@ -89,7 +89,9 @@ serve(async (req) => {
     }
 
     // Usar a função administrativa para criar/atualizar o perfil
+    // AGORA PASSANDO O user.id DO ADMIN COMO PARÂMETRO
     const { data: profileId, error: createProfileError } = await supabaseAdmin.rpc('admin_create_student_profile', {
+      p_admin_user_id: user.id, // ✅ CORREÇÃO: Passar o ID do admin
       p_id: userId,
       p_email: email.trim().toLowerCase(),
       p_first_name: firstName.trim(),

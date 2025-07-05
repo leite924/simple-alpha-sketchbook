@@ -472,22 +472,40 @@ export type Database = {
     }
     Functions: {
       admin_create_student_profile: {
-        Args: {
-          p_id: string
-          p_email: string
-          p_first_name: string
-          p_last_name: string
-          p_cpf?: string
-          p_birth_date?: string
-          p_phone?: string
-          p_address?: string
-          p_address_number?: string
-          p_address_complement?: string
-          p_neighborhood?: string
-          p_city?: string
-          p_state?: string
-          p_postal_code?: string
-        }
+        Args:
+          | {
+              p_admin_user_id: string
+              p_id: string
+              p_email: string
+              p_first_name: string
+              p_last_name: string
+              p_cpf?: string
+              p_birth_date?: string
+              p_phone?: string
+              p_address?: string
+              p_address_number?: string
+              p_address_complement?: string
+              p_neighborhood?: string
+              p_city?: string
+              p_state?: string
+              p_postal_code?: string
+            }
+          | {
+              p_id: string
+              p_email: string
+              p_first_name: string
+              p_last_name: string
+              p_cpf?: string
+              p_birth_date?: string
+              p_phone?: string
+              p_address?: string
+              p_address_number?: string
+              p_address_complement?: string
+              p_neighborhood?: string
+              p_city?: string
+              p_state?: string
+              p_postal_code?: string
+            }
         Returns: string
       }
       get_ai_settings: {
