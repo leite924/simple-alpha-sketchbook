@@ -93,7 +93,7 @@ export const useUserCreation = () => {
       console.log("6. Usuário criado via signup com ID:", signupData.user.id);
       
       // Aguardar um pouco para o trigger do perfil processar
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise(resolve => setTimeout(resolve, 3000));
       
       // Determinar o role baseado no email e configuração
       let finalRole: "admin" | "instructor" | "student" | "super_admin" | "viewer" = "viewer";
@@ -113,22 +113,26 @@ export const useUserCreation = () => {
         finalRole = roleMapping[values.role] || "viewer";
       }
       
-      console.log("7. Substituindo role padrão pelo role correto:", finalRole);
+      console.log("7. Role final determinado:", finalRole);
       
-      // PRIMEIRO: Excluir o role padrão "viewer" que foi criado automaticamente
-      const { error: deleteDefaultRoleError } = await supabase
+      // EXCLUIR TODOS os roles existentes primeiro
+      console.log("8. Removendo todos os roles existentes...");
+      const { error: deleteAllRolesError } = await supabase
         .from('user_roles')
         .delete()
-        .eq('user_id', signupData.user.id)
-        .eq('role', 'viewer');
+        .eq('user_id', signupData.user.id);
         
-      if (deleteDefaultRoleError) {
-        console.log("Aviso: Não foi possível excluir role padrão:", deleteDefaultRoleError);
+      if (deleteAllRolesError) {
+        console.log("Aviso: Não foi possível excluir roles existentes:", deleteAllRolesError);
       } else {
-        console.log("8. Role padrão 'viewer' removido com sucesso");
+        console.log("9. Todos os roles removidos com sucesso");
       }
       
-      // SEGUNDO: Inserir o role correto
+      // Aguardar um pouco antes de inserir o novo role
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // INSERIR o role correto
+      console.log("10. Inserindo o role correto:", finalRole);
       const { error: roleError } = await supabase
         .from('user_roles')
         .insert({
@@ -138,8 +142,9 @@ export const useUserCreation = () => {
         
       if (roleError) {
         console.error("Erro ao inserir role correto:", roleError);
-        // Tentar novamente após uma pausa
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Tentar novamente após uma pausa maior
+        await new Promise(resolve => setTimeout(resolve, 2000));
         
         const { error: retryRoleError } = await supabase
           .from('user_roles')
@@ -151,14 +156,15 @@ export const useUserCreation = () => {
         if (retryRoleError) {
           console.error("Erro na segunda tentativa de inserir role:", retryRoleError);
           toast.error(`Usuário criado mas erro ao definir papel: ${retryRoleError.message}`);
+          return false;
         } else {
-          console.log("9. Role inserido com sucesso na segunda tentativa");
+          console.log("11. Role inserido com sucesso na segunda tentativa");
         }
       } else {
-        console.log("9. Role correto inserido com sucesso");
+        console.log("11. Role correto inserido com sucesso na primeira tentativa");
       }
       
-      console.log("10. Usuário criado com sucesso!");
+      console.log("12. Usuário criado com sucesso!");
       
       if (values.email === 'elienaitorres@gmail.com') {
         toast.success("Usuário Elienai criado como admin com sucesso!");
