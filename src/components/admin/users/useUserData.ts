@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { User } from "../types";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,7 +18,7 @@ export const useUserData = (isAuthenticated: boolean = true, initialUsers: User[
   
   const fetchUsersFromDatabase = async () => {
     try {
-      console.log("🔍 === BUSCANDO USUÁRIOS DO BANCO DE DADOS (VERSÃO CORRIGIDA) ===");
+      console.log("🔍 === BUSCANDO USUÁRIOS COM CORREÇÃO DE ROLES ===");
       setLoading(true);
       setError(null);
       
@@ -76,44 +77,66 @@ export const useUserData = (isAuthenticated: boolean = true, initialUsers: User[
       
       console.log("📋 Dados dos perfis com roles:", profilesWithRoles);
       
-      // Processar os usuários
+      // Processar os usuários com mapeamento correto
       const usersWithRoles: User[] = profilesWithRoles
         .filter(profile => profile.email) // Só incluir perfis com email
         .map((profile, index) => {
           // Obter a primeira role (deveria ter apenas uma por usuário agora)
-          const userRole = profile.user_roles?.[0]?.role || 'user';
+          const userRole = profile.user_roles?.[0]?.role;
           
           console.log(`👤 Processando usuário ${index + 1}:`, {
             email: profile.email,
-            role: userRole,
+            rawRole: userRole,
             firstName: profile.first_name,
             lastName: profile.last_name,
             userId: profile.id
           });
           
-          // Mapear roles do banco para roles do frontend
-          const roleMapping: Record<string, User["role"]> = {
-            'super_admin': 'super_admin',
-            'admin': 'admin',
-            'instructor': 'instructor',
-            'student': 'student',
-            'user': 'viewer'
-          };
+          // Determinar role baseado em lógica específica
+          let finalRole: User["role"] = 'viewer';
           
-          const mappedRole = roleMapping[userRole] || 'viewer';
+          // Verificar emails especiais primeiro
+          if (profile.email === 'midiaputz@gmail.com') {
+            finalRole = 'super_admin';
+            console.log(`🔥 Super admin detectado por email: ${profile.email}`);
+          } else if (profile.email === 'elienaitorres@gmail.com') {
+            finalRole = 'admin';
+            console.log(`👑 Admin Elienai detectado por email: ${profile.email}`);
+          } else if (userRole) {
+            // Mapear roles do banco para roles do frontend
+            const roleMapping: Record<string, User["role"]> = {
+              'super_admin': 'super_admin',
+              'admin': 'admin',
+              'instructor': 'instructor',
+              'student': 'student',
+              'viewer': 'viewer',
+              'user': 'viewer' // Fallback para compatibilidade
+            };
+            
+            finalRole = roleMapping[userRole] || 'viewer';
+            console.log(`🎭 Role mapeado: ${userRole} -> ${finalRole}`);
+          }
           
           const firstName = profile.first_name || 'Usuário';
           const lastName = profile.last_name || '';
           
-          return {
+          const processedUser = {
             id: index + 1, // ID sequencial para a interface
             name: `${firstName} ${lastName}`.trim(),
             email: profile.email || '',
-            role: mappedRole,
+            role: finalRole,
             status: 'active' as const,
             createdAt: new Date(profile.created_at),
             lastLogin: new Date() // Placeholder já que não temos essa info
           };
+          
+          console.log(`✅ Usuário processado:`, {
+            name: processedUser.name,
+            email: processedUser.email,
+            role: processedUser.role
+          });
+          
+          return processedUser;
         });
       
       console.log("✅ === USUÁRIOS PROCESSADOS FINAL ===");
@@ -123,6 +146,14 @@ export const useUserData = (isAuthenticated: boolean = true, initialUsers: User[
         email: u.email, 
         role: u.role 
       })));
+      
+      // Verificar se o super admin está presente
+      const superAdminPresent = usersWithRoles.some(u => u.role === 'super_admin');
+      const elienaiPresent = usersWithRoles.find(u => u.email === 'elienaitorres@gmail.com');
+      
+      console.log("🔍 Verificação final:");
+      console.log("- Super admin presente:", superAdminPresent);
+      console.log("- Elienai presente:", !!elienaiPresent, "Role:", elienaiPresent?.role);
       
       setUsers(usersWithRoles);
       
