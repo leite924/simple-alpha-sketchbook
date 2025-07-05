@@ -1,361 +1,265 @@
+
 import { supabase } from '@/integrations/supabase/client';
-import { User } from '@supabase/supabase-js';
-import { Database } from '@/integrations/supabase/types';
+import { toast } from 'sonner';
 
-type Profile = Database['public']['Tables']['profiles']['Row'];
-type ProfileInsert = Database['public']['Tables']['profiles']['Insert'];
-type ProfileUpdate = Database['public']['Tables']['profiles']['Update'];
-
-/**
- * Finds a user by their email address
- */
-export async function findUserByEmail(email: string): Promise<string | undefined> {
-  try {
-    console.log('🔍 Procurando usuário por email:', email);
-    
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('email', email)
-      .single() as { data: { id: string } | null, error: any };
-    
-    if (error) {
-      if (error.code === 'PGRST116') {
-        console.log('ℹ️ Usuário não encontrado (esperado para novo usuário)');
-        return undefined;
-      }
-      console.error('❌ Erro ao buscar usuário por email:', error);
-      return undefined;
-    }
-    
-    console.log('✅ Usuário encontrado:', data?.id);
-    return data?.id;
-  } catch (error) {
-    console.error('❌ Erro inesperado ao buscar usuário:', error);
-    return undefined;
-  }
+export interface ProfileData {
+  cpf?: string;
+  phone?: string;
+  address?: string;
+  addressNumber?: string;
+  addressComplement?: string | null;
+  neighborhood?: string;
+  city?: string;
+  state?: string;
+  postalCode?: string;
+  birth_date?: string;
 }
 
 /**
- * Creates a new user profile using the administrative Edge Function
+ * Creates a new user profile for public student registration
  */
-export async function createUserAsAdmin(
+export const createUser = async (
   email: string,
   firstName: string,
   lastName: string,
-  profileData: {
-    cpf?: string;
-    birthDate?: string;
-    phone?: string;
-    address?: string;
-    addressNumber?: string;
-    addressComplement?: string;
-    neighborhood?: string;
-    city?: string;
-    state?: string;
-    postalCode?: string;
-  }
-): Promise<string | undefined> {
+  profileData: ProfileData
+): Promise<string | null> => {
+  console.log('🎯 createUser: Iniciando cadastro público de estudante');
+  console.log('📧 Email:', email);
+  console.log('👤 Nome:', firstName, lastName);
+
   try {
-    console.log('🔐 Cadastrando aluno via Edge Function administrativa:', { email, firstName, lastName });
-    console.log('📊 Profile data:', profileData);
+    // VERIFICAÇÃO CRÍTICA: Checar se email já existe antes de tentar criar
+    console.log("🔍 Verificando se email já existe:", email);
     
-    // Validate required fields
-    if (!email || !firstName) {
-      console.error('❌ Campos obrigatórios faltando:', { email, firstName });
-      throw new Error('Email e nome são obrigatórios');
+    const { data: existingProfile, error: profileCheckError } = await supabase
+      .from('profiles')
+      .select('id, email')
+      .eq('email', email.toLowerCase().trim())
+      .maybeSingle();
+      
+    if (profileCheckError && profileCheckError.code !== 'PGRST116') {
+      console.error("Erro ao verificar perfil existente:", profileCheckError);
+      throw new Error('Erro ao verificar disponibilidade do email');
+    }
+    
+    if (existingProfile) {
+      console.log("❌ Email já cadastrado:", existingProfile);
+      
+      // Mensagens específicas para emails administrativos
+      if (email.toLowerCase() === 'midiaputz@gmail.com') {
+        throw new Error('🚫 ERRO CRÍTICO: Este email já pertence ao Super Administrador do sistema!');
+      } else if (email.toLowerCase() === 'elienaitorres@gmail.com') {
+        throw new Error('🚫 ERRO: Este email já pertence a um administrador do sistema!');
+      } else {
+        throw new Error('⚠️ Este email já está cadastrado. Faça login ou use outro email.');
+      }
     }
 
-    // Chamar Edge Function administrativa
-    const { data, error } = await supabase.functions.invoke('admin-create-student', {
-      body: {
-        email: email.trim().toLowerCase(),
-        firstName: firstName.trim(),
-        lastName: lastName?.trim() || '',
-        profileData: {
-          cpf: profileData.cpf?.replace(/\D/g, '') || null,
-          birthDate: profileData.birthDate || null,
-          phone: profileData.phone || null,
-          address: profileData.address?.trim() || null,
-          addressNumber: profileData.addressNumber?.trim() || null,
-          addressComplement: profileData.addressComplement?.trim() || null,
-          neighborhood: profileData.neighborhood?.trim() || null,
-          city: profileData.city?.trim() || null,
-          state: profileData.state?.trim().toUpperCase() || null,
-          postalCode: profileData.postalCode?.replace(/\D/g, '') || null
+    console.log("✅ Email disponível, prosseguindo com cadastro...");
+
+    // Criar usuário via signup público
+    const { data: signupData, error: signupError } = await supabase.auth.signUp({
+      email: email.toLowerCase().trim(),
+      password: 'TempPassword123!', // Senha temporária que deve ser alterada
+      options: {
+        data: {
+          first_name: firstName,
+          last_name: lastName
         }
       }
     });
-    
-    if (error) {
-      console.error('❌ Erro ao chamar Edge Function:', error);
-      throw new Error(`Erro no servidor: ${error.message}`);
-    }
 
-    if (!data.success) {
-      console.error('❌ Edge Function retornou erro:', data.error);
-      throw new Error(data.error || 'Erro desconhecido no cadastro');
-    }
-    
-    console.log('✅ Aluno cadastrado com sucesso via Edge Function:', data.userId);
-    return data.userId;
-    
-  } catch (error) {
-    console.error('❌ Erro geral no cadastro administrativo:', error);
-    
-    if (error instanceof Error) {
-      throw error;
-    }
-    
-    throw new Error('Erro inesperado ao cadastrar aluno');
-  }
-}
-
-/**
- * Creates a new user profile or updates existing user if found
- * This function is kept for backward compatibility and regular user signup
- */
-export async function createUser(
-  email: string,
-  firstName: string,
-  lastName: string,
-  profileData: {
-    cpf?: string;
-    birthDate?: string;
-    phone?: string;
-    address?: string;
-    addressNumber?: string;
-    addressComplement?: string;
-    neighborhood?: string;
-    city?: string;
-    state?: string;
-    postalCode?: string;
-  }
-): Promise<string | undefined> {
-  // Check if current user is admin, if so use admin function
-  try {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
-      const { data: userRole } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', session.user.id)
-        .single();
-      
-      if (userRole && ['admin', 'super_admin'].includes(userRole.role)) {
-        console.log('🔐 Usuário é admin, usando função administrativa');
-        return await createUserAsAdmin(email, firstName, lastName, profileData);
+    if (signupError) {
+      console.error("Erro no signup:", signupError);
+      if (signupError.message.includes("User already registered") || signupError.message.includes("already registered")) {
+        throw new Error('🚫 Este email já está cadastrado no sistema de autenticação!');
+      } else {
+        throw new Error(`Erro ao criar usuário: ${signupError.message}`);
       }
     }
-  } catch (error) {
-    console.log('ℹ️ Não foi possível verificar role do usuário, continuando com método padrão');
-  }
 
-  // Fallback to original method for regular users
-  return await createUserOriginal(email, firstName, lastName, profileData);
-}
+    if (!signupData.user) {
+      throw new Error("Falha ao criar usuário");
+    }
+
+    console.log("✅ Usuário criado via signup com ID:", signupData.user.id);
+    
+    // Aguardar processamento do trigger
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    
+    // Atualizar perfil com dados completos
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({
+        first_name: firstName,
+        last_name: lastName,
+        cpf: profileData.cpf,
+        phone: profileData.phone,
+        address: profileData.address,
+        address_number: profileData.addressNumber,
+        address_complement: profileData.addressComplement,
+        neighborhood: profileData.neighborhood,
+        city: profileData.city,
+        state: profileData.state,
+        postal_code: profileData.postalCode,
+        birth_date: profileData.birth_date
+      })
+      .eq('id', signupData.user.id);
+
+    if (updateError) {
+      console.error("Erro ao atualizar perfil:", updateError);
+    }
+
+    // CRITICAL: Garantir que o role seja STUDENT
+    console.log("🎓 Definindo role como STUDENT para cadastro público");
+    
+    // Excluir todos os roles existentes
+    const { error: deleteRolesError } = await supabase
+      .from('user_roles')
+      .delete()
+      .eq('user_id', signupData.user.id);
+      
+    if (deleteRolesError) {
+      console.log("Aviso: Não foi possível excluir roles existentes:", deleteRolesError);
+    }
+    
+    // Inserir role de STUDENT
+    const { error: roleError } = await supabase
+      .from('user_roles')
+      .insert({
+        user_id: signupData.user.id,
+        role: 'student' // SEMPRE student para cadastro público
+      });
+      
+    if (roleError) {
+      console.error("Erro ao inserir role de student:", roleError);
+      
+      // Tentar novamente
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      const { error: retryRoleError } = await supabase
+        .from('user_roles')
+        .upsert({
+          user_id: signupData.user.id,
+          role: 'student'
+        });
+        
+      if (retryRoleError) {
+        console.error("Erro na segunda tentativa:", retryRoleError);
+        toast.error("Usuário criado mas erro ao definir como estudante");
+      }
+    }
+
+    console.log("🎉 Estudante cadastrado com sucesso!");
+    toast.success("✅ Estudante cadastrado com sucesso!");
+    
+    return signupData.user.id;
+    
+  } catch (error: any) {
+    console.error("❌ Erro no createUser:", error);
+    toast.error(error.message || 'Erro inesperado ao cadastrar estudante');
+    throw error;
+  }
+};
 
 /**
- * Original createUser function for regular user signup
+ * Creates a user profile via admin (maintains existing functionality)
  */
-async function createUserOriginal(
+export const createUserAsAdmin = async (
   email: string,
   firstName: string,
   lastName: string,
-  profileData: {
-    cpf?: string;
-    birthDate?: string;
-    phone?: string;
-    address?: string;
-    addressNumber?: string;
-    addressComplement?: string;
-    neighborhood?: string;
-    city?: string;
-    state?: string;
-    postalCode?: string;
-  }
-): Promise<string | undefined> {
+  profileData: ProfileData
+): Promise<string | null> => {
+  console.log('🔐 createUserAsAdmin: Iniciando cadastro administrativo');
+  
   try {
-    console.log('🚀 Iniciando criação/atualização de usuário (método original):', { email, firstName, lastName });
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
     
-    // First check if user already exists
-    const existingUserId = await findUserByEmail(email);
-    
-    if (existingUserId) {
-      console.log('⚠️ Usuário já existe, atualizando dados:', existingUserId);
-      
-      // Update existing user with new data
-      const updateData: ProfileUpdate = {
-        first_name: firstName?.trim() || null,
-        last_name: lastName?.trim() || null,
-        cpf: profileData.cpf?.replace(/\D/g, '') || null,
-        birth_date: profileData.birthDate || null,
-        phone: profileData.phone || null,
-        address: profileData.address?.trim() || null,
-        address_number: profileData.addressNumber?.trim() || null,
-        address_complement: profileData.addressComplement?.trim() || null,
-        neighborhood: profileData.neighborhood?.trim() || null,
-        city: profileData.city?.trim() || null,
-        state: profileData.state?.trim().toUpperCase() || null,
-        postal_code: profileData.postalCode?.replace(/\D/g, '') || null,
-        updated_at: new Date().toISOString()
-      };
+    if (!currentUser) {
+      throw new Error('Você precisa estar logado como administrador');
+    }
 
+    console.log('👤 Admin logado:', currentUser.email);
+    
+    // Verificar se já existe
+    const { data: existingProfile } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('email', email.toLowerCase().trim())
+      .maybeSingle();
+    
+    if (existingProfile) {
+      console.log('📝 Atualizando perfil existente via admin');
+      // Atualizar perfil existente
       const { error: updateError } = await supabase
         .from('profiles')
-        .update(updateData)
-        .eq('id', existingUserId);
-
+        .update({
+          first_name: firstName,
+          last_name: lastName,
+          cpf: profileData.cpf,
+          phone: profileData.phone,
+          address: profileData.address,
+          address_number: profileData.addressNumber,
+          address_complement: profileData.addressComplement,
+          neighborhood: profileData.neighborhood,
+          city: profileData.city,
+          state: profileData.state,
+          postal_code: profileData.postalCode
+        })
+        .eq('id', existingProfile.id);
+        
       if (updateError) {
-        console.error('❌ Erro ao atualizar usuário existente:', updateError);
-        throw new Error(`Erro ao atualizar dados do usuário: ${updateError.message}`);
-      }
-
-      console.log('✅ Dados do usuário atualizados com sucesso');
-      return existingUserId;
-    }
-    
-    // Generate a UUID for the new profile
-    const profileId = crypto.randomUUID();
-    console.log('🆔 ID gerado para novo perfil:', profileId);
-    
-    // Validate required fields
-    if (!email || !firstName) {
-      console.error('❌ Campos obrigatórios faltando:', { email, firstName });
-      throw new Error('Email e nome são obrigatórios');
-    }
-    
-    // Define the profile data with explicit typing
-    const profileInsertData: ProfileInsert = {
-      id: profileId,
-      email: email.trim().toLowerCase(),
-      first_name: firstName.trim(),
-      last_name: lastName?.trim() || '',
-      cpf: profileData.cpf?.replace(/\D/g, '') || null,
-      birth_date: profileData.birthDate || null,
-      phone: profileData.phone || null,
-      address: profileData.address?.trim() || null,
-      address_number: profileData.addressNumber?.trim() || null,
-      address_complement: profileData.addressComplement?.trim() || null,
-      neighborhood: profileData.neighborhood?.trim() || null,
-      city: profileData.city?.trim() || null,
-      state: profileData.state?.trim().toUpperCase() || null,
-      postal_code: profileData.postalCode?.replace(/\D/g, '') || null
-    };
-    
-    console.log('📝 Dados para inserção:', profileInsertData);
-    
-    const { data, error } = await supabase
-      .from('profiles')
-      .insert([profileInsertData])
-      .select('id')
-      .single();
-    
-    if (error) {
-      console.error('❌ Erro ao criar perfil do usuário:', error);
-      
-      if (error.code === '23505') {
-        throw new Error('Este email já está cadastrado no sistema');
+        throw new Error(`Erro ao atualizar perfil: ${updateError.message}`);
       }
       
-      if (error.message?.includes('row-level security')) {
-        throw new Error('Erro de permissões - verifique se está autenticado como administrador');
-      }
+      return existingProfile.id;
+    }
+    
+    // Criar novo perfil via função admin
+    const userId = crypto.randomUUID();
+    
+    const { data: newUserId, error: createError } = await supabase
+      .rpc('admin_create_student_profile', {
+        p_admin_user_id: currentUser.id,
+        p_id: userId,
+        p_email: email.toLowerCase().trim(),
+        p_first_name: firstName,
+        p_last_name: lastName,
+        p_cpf: profileData.cpf,
+        p_phone: profileData.phone,
+        p_address: profileData.address,
+        p_address_number: profileData.addressNumber,
+        p_address_complement: profileData.addressComplement,
+        p_neighborhood: profileData.neighborhood,
+        p_city: profileData.city,
+        p_state: profileData.state,
+        p_postal_code: profileData.postalCode
+      });
+    
+    if (createError) {
+      console.error('❌ Erro na função admin:', createError);
+      throw new Error(`Erro ao criar perfil: ${createError.message}`);
+    }
+    
+    // CRITICAL: Garantir que o role seja STUDENT para admin também
+    const { error: roleError } = await supabase
+      .from('user_roles')
+      .upsert({
+        user_id: userId,
+        role: 'student' // SEMPRE student para cadastro de aluno
+      });
       
-      throw new Error(`Erro ao criar usuário: ${error.message}`);
+    if (roleError) {
+      console.error("Erro ao definir role de student:", roleError);
     }
     
-    console.log('✅ Usuário criado com sucesso:', data);
-    return profileId;
+    console.log('✅ Perfil criado via admin com sucesso');
+    return newUserId || userId;
     
-  } catch (error) {
-    console.error('❌ Erro geral na criação do usuário:', error);
-    
-    if (error instanceof Error) {
-      throw error;
-    }
-    
-    throw new Error('Erro inesperado ao criar usuário');
+  } catch (error: any) {
+    console.error('❌ Erro no createUserAsAdmin:', error);
+    throw error;
   }
-}
-
-/**
- * Retrieves a user profile by ID
- */
-export async function getUserProfile(userId: string) {
-  try {
-    console.log('🔍 Buscando perfil do usuário:', userId);
-    
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single<Profile>();
-
-    if (error) {
-      console.error('❌ Erro ao buscar perfil:', error);
-      return null;
-    }
-
-    console.log('✅ Perfil encontrado:', data);
-    return data;
-  } catch (error) {
-    console.error('❌ Erro inesperado ao buscar perfil:', error);
-    return null;
-  }
-}
-
-export async function updateUserProfile(
-  userId: string,
-  profileData: {
-    firstName?: string;
-    lastName?: string;
-    cpf?: string;
-    birthDate?: string;
-    phone?: string;
-    address?: string;
-    addressNumber?: string;
-    addressComplement?: string;
-    neighborhood?: string;
-    city?: string;
-    state?: string;
-    postalCode?: string;
-  }
-) {
-  try {
-    console.log('🔄 Atualizando perfil:', userId, profileData);
-    
-    // Define update data with explicit typing to avoid complex type inference
-    const updateData: ProfileUpdate = {
-      first_name: profileData.firstName?.trim(),
-      last_name: profileData.lastName?.trim(),
-      cpf: profileData.cpf?.replace(/\D/g, ''),
-      birth_date: profileData.birthDate,
-      phone: profileData.phone,
-      address: profileData.address?.trim(),
-      address_number: profileData.addressNumber?.trim(),
-      address_complement: profileData.addressComplement?.trim(),
-      neighborhood: profileData.neighborhood?.trim(),
-      city: profileData.city?.trim(),
-      state: profileData.state?.trim().toUpperCase(),
-      postal_code: profileData.postalCode?.replace(/\D/g, ''),
-      updated_at: new Date().toISOString()
-    };
-
-    const { error } = await supabase
-      .from('profiles')
-      .update(updateData)
-      .eq('id', userId);
-
-    if (error) {
-      console.error('❌ Erro ao atualizar perfil:', error);
-      return false;
-    }
-
-    console.log('✅ Perfil atualizado com sucesso');
-    return true;
-  } catch (error) {
-    console.error('❌ Erro inesperado ao atualizar perfil:', error);
-    return false;
-  }
-}
+};

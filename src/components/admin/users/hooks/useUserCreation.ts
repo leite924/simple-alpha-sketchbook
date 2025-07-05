@@ -114,7 +114,7 @@ export const useUserCreation = () => {
         finalRole = 'admin';
         console.log("7. EMAIL ADMIN ELIENAI DETECTADO - Role definido como admin");
       } else {
-        // Só usar a seleção do formulário se não for email especial
+        // Usar a seleção do formulário, mas student tem prioridade para cadastros de aluno
         const roleMapping: Record<string, "admin" | "instructor" | "student" | "super_admin" | "viewer"> = {
           "admin": "admin",
           "viewer": "viewer", 
@@ -122,7 +122,7 @@ export const useUserCreation = () => {
           "student": "student",
           "super_admin": "super_admin"
         };
-        finalRole = roleMapping[values.role] || "viewer";
+        finalRole = roleMapping[values.role] || "student"; // DEFAULT para student em vez de viewer
         console.log("7. Role baseado na seleção do formulário:", finalRole);
       }
       
