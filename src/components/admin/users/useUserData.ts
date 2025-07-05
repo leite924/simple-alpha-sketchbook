@@ -19,45 +19,35 @@ export const useUserData = (isAuthenticated: boolean = true, initialUsers: User[
   
   const fetchUsersFromDatabase = async () => {
     try {
-      console.log("🔍 === BUSCANDO USUÁRIOS REAIS DA BASE ===");
       setLoading(true);
       setError(null);
       
       // Verificar sessão
       const { data: { session } } = await supabase.auth.getSession();
-      console.log("🔐 Sessão:", !!session, "Email:", session?.user?.email);
       
       if (!session) {
-        console.log("❌ Usuário não autenticado");
         setUsers([]);
         setLoading(false);
         return;
       }
       
-      // Buscar perfis
-      console.log("👥 Buscando perfis da base...");
+      // Buscar perfis - agora com as novas políticas RLS funcionando
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('id, email, first_name, last_name, created_at')
         .order('created_at', { ascending: true });
         
       if (profilesError) {
-        console.error("❌ Erro ao buscar perfis:", profilesError);
         throw profilesError;
       }
       
-      console.log(`✅ Perfis encontrados: ${profiles?.length || 0}`);
-      console.log("📋 Perfis:", profiles?.map(p => ({ email: p.email, nome: `${p.first_name} ${p.last_name}` })));
-      
       if (!profiles || profiles.length === 0) {
-        console.log("⚠️ Nenhum perfil encontrado na base");
         setUsers([]);
         setLoading(false);
         return;
       }
       
       // Buscar roles
-      console.log("🎭 Buscando roles...");
       let allRoles: Array<{ user_id: string; role: string }> = [];
       
       try {
@@ -65,17 +55,11 @@ export const useUserData = (isAuthenticated: boolean = true, initialUsers: User[
           .from('user_roles')
           .select('user_id, role');
           
-        if (rolesError) {
-          console.error("❌ Erro ao buscar roles:", rolesError);
-          console.log("⚠️ Continuando sem roles (será usado viewer como padrão)");
-        } else {
+        if (!rolesError) {
           allRoles = rolesData || [];
-          console.log(`📊 Roles encontradas: ${allRoles.length}`);
-          console.log("🎭 Roles:", allRoles.map(r => ({ user_id: r.user_id.substring(0, 8), role: r.role })));
         }
       } catch (rolesFetchError) {
-        console.error("💥 Erro crítico ao buscar roles:", rolesFetchError);
-        console.log("🔄 Continuando sem roles...");
+        // Continuar sem roles se houver erro
       }
       
       // Criar mapa de roles
@@ -84,7 +68,7 @@ export const useUserData = (isAuthenticated: boolean = true, initialUsers: User[
         rolesMap.set(roleEntry.user_id, roleEntry.role);
       });
       
-      // Processar usuários reais
+      // Processar usuários
       const realUsers: User[] = profiles
         .filter(profile => profile.email) // Apenas perfis com email
         .map((profile, index) => {
@@ -103,8 +87,6 @@ export const useUserData = (isAuthenticated: boolean = true, initialUsers: User[
           const firstName = profile.first_name || 'Usuário';
           const lastName = profile.last_name || '';
           
-          console.log(`👤 Processando usuário: ${profile.email} -> Role: ${finalRole}`);
-          
           return {
             id: index + 1,
             name: `${firstName} ${lastName}`.trim(),
@@ -116,24 +98,13 @@ export const useUserData = (isAuthenticated: boolean = true, initialUsers: User[
           };
         });
       
-      console.log("✅ === RESULTADO FINAL ===");
-      console.log(`📊 Total de usuários processados: ${realUsers.length}`);
-      console.log("📋 Lista completa:", realUsers.map(u => ({ 
-        name: u.name, 
-        email: u.email, 
-        role: u.role 
-      })));
-      
       setUsers(realUsers);
-      toast.success(`${realUsers.length} usuários carregados da base de dados`);
+      toast.success(`${realUsers.length} usuários carregados com sucesso`);
       
     } catch (err) {
-      console.error("💥 === ERRO CRÍTICO ===");
-      console.error("Erro na busca de usuários:", err);
-      
       setUsers([]);
       setError(err instanceof Error ? err : new Error('Erro desconhecido'));
-      toast.error("Erro ao carregar usuários da base de dados");
+      toast.error("Erro ao carregar usuários");
       
     } finally {
       setLoading(false);
@@ -141,11 +112,9 @@ export const useUserData = (isAuthenticated: boolean = true, initialUsers: User[
   };
 
   useEffect(() => {
-    console.log("🔄 useUserData effect - isAuthenticated:", isAuthenticated);
     if (isAuthenticated) {
       fetchUsersFromDatabase();
     } else {
-      console.log("⚠️ Usuário não autenticado, não buscando usuários");
       setLoading(false);
     }
   }, [isAuthenticated]);
@@ -170,7 +139,6 @@ export const useUserData = (isAuthenticated: boolean = true, initialUsers: User[
   };
   
   const refreshUsers = () => {
-    console.log("🔄 Recarregando usuários...");
     if (isAuthenticated) {
       fetchUsersFromDatabase();
     }

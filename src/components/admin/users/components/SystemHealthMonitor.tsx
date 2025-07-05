@@ -72,7 +72,7 @@ const SystemHealthMonitor = () => {
         });
       }
 
-      // Verificar acesso às user_roles de forma segura
+      // Verificar acesso às user_roles
       try {
         const { data: userRoles, error: rolesError } = await supabase
           .from('user_roles')
@@ -112,31 +112,25 @@ const SystemHealthMonitor = () => {
         });
       }
 
-      // Verificar usuários na base - SIMPLIFICADO
+      // Verificar usuários na base - OTIMIZADO
       try {
         const { data: allProfiles } = await supabase
           .from('profiles')
-          .select('email, first_name, last_name')
-          .in('email', ['midiaputz@gmail.com', 'elienaitorres@gmail.com', 'ligiaferreiraleite@hotmail.com']);
+          .select('email, first_name, last_name');
 
-        const foundEmails = allProfiles?.map(p => p.email) || [];
         const totalUsers = allProfiles?.length || 0;
 
-        console.log('👥 Usuários encontrados na verificação:', foundEmails);
-
-        if (totalUsers >= 2) {
+        if (totalUsers >= 3) {
           checks.push({
             name: 'Usuários na Base',
             status: 'success',
             message: `${totalUsers} usuários encontrados na base de dados`,
-            details: `Emails: ${foundEmails.join(', ')}`,
           });
-        } else if (totalUsers === 1) {
+        } else if (totalUsers >= 1) {
           checks.push({
             name: 'Usuários na Base',
             status: 'warning',
-            message: `Apenas ${totalUsers} usuário encontrado`,
-            details: `Email: ${foundEmails.join(', ')}`,
+            message: `${totalUsers} usuários encontrados (esperado: 3+)`,
           });
         } else {
           checks.push({
@@ -194,7 +188,7 @@ const SystemHealthMonitor = () => {
     } else if (errorCount === 0) {
       toast.success(`Sistema OK com ${warningCount} avisos menores`);
     } else {
-      toast.warning(`${errorCount} problemas detectados, mas sistema operacional`);
+      toast.warning(`Sistema operacional com ${errorCount} problemas detectados`);
     }
   };
 
