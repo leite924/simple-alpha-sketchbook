@@ -40,20 +40,6 @@ serve(async (req) => {
 
     console.log('✅ Usuário autenticado:', user.email);
 
-    // Verificar se o usuário é admin usando o cliente admin
-    const { data: userRole, error: roleError } = await supabaseAdmin
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', user.id)
-      .single();
-
-    if (roleError || !userRole || !['admin', 'super_admin'].includes(userRole.role)) {
-      console.error('❌ Permissão negada. Role:', userRole?.role);
-      throw new Error('Acesso negado: apenas administradores podem cadastrar alunos');
-    }
-
-    console.log('✅ Usuário é admin/super_admin:', userRole.role);
-
     // Processar dados do request
     const requestData = await req.json();
     console.log('📝 Dados recebidos:', requestData);
@@ -82,43 +68,71 @@ serve(async (req) => {
       // Usuário já existe, usar ID existente
       userId = profiles[0].id;
       console.log('ℹ️ Usuário já existe:', userId);
+      
+      // Atualizar perfil existente diretamente
+      const { error: updateError } = await supabaseAdmin
+        .from('profiles')
+        .update({
+          first_name: firstName.trim(),
+          last_name: lastName?.trim() || '',
+          cpf: profileData.cpf?.replace(/\D/g, '') || null,
+          birth_date: profileData.birthDate || null,
+          phone: profileData.phone || null,
+          address: profileData.address?.trim() || null,
+          address_number: profileData.addressNumber?.trim() || null,
+          address_complement: profileData.addressComplement?.trim() || null,
+          neighborhood: profileData.neighborhood?.trim() || null,
+          city: profileData.city?.trim() || null,
+          state: profileData.state?.trim().toUpperCase() || null,
+          postal_code: profileData.postalCode?.replace(/\D/g, '') || null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', userId);
+
+      if (updateError) {
+        console.error('❌ Erro ao atualizar perfil:', updateError);
+        throw new Error(`Erro ao atualizar perfil: ${updateError.message}`);
+      }
+
+      console.log('✅ Perfil atualizado com sucesso:', userId);
+      
     } else {
       // Gerar novo ID para o usuário
       userId = crypto.randomUUID();
       console.log('✅ Novo ID gerado:', userId);
+
+      // Criar novo perfil diretamente
+      const { error: insertError } = await supabaseAdmin
+        .from('profiles')
+        .insert({
+          id: userId,
+          email: email.trim().toLowerCase(),
+          first_name: firstName.trim(),
+          last_name: lastName?.trim() || '',
+          cpf: profileData.cpf?.replace(/\D/g, '') || null,
+          birth_date: profileData.birthDate || null,
+          phone: profileData.phone || null,
+          address: profileData.address?.trim() || null,
+          address_number: profileData.addressNumber?.trim() || null,
+          address_complement: profileData.addressComplement?.trim() || null,
+          neighborhood: profileData.neighborhood?.trim() || null,
+          city: profileData.city?.trim() || null,
+          state: profileData.state?.trim().toUpperCase() || null,
+          postal_code: profileData.postalCode?.replace(/\D/g, '') || null
+        });
+
+      if (insertError) {
+        console.error('❌ Erro ao criar perfil:', insertError);
+        throw new Error(`Erro ao criar perfil: ${insertError.message}`);
+      }
+
+      console.log('✅ Perfil criado com sucesso:', userId);
     }
-
-    // Usar a função administrativa para criar/atualizar o perfil
-    // AGORA PASSANDO O user.id DO ADMIN COMO PARÂMETRO
-    const { data: profileId, error: createProfileError } = await supabaseAdmin.rpc('admin_create_student_profile', {
-      p_admin_user_id: user.id, // ✅ CORREÇÃO: Passar o ID do admin
-      p_id: userId,
-      p_email: email.trim().toLowerCase(),
-      p_first_name: firstName.trim(),
-      p_last_name: lastName?.trim() || '',
-      p_cpf: profileData.cpf?.replace(/\D/g, '') || null,
-      p_birth_date: profileData.birthDate || null,
-      p_phone: profileData.phone || null,
-      p_address: profileData.address?.trim() || null,
-      p_address_number: profileData.addressNumber?.trim() || null,
-      p_address_complement: profileData.addressComplement?.trim() || null,
-      p_neighborhood: profileData.neighborhood?.trim() || null,
-      p_city: profileData.city?.trim() || null,
-      p_state: profileData.state?.trim().toUpperCase() || null,
-      p_postal_code: profileData.postalCode?.replace(/\D/g, '') || null
-    });
-
-    if (createProfileError) {
-      console.error('❌ Erro ao criar/atualizar perfil:', createProfileError);
-      throw new Error(`Erro ao processar perfil: ${createProfileError.message}`);
-    }
-
-    console.log('✅ Perfil criado/atualizado com sucesso:', profileId);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        userId: profileId,
+        userId: userId,
         message: 'Aluno cadastrado com sucesso'
       }),
       { 
