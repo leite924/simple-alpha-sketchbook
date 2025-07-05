@@ -4,6 +4,8 @@ import { toast } from 'sonner';
 import {
   processCardPayment,
   generatePaymentLink,
+  generatePixPayment,
+  generateBoletoPayment,
   checkTransactionStatus,
   saveTransactionToSupabase,
   PagarmeTransaction
@@ -13,6 +15,7 @@ export const usePagarmeIntegration = () => {
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [transactionResult, setTransactionResult] = useState<PagarmeTransaction | null>(null);
   const [paymentLink, setPaymentLink] = useState<string | null>(null);
+  const [pixData, setPixData] = useState<{qrCode: string, code: string} | null>(null);
 
   // Processar pagamento com cartão
   const handleCardPayment = async (
@@ -26,16 +29,59 @@ export const usePagarmeIntegration = () => {
       const transaction = await processCardPayment(cardData, customer, amount, items);
       setTransactionResult(transaction);
       
-      // Salvar no Supabase se tivermos um userId
-      if (customer.userId) {
-        await saveTransactionToSupabase(customer.userId, transaction);
-      }
-      
       toast.success('Pagamento processado com sucesso!');
       return transaction;
     } catch (error) {
       console.error('Erro ao processar pagamento:', error);
-      toast.error('Erro ao processar pagamento. Tente novamente.');
+      toast.error(`Erro ao processar pagamento: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+      throw error;
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // Gerar PIX
+  const handleGeneratePixPayment = async (
+    customer: any,
+    amount: number,
+    items: any[]
+  ) => {
+    setIsProcessing(true);
+    try {
+      const result = await generatePixPayment(customer, amount, items);
+      setPaymentLink(result.paymentUrl);
+      setPixData({
+        qrCode: result.pixQrCode,
+        code: result.pixCode
+      });
+      
+      toast.success('Código PIX gerado com sucesso!');
+      return result;
+    } catch (error) {
+      console.error('Erro ao gerar PIX:', error);
+      toast.error(`Erro ao gerar PIX: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+      throw error;
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // Gerar boleto
+  const handleGenerateBoletoPayment = async (
+    customer: any,
+    amount: number,
+    items: any[]
+  ) => {
+    setIsProcessing(true);
+    try {
+      const result = await generateBoletoPayment(customer, amount, items);
+      setPaymentLink(result.paymentUrl);
+      
+      toast.success('Boleto gerado com sucesso!');
+      return result;
+    } catch (error) {
+      console.error('Erro ao gerar boleto:', error);
+      toast.error(`Erro ao gerar boleto: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
       throw error;
     } finally {
       setIsProcessing(false);
@@ -49,19 +95,10 @@ export const usePagarmeIntegration = () => {
     paymentMethod: 'boleto' | 'pix',
     items: any[]
   ) => {
-    setIsProcessing(true);
-    try {
-      const result = await generatePaymentLink(customer, amount, paymentMethod, items);
-      setPaymentLink(result.paymentUrl);
-      
-      toast.success(`Link de pagamento ${paymentMethod.toUpperCase()} gerado com sucesso!`);
-      return result;
-    } catch (error) {
-      console.error('Erro ao gerar link de pagamento:', error);
-      toast.error(`Erro ao gerar link de pagamento ${paymentMethod.toUpperCase()}`);
-      throw error;
-    } finally {
-      setIsProcessing(false);
+    if (paymentMethod === 'pix') {
+      return await handleGeneratePixPayment(customer, amount, items);
+    } else {
+      return await handleGenerateBoletoPayment(customer, amount, items);
     }
   };
 
@@ -85,8 +122,11 @@ export const usePagarmeIntegration = () => {
     isProcessing,
     transactionResult,
     paymentLink,
+    pixData,
     handleCardPayment,
     handleGeneratePaymentLink,
+    handleGeneratePixPayment,
+    handleGenerateBoletoPayment,
     handleCheckStatus
   };
 };

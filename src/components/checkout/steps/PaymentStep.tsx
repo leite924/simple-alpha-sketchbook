@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { CreditCard, Smartphone, Receipt, Shield } from 'lucide-react';
+import { CreditCard, Smartphone, Receipt, Shield, Copy, QrCode } from 'lucide-react';
 import { usePagarmeIntegration } from '@/components/admin/payment/hooks/usePagarmeIntegration';
 import { toast } from 'sonner';
 
@@ -20,7 +20,15 @@ interface PaymentStepProps {
 
 const PaymentStep = ({ onComplete, classData, orderBump, formData }: PaymentStepProps) => {
   const navigate = useNavigate();
-  const { handleCardPayment, handleGeneratePaymentLink, isProcessing } = usePagarmeIntegration();
+  const { 
+    handleCardPayment, 
+    handleGeneratePixPayment, 
+    handleGenerateBoletoPayment, 
+    isProcessing,
+    pixData,
+    paymentLink
+  } = usePagarmeIntegration();
+  
   const [paymentMethod, setPaymentMethod] = useState<'credit_card' | 'pix' | 'bank_slip'>('credit_card');
   const [cardData, setCardData] = useState({
     cardNumber: '',
@@ -96,6 +104,13 @@ const PaymentStep = ({ onComplete, classData, orderBump, formData }: PaymentStep
     }
   };
 
+  const copyPixCode = () => {
+    if (pixData?.code) {
+      navigator.clipboard.writeText(pixData.code);
+      toast.success('Código PIX copiado!');
+    }
+  };
+
   const handleFinishOrder = async () => {
     if (!validateForm()) return;
 
@@ -123,7 +138,7 @@ const PaymentStep = ({ onComplete, classData, orderBump, formData }: PaymentStep
         {
           id: classData.id,
           title: classData.courseName,
-          unitPrice: Math.round(classData.price * 100), // Pagarme usa centavos
+          unitPrice: Math.round(baseTotal * 100), // Pagarme usa centavos
           quantity: 1,
           tangible: false
         }
@@ -142,17 +157,21 @@ const PaymentStep = ({ onComplete, classData, orderBump, formData }: PaymentStep
         };
 
         await handleCardPayment(cardPaymentData, customer, totalAmount, items);
-      } else {
-        // Converter bank_slip para boleto para compatibilidade com Pagarme
-        const pagarmePaymentMethod = paymentMethod === 'bank_slip' ? 'boleto' : paymentMethod;
-        await handleGeneratePaymentLink(customer, totalAmount, pagarmePaymentMethod, items);
+        
+        toast.success('Pagamento aprovado com sucesso!');
+        onComplete({ paymentMethod, ...cardData });
+        navigate('/checkout/success');
+        
+      } else if (paymentMethod === 'pix') {
+        // Gerar PIX
+        await handleGeneratePixPayment(customer, totalAmount, items);
+        toast.success('Código PIX gerado! Complete o pagamento para finalizar.');
+        
+      } else if (paymentMethod === 'bank_slip') {
+        // Gerar boleto
+        await handleGenerateBoletoPayment(customer, totalAmount, items);
+        toast.success('Boleto gerado! Clique no link para fazer o download.');
       }
-
-      toast.success('Matrícula processada com sucesso!');
-      onComplete({ paymentMethod, ...cardData });
-      
-      // Redirecionar para a página de sucesso
-      navigate('/checkout/success');
       
     } catch (error) {
       console.error('Erro no checkout:', error);
@@ -194,6 +213,7 @@ const PaymentStep = ({ onComplete, classData, orderBump, formData }: PaymentStep
         {/* Credit Card Form */}
         {paymentMethod === 'credit_card' && (
           <div className="space-y-4 p-4 bg-muted/50 rounded-lg border border-border">
+            
             <div>
               <Label htmlFor="cardNumber">Número do Cartão</Label>
               <Input
@@ -260,31 +280,84 @@ const PaymentStep = ({ onComplete, classData, orderBump, formData }: PaymentStep
           </div>
         )}
 
-        {/* PIX Instructions */}
+        {/* PIX Display */}
         {paymentMethod === 'pix' && (
           <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
             <div className="flex items-center space-x-2 mb-2">
               <Smartphone className="w-5 h-5 text-blue-600" />
               <span className="font-medium text-blue-800">Pagamento via PIX</span>
             </div>
-            <p className="text-sm text-blue-700">
-              Após finalizar o pedido, você receberá o código PIX para pagamento. 
-              A matrícula será confirmada automaticamente após a aprovação do pagamento.
-            </p>
+            
+            {pixData ? (
+              <div className="space-y-4">
+                <div className="text-center">
+                  <div className="bg-white p-4 rounded-lg inline-block">
+                    <QrCode className="w-32 h-32 mx-auto" />
+                  </div>
+                  <p className="text-sm text-blue-700 mt-2">
+                    Escaneie o QR Code acima ou copie o código PIX
+                  </p>
+                </div>
+                
+                <div className="bg-white p-3 rounded border">
+                  <Label className="text-sm font-medium">Código PIX:</Label>
+                  <div className="flex items-center space-x-2 mt-1">
+                    <Input 
+                      value={pixData.code} 
+                      readOnly 
+                      className="text-xs"
+                    />
+                    <Button 
+                      type="button" 
+                      size="sm" 
+                      variant="outline"
+                      onClick={copyPixCode}
+                    >
+                      <Copy className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+                
+                <p className="text-xs text-blue-600">
+                  Após o pagamento, sua matrícula será confirmada automaticamente.
+                </p>
+              </div>
+            ) : (
+              <p className="text-sm text-blue-700">
+                Clique em "Finalizar Matrícula" para gerar o código PIX.
+              </p>
+            )}
           </div>
         )}
 
-        {/* Boleto Instructions */}
+        {/* Boleto Display */}
         {paymentMethod === 'bank_slip' && (
           <div className="p-4 bg-orange-50 rounded-lg border border-orange-200">
             <div className="flex items-center space-x-2 mb-2">
               <Receipt className="w-5 h-5 text-orange-600" />
               <span className="font-medium text-orange-800">Pagamento via Boleto</span>
             </div>
-            <p className="text-sm text-orange-700">
-              O boleto será enviado por e-mail. O prazo para pagamento é de 3 dias úteis.
-              Após o pagamento, a matrícula será confirmada em até 2 dias úteis.
-            </p>
+            
+            {paymentLink ? (
+              <div className="space-y-3">
+                <p className="text-sm text-orange-700">
+                  Seu boleto foi gerado com sucesso!
+                </p>
+                <Button asChild variant="outline" className="w-full">
+                  <a href={paymentLink} target="_blank" rel="noopener noreferrer">
+                    <Receipt className="w-4 h-4 mr-2" />
+                    Abrir Boleto
+                  </a>
+                </Button>
+                <p className="text-xs text-orange-600">
+                  Prazo de pagamento: 3 dias úteis. Após o pagamento, a matrícula será confirmada em até 2 dias úteis.
+                </p>
+              </div>
+            ) : (
+              <p className="text-sm text-orange-700">
+                Clique em "Finalizar Matrícula" para gerar o boleto bancário.
+              </p>
+            )}
           </div>
         )}
 
