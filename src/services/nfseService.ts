@@ -24,25 +24,32 @@ export class NFSeService {
   // Buscar configurações do usuário atual
   static async getUserSettings(): Promise<NFSeSettings | null> {
     try {
+      console.log('🔍 Buscando configurações do usuário...');
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) {
+        console.error('❌ Usuário não autenticado');
         throw new Error('Usuário não autenticado');
       }
+
+      console.log('👤 Usuário autenticado:', user.user.id);
 
       const { data, error } = await supabase
         .rpc('get_user_nfse_settings', { p_user_id: user.user.id });
 
       if (error) {
-        console.error('Erro ao buscar configurações:', error);
+        console.error('❌ Erro na consulta RPC:', error);
         return null;
       }
 
+      console.log('📊 Dados retornados do banco:', data);
+
       if (!data || data.length === 0) {
+        console.log('ℹ️ Nenhuma configuração encontrada');
         return null;
       }
 
       const settings = data[0];
-      return {
+      const result = {
         id: settings.id,
         autoGenerate: settings.auto_generate,
         autoGenerateStatus: settings.auto_generate_status as 'completed' | 'all',
@@ -59,8 +66,11 @@ export class NFSeService {
         webserviceUrlHomologacao: settings.webservice_url_homologacao || '',
         webserviceUrlProducao: settings.webservice_url_producao || '',
       };
+
+      console.log('✅ Configurações convertidas:', result);
+      return result;
     } catch (error) {
-      console.error('Erro no NFSeService.getUserSettings:', error);
+      console.error('❌ Erro no NFSeService.getUserSettings:', error);
       return null;
     }
   }
@@ -68,21 +78,29 @@ export class NFSeService {
   // Salvar configurações
   static async saveSettings(settings: NFSeSettings): Promise<boolean> {
     try {
+      console.log('💾 Iniciando salvamento no banco...');
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) {
+        console.error('❌ Usuário não autenticado para salvamento');
         throw new Error('Usuário não autenticado');
       }
+
+      console.log('👤 Usuário para salvamento:', user.user.id);
+      console.log('📝 Configurações recebidas para salvamento:', settings);
 
       // Criptografar senha do certificado se fornecida
       let encryptedPassword = null;
       if (settings.certificado.senha) {
+        console.log('🔐 Criptografando senha do certificado...');
         const { data: encryptedData, error: encryptError } = await supabase
           .rpc('encrypt_password', { password: settings.certificado.senha });
         
         if (encryptError) {
+          console.error('❌ Erro ao criptografar senha:', encryptError);
           throw encryptError;
         }
         encryptedPassword = encryptedData;
+        console.log('✅ Senha criptografada com sucesso');
       }
 
       const settingsData = {
@@ -101,29 +119,39 @@ export class NFSeService {
         webservice_url_producao: settings.webserviceUrlProducao || null,
       };
 
+      console.log('📊 Dados preparados para inserção/atualização:', settingsData);
+
       let result;
       
       if (settings.id) {
-        // Atualizar configuração existente
+        console.log('🔄 Atualizando configuração existente com ID:', settings.id);
         result = await supabase
           .from('nfse_settings')
           .update(settingsData)
           .eq('id', settings.id)
-          .eq('user_id', user.user.id);
+          .eq('user_id', user.user.id)
+          .select()
+          .single();
       } else {
-        // Criar nova configuração
+        console.log('➕ Criando nova configuração...');
         result = await supabase
           .from('nfse_settings')
-          .insert([settingsData]);
+          .insert([settingsData])
+          .select()
+          .single();
       }
 
+      console.log('📊 Resultado da operação no banco:', result);
+
       if (result.error) {
+        console.error('❌ Erro na operação do banco:', result.error);
         throw result.error;
       }
 
+      console.log('✅ Configurações salvas com sucesso no banco!');
       return true;
     } catch (error) {
-      console.error('Erro ao salvar configurações:', error);
+      console.error('❌ Erro ao salvar configurações:', error);
       throw error;
     }
   }
@@ -133,28 +161,32 @@ export class NFSeService {
     try {
       const localData = localStorage.getItem('nfse-settings');
       if (!localData) {
+        console.log('ℹ️ Nenhum dado no localStorage para migrar');
         return;
       }
 
       const parsedData = JSON.parse(localData);
-      console.log('Migrando dados do localStorage para o banco:', parsedData);
+      console.log('🔄 Dados encontrados no localStorage:', parsedData);
 
       // Verificar se já existem configurações no banco
       const existingSettings = await this.getUserSettings();
       if (existingSettings) {
-        console.log('Configurações já existem no banco, ignorando migração');
+        console.log('ℹ️ Configurações já existem no banco, removendo localStorage');
+        localStorage.removeItem('nfse-settings');
         return;
       }
 
-      // Migrar dados
-      await this.saveSettings(parsedData);
+      console.log('🔄 Migrando dados do localStorage para o banco...');
+      const success = await this.saveSettings(parsedData);
       
-      // Remover do localStorage após migração bem-sucedida
-      localStorage.removeItem('nfse-settings');
-      
-      toast.success('Configurações migradas para o banco de dados com sucesso!');
+      if (success) {
+        // Remover do localStorage após migração bem-sucedida
+        localStorage.removeItem('nfse-settings');
+        console.log('✅ Migração concluída com sucesso');
+        toast.success('Configurações migradas para o banco de dados com sucesso!');
+      }
     } catch (error) {
-      console.error('Erro na migração:', error);
+      console.error('❌ Erro na migração:', error);
       toast.error('Erro ao migrar configurações para o banco de dados');
     }
   }
