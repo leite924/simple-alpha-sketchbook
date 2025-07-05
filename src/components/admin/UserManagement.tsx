@@ -12,6 +12,7 @@ import { useUserCredentialsDiagnostics } from "./users/hooks/useUserCredentialsD
 import { useUserSync } from "./users/hooks/useUserSync";
 import AdminPasswordReset from "./users/components/AdminPasswordReset";
 import SystemHealthMonitor from "./users/components/SystemHealthMonitor";
+import SuperAdminRestoration from "./users/components/SuperAdminRestoration";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { CheckCircle2, Info } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -67,6 +68,9 @@ const UserManagement = () => {
 
   return (
     <div className="space-y-6">
+      {/* Ferramenta de Restauração de Super Admin */}
+      <SuperAdminRestoration />
+
       {/* Monitor de Saúde do Sistema */}
       <SystemHealthMonitor />
 
@@ -80,6 +84,7 @@ const UserManagement = () => {
           <br />• Monitor de saúde inteligente com verificações seguras
           <br />• Sistema robusto contra erros de permissão
           <br />• Fallbacks automáticos para máxima estabilidade
+          <br />• 🆕 Ferramenta de restauração de Super Admin adicionada
           <br /><strong>✨ Usuários carregados: {filteredUsers.length}</strong>
         </AlertDescription>
       </Alert>
