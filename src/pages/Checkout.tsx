@@ -1,86 +1,53 @@
 
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React from 'react';
+import { useParams } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
-import { Loader2 } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import CheckoutForm from '@/components/checkout/CheckoutForm';
+import CheckoutContainer from '@/components/checkout/CheckoutContainer';
+import CheckoutSummary from '@/components/checkout/CheckoutSummary';
+import { Card } from '@/components/ui/card';
+import { useClassDetail } from '@/hooks/classes/useClassDetail';
 
 const Checkout = () => {
-  const { classId } = useParams<{ classId: string }>();
-  const navigate = useNavigate();
+  const { classId } = useParams();
   
-  // Redirect if no classId is provided
-  useEffect(() => {
-    if (!classId) {
-      navigate('/classes');
-    }
-  }, [classId, navigate]);
-  
-  // Fetch class details
-  const { data: classDetails, isLoading, error } = useQuery({
-    queryKey: ['class_checkout', classId],
-    queryFn: async () => {
-      if (!classId) throw new Error("ID da turma não fornecido");
-      
-      const { data, error } = await supabase
-        .from('classes')
-        .select('*')
-        .eq('id', classId)
-        .single();
-        
-      if (error) throw new Error(error.message);
-      return data;
-    },
-    enabled: !!classId,
-  });
-  
-  if (isLoading) {
-    return (
-      <MainLayout>
-        <div className="container mx-auto py-10 flex justify-center items-center min-h-[50vh]">
-          <Loader2 className="h-8 w-8 animate-spin" />
-        </div>
-      </MainLayout>
-    );
-  }
-  
-  if (error) {
-    return (
-      <MainLayout>
-        <div className="container mx-auto py-10">
-          <div className="bg-red-50 p-6 rounded-lg">
-            <h2 className="text-xl font-bold text-red-700 mb-4">Erro ao carregar dados</h2>
-            <p>{error instanceof Error ? error.message : 'Ocorreu um erro inesperado'}</p>
-          </div>
-        </div>
-      </MainLayout>
-    );
-  }
-  
+  // Mock class data for now - in a real app, you'd fetch this based on classId
+  const classData = {
+    id: classId || '650e8400-e29b-41d4-a716-446655440001',
+    courseName: 'Fotografia Básica',
+    period: 'Noturno',
+    price: 1200.00,
+    image: 'https://images.unsplash.com/photo-1452378174528-3090a4bba7b2?ixlib=rb-4.0.3'
+  };
+
   return (
     <MainLayout>
-      <div className="container mx-auto py-10">
-        <h1 className="text-3xl font-bold mb-8">Finalize sua Matrícula</h1>
-        
-        <div className="mb-8">
-          <h2 className="text-2xl font-semibold mb-2">{classDetails?.course_name}</h2>
-          <p className="text-gray-700 mb-4">
-            {classDetails?.period} | {classDetails?.days}
-          </p>
-          <p className="font-medium text-lg">
-            Valor: R$ {classDetails?.price?.toFixed(2) || '0.00'}
-          </p>
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="container mx-auto px-4">
+          {/* Header */}
+          <div className="flex justify-between items-center mb-8 bg-white p-6 rounded-lg shadow-sm">
+            <div className="flex items-center space-x-4">
+              <img src="/placeholder.svg" alt="Logo" className="w-12 h-12" />
+              <h1 className="text-2xl font-bold text-gray-900">Checkout</h1>
+            </div>
+            <div className="flex items-center space-x-2 bg-green-100 px-4 py-2 rounded-full">
+              <span className="text-green-600">🔒</span>
+              <span className="text-green-700 font-medium">Compra 100% Segura</span>
+            </div>
+          </div>
+
+          {/* Main Content */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Checkout Form */}
+            <div className="lg:col-span-2">
+              <CheckoutContainer classData={classData} />
+            </div>
+            
+            {/* Order Summary */}
+            <div className="lg:col-span-1">
+              <CheckoutSummary classData={classData} />
+            </div>
+          </div>
         </div>
-        
-        {classDetails && (
-          <CheckoutForm
-            classId={classId!}
-            classPrice={classDetails.price}
-            className={classDetails.course_name}
-          />
-        )}
       </div>
     </MainLayout>
   );
