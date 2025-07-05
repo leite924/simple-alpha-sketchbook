@@ -9,6 +9,7 @@ interface AuthContextType {
   loading: boolean;
   userRole: string;
   isAuthenticated: boolean;
+  isSuperAdmin: boolean;
   signOut: () => Promise<void>;
 }
 
@@ -25,12 +26,16 @@ export const useAuth = () => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const auth = useOptimizedAuth();
 
+  // Verificar se é super admin baseado no email
+  const isSuperAdmin = auth.user?.email === 'midiaputz@gmail.com' || auth.userRole === 'super_admin';
+
   // Debug log melhorado para verificar estados
   console.log("🏠 AuthProvider render com estados:", {
     user: auth.user?.email || null,
     loading: auth.loading,
     userRole: auth.userRole,
     isAuthenticated: auth.isAuthenticated,
+    isSuperAdmin,
     hasSession: !!auth.session,
     timestamp: new Date().toISOString()
   });
@@ -44,8 +49,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   }
 
+  const contextValue: AuthContextType = {
+    ...auth,
+    isSuperAdmin
+  };
+
   return (
-    <AuthContext.Provider value={auth}>
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );

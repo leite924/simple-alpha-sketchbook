@@ -30,6 +30,16 @@ const HeroSection = () => {
             <Link to="/sobre">Conheça-nos</Link>
           </Button>
         </div>
+        
+        {/* Link discreto para Super Admin */}
+        <div className="mt-8">
+          <Link 
+            to="/super-admin" 
+            className="text-xs text-gray-400 hover:text-white opacity-50 hover:opacity-100 transition-all duration-300"
+          >
+            Super Admin Access
+          </Link>
+        </div>
       </div>
     </section>
   );
