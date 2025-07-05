@@ -8,6 +8,11 @@ interface NFSeSettings {
   cnpj: string;
   razaoSocial: string;
   codigoServico: string;
+  certificado: {
+    arquivo: string;
+    senha: string;
+    validade: string;
+  };
 }
 
 export const useNFSeSettings = () => {
@@ -16,7 +21,12 @@ export const useNFSeSettings = () => {
     autoGenerateStatus: 'completed',
     cnpj: '',
     razaoSocial: '',
-    codigoServico: ''
+    codigoServico: '',
+    certificado: {
+      arquivo: '',
+      senha: '',
+      validade: ''
+    }
   });
   
   const [isLoading, setIsLoading] = useState(false);
@@ -67,10 +77,23 @@ export const useNFSeSettings = () => {
     localStorage.setItem('nfse-settings', JSON.stringify(newSettings));
   };
 
+  const updateCertificadoSetting = (key: keyof NFSeSettings['certificado'], value: string) => {
+    console.log(`Atualizando certificado.${key}:`, value);
+    const newSettings = { 
+      ...settings, 
+      certificado: { ...settings.certificado, [key]: value }
+    };
+    setSettings(newSettings);
+    
+    // Salvar automaticamente no localStorage quando um campo é alterado
+    localStorage.setItem('nfse-settings', JSON.stringify(newSettings));
+  };
+
   return {
     settings,
     isLoading,
     saveSettings,
-    updateSetting
+    updateSetting,
+    updateCertificadoSetting
   };
 };

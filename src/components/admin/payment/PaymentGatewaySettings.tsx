@@ -7,7 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { CreditCard, Upload } from "lucide-react";
+import { CreditCard, Upload, Shield, FileText } from "lucide-react";
 import { useNFSeSettings } from "@/hooks/useNFSeSettings";
 
 interface PaymentGatewaySettingsProps {
@@ -15,7 +15,7 @@ interface PaymentGatewaySettingsProps {
 }
 
 export const PaymentGatewaySettings = ({ onSave }: PaymentGatewaySettingsProps) => {
-  const { settings, isLoading, saveSettings, updateSetting } = useNFSeSettings();
+  const { settings, isLoading, saveSettings, updateSetting, updateCertificadoSetting } = useNFSeSettings();
   const [logoPreview, setLogoPreview] = useState("/lovable-uploads/d580b9f4-ed3f-44c5-baa5-e0a42dfcb768.png");
 
   const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -28,6 +28,14 @@ export const PaymentGatewaySettings = ({ onSave }: PaymentGatewaySettingsProps) 
         }
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handleCertificadoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      console.log('Certificado selecionado:', file.name);
+      updateCertificadoSetting('arquivo', file.name);
     }
   };
 
@@ -162,6 +170,87 @@ export const PaymentGatewaySettings = ({ onSave }: PaymentGatewaySettingsProps) 
               />
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Certificado Digital */}
+      <div className="bg-white rounded-lg border p-6 shadow-sm">
+        <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
+          <Shield className="h-5 w-5" />
+          Certificado Digital A1
+        </h3>
+        <Separator className="mb-4" />
+        
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="cert-file">Arquivo do Certificado (.p12/.pfx)</Label>
+            <div className="flex gap-2 mt-1">
+              <div className="flex-1">
+                <Input
+                  value={settings.certificado.arquivo}
+                  placeholder="Nenhum arquivo selecionado"
+                  readOnly
+                  className="bg-gray-50"
+                />
+              </div>
+              <Label 
+                htmlFor="cert-upload" 
+                className="cursor-pointer flex gap-2 items-center px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-md transition-colors"
+              >
+                <FileText className="h-4 w-4" />
+                Selecionar
+              </Label>
+              <Input 
+                id="cert-upload" 
+                type="file" 
+                accept=".p12,.pfx"
+                className="hidden" 
+                onChange={handleCertificadoUpload}
+              />
+            </div>
+          </div>
+          
+          <div>
+            <Label htmlFor="cert-password">Senha do Certificado</Label>
+            <Input
+              id="cert-password"
+              type="password"
+              value={settings.certificado.senha}
+              onChange={(e) => {
+                console.log('Senha do certificado alterada');
+                updateCertificadoSetting('senha', e.target.value);
+              }}
+              placeholder="Digite a senha do certificado"
+            />
+          </div>
+          
+          <div>
+            <Label htmlFor="cert-validity">Validade do Certificado</Label>
+            <Input
+              id="cert-validity"
+              type="date"
+              value={settings.certificado.validade}
+              onChange={(e) => {
+                console.log('Validade do certificado alterada para:', e.target.value);
+                updateCertificadoSetting('validade', e.target.value);
+              }}
+            />
+          </div>
+          
+          {settings.certificado.arquivo && settings.certificado.senha && (
+            <div className="p-3 bg-green-50 border border-green-200 rounded-md">
+              <div className="flex items-center gap-2 text-green-700">
+                <Shield className="h-4 w-4" />
+                <span className="text-sm font-medium">Certificado configurado</span>
+              </div>
+              <p className="text-sm text-green-600 mt-1">
+                Arquivo: {settings.certificado.arquivo}
+                {settings.certificado.validade && (
+                  <span className="ml-2">• Válido até: {new Date(settings.certificado.validade).toLocaleDateString('pt-BR')}</span>
+                )}
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
