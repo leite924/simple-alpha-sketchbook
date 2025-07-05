@@ -10,6 +10,7 @@ interface AuthContextType {
   loading: boolean;
   userRole: string;
   isAuthenticated: boolean;
+  isSuperAdmin: boolean;
   signUp: (email: string, password: string, firstName?: string, lastName?: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
@@ -22,6 +23,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [userRole, setUserRole] = useState<string>('viewer');
+
+  // Calculate isSuperAdmin based on userRole or email
+  const isSuperAdmin = userRole === 'super_admin' || user?.email === 'midiaputz@gmail.com';
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -169,6 +173,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     loading,
     userRole,
     isAuthenticated: !!session?.user,
+    isSuperAdmin,
     signUp,
     signIn,
     signOut
