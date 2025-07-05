@@ -29,7 +29,7 @@ export const usePaymentProcessing = () => {
           values.lastName,
           {
             cpf: values.cpf,
-            birthDate: values.birthDate,
+            birth_date: values.birthDate, // Corrigido: usar birth_date em vez de birthDate
             phone: values.phone,
             address: values.address,
             addressNumber: values.addressNumber,
