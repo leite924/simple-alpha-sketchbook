@@ -31,13 +31,13 @@ const HeroSection = () => {
           </Button>
         </div>
         
-        {/* Link discreto para Super Admin */}
+        {/* Link discreto para acesso administrativo */}
         <div className="mt-8">
           <Link 
-            to="/super-admin" 
+            to="/login" 
             className="text-xs text-gray-400 hover:text-white opacity-50 hover:opacity-100 transition-all duration-300"
           >
-            Super Admin Access
+            Acesso Administrativo
           </Link>
         </div>
       </div>

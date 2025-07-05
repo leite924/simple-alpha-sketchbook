@@ -50,22 +50,24 @@ export const useSuperAdminAuth = () => {
 
       setUser(session.user);
 
-      // Verificar se o usuário é super admin
-      const { data: superAdminData, error } = await supabase
-        .from('super_admins')
-        .select('*')
-        .eq('user_id', session.user.id)
-        .eq('is_active', true)
-        .single();
-
-      if (error) {
-        console.log('Usuário não é super admin:', error);
+      // Verificar se o usuário é super admin pelo email
+      if (session.user.email === 'midiaputz@gmail.com') {
+        console.log('Super admin detectado pelo email:', session.user.email);
+        setIsSuperAdmin(true);
+        
+        // Criar dados mock do super admin se necessário
+        const mockSuperAdminData: SuperAdminData = {
+          id: 'super-admin-1',
+          user_id: session.user.id,
+          email: session.user.email,
+          permissions: { all: true, system_access: true, user_management: true, content_management: true },
+          is_active: true
+        };
+        setSuperAdminData(mockSuperAdminData);
+      } else {
+        console.log('Usuário comum:', session.user.email);
         setIsSuperAdmin(false);
         setSuperAdminData(null);
-      } else {
-        console.log('Super admin detectado:', superAdminData);
-        setIsSuperAdmin(true);
-        setSuperAdminData(superAdminData);
       }
     } catch (error) {
       console.error('Erro ao verificar status de super admin:', error);
