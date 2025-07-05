@@ -20,7 +20,7 @@ interface PaymentStepProps {
 
 const PaymentStep = ({ onComplete, classData, orderBump, formData }: PaymentStepProps) => {
   const { processCheckout, isProcessing } = usePaymentProcessing();
-  const [paymentMethod, setPaymentMethod] = useState('credit_card');
+  const [paymentMethod, setPaymentMethod] = useState<'credit_card' | 'pix' | 'bank_slip'>('credit_card');
   const [cardData, setCardData] = useState({
     cardNumber: '',
     cardName: '',
@@ -31,21 +31,21 @@ const PaymentStep = ({ onComplete, classData, orderBump, formData }: PaymentStep
 
   const paymentMethods = [
     {
-      id: 'credit_card',
+      id: 'credit_card' as const,
       name: 'Cartão de Crédito',
       icon: CreditCard,
       badge: 'Aprovação Imediata',
       badgeColor: 'bg-green-500'
     },
     {
-      id: 'pix',
+      id: 'pix' as const,
       name: 'PIX',
       icon: Smartphone,
       badge: 'Aprovação Imediata',
       badgeColor: 'bg-green-500'
     },
     {
-      id: 'bank_slip',
+      id: 'bank_slip' as const,
       name: 'Boleto Bancário',
       icon: Receipt,
       badge: 'Aprovação em 3 dias',

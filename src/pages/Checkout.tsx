@@ -10,9 +10,9 @@ import { Loader2 } from 'lucide-react';
 
 const Checkout = () => {
   const { classId } = useParams();
-  const { data: classData, isLoading, error } = useClassDetail(classId || '');
+  const { classData, loading } = useClassDetail(classId || '');
 
-  if (isLoading) {
+  if (loading) {
     return (
       <MainLayout>
         <div className="min-h-screen bg-gray-50 py-8 flex items-center justify-center">
@@ -25,7 +25,7 @@ const Checkout = () => {
     );
   }
 
-  if (error || !classData) {
+  if (!classData) {
     return (
       <MainLayout>
         <div className="min-h-screen bg-gray-50 py-8 flex items-center justify-center">
@@ -41,9 +41,9 @@ const Checkout = () => {
   // Preparar dados para o checkout
   const checkoutClassData = {
     id: classData.id,
-    courseName: classData.course_name,
+    courseName: classData.courseName,
     period: classData.period,
-    price: parseFloat(classData.price.toString()),
+    price: parseFloat(classData.price.toString().replace('R$ ', '').replace(',', '.')),
     image: 'https://images.unsplash.com/photo-1452378174528-3090a4bba7b2?ixlib=rb-4.0.3'
   };
 
@@ -55,7 +55,7 @@ const Checkout = () => {
           <div className="flex justify-between items-center mb-8 bg-white p-6 rounded-lg shadow-sm">
             <div className="flex items-center space-x-4">
               <img src="/placeholder.svg" alt="Logo" className="w-12 h-12" />
-              <h1 className="text-2xl font-bold text-gray-900">Checkout - {classData.course_name}</h1>
+              <h1 className="text-2xl font-bold text-gray-900">Checkout - {classData.courseName}</h1>
             </div>
             <div className="flex items-center space-x-2 bg-green-100 px-4 py-2 rounded-full">
               <span className="text-green-600">🔒</span>
