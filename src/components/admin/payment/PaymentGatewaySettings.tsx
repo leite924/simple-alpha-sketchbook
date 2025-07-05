@@ -7,15 +7,16 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { CreditCard, Upload, Shield, FileText } from "lucide-react";
+import { CreditCard, Upload, Shield, FileText, Database } from "lucide-react";
 import { useNFSeSettings } from "@/hooks/useNFSeSettings";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface PaymentGatewaySettingsProps {
   onSave: () => void;
 }
 
 export const PaymentGatewaySettings = ({ onSave }: PaymentGatewaySettingsProps) => {
-  const { settings, isLoading, saveSettings, updateSetting, updateCertificadoSetting } = useNFSeSettings();
+  const { settings, isLoading, isInitialized, saveSettings, updateSetting, updateCertificadoSetting } = useNFSeSettings();
   const [logoPreview, setLogoPreview] = useState("/lovable-uploads/d580b9f4-ed3f-44c5-baa5-e0a42dfcb768.png");
 
   const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -40,15 +41,34 @@ export const PaymentGatewaySettings = ({ onSave }: PaymentGatewaySettingsProps) 
   };
 
   const handleSave = async () => {
-    console.log('Salvando configurações manuais...');
+    console.log('Salvando configurações no banco de dados...');
     const success = await saveSettings();
     if (success) {
       onSave();
     }
   };
 
+  if (!isInitialized) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="text-center">
+          <Database className="h-8 w-8 animate-spin mx-auto mb-2" />
+          <p>Carregando configurações...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
+      {/* Alerta sobre armazenamento no banco */}
+      <Alert>
+        <Database className="h-4 w-4" />
+        <AlertDescription>
+          As configurações de NFS-e agora são salvas com segurança no banco de dados e sincronizadas entre dispositivos.
+        </AlertDescription>
+      </Alert>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Integração de Pagamento */}
         <div className="bg-white rounded-lg border p-6 shadow-sm space-y-4">
@@ -153,6 +173,19 @@ export const PaymentGatewaySettings = ({ onSave }: PaymentGatewaySettingsProps) 
                 onChange={(e) => {
                   console.log('Razão Social alterada para:', e.target.value);
                   updateSetting('razaoSocial', e.target.value);
+                }}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="inscricao-municipal">Inscrição Municipal</Label>
+              <Input 
+                id="inscricao-municipal" 
+                placeholder="123456" 
+                value={settings.inscricaoMunicipal}
+                onChange={(e) => {
+                  console.log('Inscrição Municipal alterada para:', e.target.value);
+                  updateSetting('inscricaoMunicipal', e.target.value);
                 }}
               />
             </div>

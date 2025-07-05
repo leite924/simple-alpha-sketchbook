@@ -1,19 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-
-interface NFSeSettings {
-  autoGenerate: boolean;
-  autoGenerateStatus: 'completed' | 'all';
-  cnpj: string;
-  razaoSocial: string;
-  codigoServico: string;
-  certificado: {
-    arquivo: string;
-    senha: string;
-    validade: string;
-  };
-}
+import { NFSeService, NFSeSettings } from '@/services/nfseService';
 
 export const useNFSeSettings = () => {
   const [settings, setSettings] = useState<NFSeSettings>({
@@ -21,41 +9,62 @@ export const useNFSeSettings = () => {
     autoGenerateStatus: 'completed',
     cnpj: '',
     razaoSocial: '',
+    inscricaoMunicipal: '',
     codigoServico: '',
     certificado: {
       arquivo: '',
       senha: '',
       validade: ''
-    }
+    },
+    webserviceEnvironment: 'homologacao',
+    webserviceUrlHomologacao: 'https://nfse-hom.recife.pe.gov.br/nfse/services',
+    webserviceUrlProducao: 'https://nfse.recife.pe.gov.br/nfse/services'
   });
   
   const [isLoading, setIsLoading] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
 
-  // Carregar configurações do localStorage na inicialização
+  // Carregar configurações do banco de dados na inicialização
   useEffect(() => {
-    const savedSettings = localStorage.getItem('nfse-settings');
-    if (savedSettings) {
+    const loadSettings = async () => {
+      setIsLoading(true);
       try {
-        const parsed = JSON.parse(savedSettings);
-        console.log('Configurações carregadas:', parsed);
-        setSettings(parsed);
+        // Primeiro, tentar migrar dados do localStorage se existirem
+        await NFSeService.migrateFromLocalStorage();
+        
+        // Depois, carregar configurações do banco
+        const dbSettings = await NFSeService.getUserSettings();
+        if (dbSettings) {
+          console.log('Configurações carregadas do banco:', dbSettings);
+          setSettings(dbSettings);
+        } else {
+          console.log('Nenhuma configuração encontrada no banco, usando padrões');
+        }
       } catch (error) {
         console.error('Erro ao carregar configurações de NFS-e:', error);
+        toast.error('Erro ao carregar configurações de NFS-e');
+      } finally {
+        setIsLoading(false);
+        setIsInitialized(true);
       }
-    }
+    };
+
+    loadSettings();
   }, []);
 
   const saveSettings = async (newSettings?: Partial<NFSeSettings>) => {
     setIsLoading(true);
     try {
       const settingsToSave = newSettings ? { ...settings, ...newSettings } : settings;
-      console.log('Salvando configurações:', settingsToSave);
+      console.log('Salvando configurações no banco:', settingsToSave);
       
-      // Salvar no localStorage
-      localStorage.setItem('nfse-settings', JSON.stringify(settingsToSave));
+      await NFSeService.saveSettings(settingsToSave);
       
-      // Atualizar estado local
-      setSettings(settingsToSave);
+      // Recarregar configurações do banco para obter dados atualizados (como ID)
+      const updatedSettings = await NFSeService.getUserSettings();
+      if (updatedSettings) {
+        setSettings(updatedSettings);
+      }
       
       toast.success('Configurações de NFS-e salvas com sucesso!');
       return true;
@@ -70,28 +79,21 @@ export const useNFSeSettings = () => {
 
   const updateSetting = (key: keyof NFSeSettings, value: any) => {
     console.log(`Atualizando ${key}:`, value);
-    const newSettings = { ...settings, [key]: value };
-    setSettings(newSettings);
-    
-    // Salvar automaticamente no localStorage quando um campo é alterado
-    localStorage.setItem('nfse-settings', JSON.stringify(newSettings));
+    setSettings(prev => ({ ...prev, [key]: value }));
   };
 
   const updateCertificadoSetting = (key: keyof NFSeSettings['certificado'], value: string) => {
     console.log(`Atualizando certificado.${key}:`, value);
-    const newSettings = { 
-      ...settings, 
-      certificado: { ...settings.certificado, [key]: value }
-    };
-    setSettings(newSettings);
-    
-    // Salvar automaticamente no localStorage quando um campo é alterado
-    localStorage.setItem('nfse-settings', JSON.stringify(newSettings));
+    setSettings(prev => ({ 
+      ...prev, 
+      certificado: { ...prev.certificado, [key]: value }
+    }));
   };
 
   return {
     settings,
     isLoading,
+    isInitialized,
     saveSettings,
     updateSetting,
     updateCertificadoSetting

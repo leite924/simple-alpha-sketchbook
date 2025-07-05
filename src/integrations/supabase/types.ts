@@ -292,6 +292,72 @@ export type Database = {
           },
         ]
       }
+      nfse_settings: {
+        Row: {
+          auto_generate: boolean
+          auto_generate_status: string
+          certificate_file_name: string | null
+          certificate_password_encrypted: string | null
+          certificate_validity: string | null
+          company_cnpj: string
+          company_name: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          municipal_inscription: string | null
+          service_code: string
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+          webservice_environment: string
+          webservice_url_homologacao: string | null
+          webservice_url_producao: string | null
+        }
+        Insert: {
+          auto_generate?: boolean
+          auto_generate_status?: string
+          certificate_file_name?: string | null
+          certificate_password_encrypted?: string | null
+          certificate_validity?: string | null
+          company_cnpj: string
+          company_name: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          municipal_inscription?: string | null
+          service_code: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id: string
+          webservice_environment?: string
+          webservice_url_homologacao?: string | null
+          webservice_url_producao?: string | null
+        }
+        Update: {
+          auto_generate?: boolean
+          auto_generate_status?: string
+          certificate_file_name?: string | null
+          certificate_password_encrypted?: string | null
+          certificate_validity?: string | null
+          company_cnpj?: string
+          company_name?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          municipal_inscription?: string | null
+          service_code?: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+          webservice_environment?: string
+          webservice_url_homologacao?: string | null
+          webservice_url_producao?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           address: string | null
@@ -512,6 +578,10 @@ export type Database = {
         Args: { user_email: string }
         Returns: boolean
       }
+      encrypt_password: {
+        Args: { password: string }
+        Returns: string
+      }
       get_ai_settings: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -525,6 +595,25 @@ export type Database = {
       get_current_user_email: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      get_user_nfse_settings: {
+        Args: { p_user_id?: string }
+        Returns: {
+          id: string
+          company_cnpj: string
+          company_name: string
+          municipal_inscription: string
+          service_code: string
+          auto_generate: boolean
+          auto_generate_status: string
+          certificate_file_name: string
+          certificate_validity: string
+          webservice_environment: string
+          webservice_url_homologacao: string
+          webservice_url_producao: string
+          created_at: string
+          updated_at: string
+        }[]
       }
       is_current_user_super_admin: {
         Args: Record<PropertyKey, never>

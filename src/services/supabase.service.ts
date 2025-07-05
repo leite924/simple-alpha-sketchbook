@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -197,6 +198,35 @@ export class SupabaseService {
         p_model: model,
         p_api_key: apiKey
       });
+    
+    return { data, error };
+  }
+
+  // NFS-e Settings functions - work with existing nfse_settings table
+  static async getNFSeSettings(userId?: string) {
+    const { data, error } = await supabase
+      .rpc('get_user_nfse_settings', { p_user_id: userId });
+    
+    return { data, error };
+  }
+
+  static async saveNFSeSettings(settingsData: any) {
+    const { data, error } = await supabase
+      .from('nfse_settings')
+      .upsert([settingsData])
+      .select()
+      .single();
+    
+    return { data, error };
+  }
+
+  static async updateNFSeSettings(id: string, settingsData: any) {
+    const { data, error } = await supabase
+      .from('nfse_settings')
+      .update(settingsData)
+      .eq('id', id)
+      .select()
+      .single();
     
     return { data, error };
   }
