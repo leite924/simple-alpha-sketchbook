@@ -109,7 +109,7 @@ export const processCardPayment = async (
 
     const result = await response.json();
     
-    // Salvar transação no banco local
+    // Salvar transação no banco local usando a tabela transactions existente
     await saveTransactionToSupabase(customer.userId || '', {
       id: result.id,
       status: result.status,
@@ -180,7 +180,7 @@ export const generatePixPayment = async (
     const result = await response.json();
     const pixData = result.charges[0].last_transaction;
 
-    // Salvar transação no banco local
+    // Salvar transação no banco local usando a tabela transactions existente
     await saveTransactionToSupabase(customer.userId || '', {
       id: result.id,
       status: result.status,
@@ -247,7 +247,7 @@ export const generateBoletoPayment = async (
     const result = await response.json();
     const boletoData = result.charges[0].last_transaction;
 
-    // Salvar transação no banco local
+    // Salvar transação no banco local usando a tabela transactions existente
     await saveTransactionToSupabase(customer.userId || '', {
       id: result.id,
       status: result.status,
@@ -309,27 +309,21 @@ export const checkTransactionStatus = async (transactionId: string): Promise<str
   }
 };
 
-// Save transaction to Supabase
+// Save transaction to Supabase using existing transactions table
 export const saveTransactionToSupabase = async (
   userId: string, 
   transaction: PagarmeTransaction
 ): Promise<void> => {
   try {
+    // Use the existing transactions table with a different structure
     const { error } = await supabase
-      .from('payment_transactions')
+      .from('transactions')
       .insert({
-        user_id: userId,
-        pagarme_transaction_id: transaction.id,
-        status: transaction.status,
+        description: `Pagamento ${transaction.paymentMethod} - ${transaction.customerName}`,
+        type: 'receita',
         amount: transaction.amount,
-        method: transaction.paymentMethod,
-        customer_name: transaction.customerName,
-        customer_email: transaction.customerEmail,
-        card_brand: transaction.cardBrand,
-        installments: transaction.installments,
-        pix_qr_code: transaction.pixQrCode,
-        pix_code: transaction.pixCode,
-        boleto_url: transaction.boletoUrl
+        reference_id: transaction.id,
+        reference_type: 'pagarme_payment'
       });
 
     if (error) {
