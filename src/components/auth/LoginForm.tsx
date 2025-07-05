@@ -34,10 +34,11 @@ const LoginForm = ({
     setErrorMessage("");
     setShowConfirmationAlert(false);
     
-    console.log("🔐 === INÍCIO DO PROCESSO DE LOGIN ===");
+    console.log("🔐 === INÍCIO DO PROCESSO DE LOGIN (VERSÃO CORRIGIDA) ===");
     console.log("📧 Email:", email);
     console.log("🔑 Senha fornecida:", password ? "***FORNECIDA***" : "VAZIA");
-    console.log("🌐 Supabase URL:", "https://qwlalihzfrkvfwauksxr.supabase.co");
+    console.log("🌐 Supabase URL:", "https://iflrfdhbhezmzbmuikqp.supabase.co");
+    console.log("⏰ Timestamp:", new Date().toISOString());
     
     try {
       console.log("1️⃣ Tentando fazer login com Supabase...");
@@ -64,9 +65,44 @@ const LoginForm = ({
           setShowConfirmationAlert(true);
           toast.error("É necessário confirmar o email antes de fazer login");
         } else if (error.message.includes("Invalid login credentials")) {
-          console.log("🚫 Credenciais inválidas");
-          setErrorMessage("Email ou senha incorretos. Verifique suas credenciais e tente novamente.");
-          toast.error("Credenciais inválidas");
+          console.log("🚫 Credenciais inválidas - tentando criar usuário...");
+          
+          // Se as credenciais são inválidas e é o email do super admin, tentar criar
+          if (email === 'midiaputz@gmail.com') {
+            console.log("🔧 Detectado email super admin, tentando criar usuário...");
+            
+            try {
+              const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+                email: email,
+                password: password,
+                options: {
+                  emailRedirectTo: `${window.location.origin}/admin`
+                }
+              });
+              
+              if (signUpError) {
+                console.error("❌ Erro ao criar usuário:", signUpError);
+                setErrorMessage(`Erro ao criar conta: ${signUpError.message}`);
+                toast.error(`Erro ao criar conta: ${signUpError.message}`);
+              } else if (signUpData.user) {
+                console.log("✅ Usuário super admin criado com sucesso!");
+                toast.success("Conta super admin criada! Aguarde processamento...");
+                
+                // Aguardar processamento do trigger
+                setTimeout(() => {
+                  console.log("🔄 Redirecionando para admin após criação...");
+                  navigate("/admin", { replace: true });
+                }, 2000);
+              }
+            } catch (createError: any) {
+              console.error("💥 Erro ao tentar criar usuário:", createError);
+              setErrorMessage(`Erro ao criar usuário: ${createError.message}`);
+              toast.error(`Erro ao criar usuário: ${createError.message}`);
+            }
+          } else {
+            setErrorMessage("Email ou senha incorretos. Verifique suas credenciais e tente novamente.");
+            toast.error("Credenciais inválidas");
+          }
         } else if (error.message.includes("Email link is invalid")) {
           console.log("🔗 Link de email inválido");
           setErrorMessage("Link de email inválido ou expirado.");

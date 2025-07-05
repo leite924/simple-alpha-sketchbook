@@ -382,6 +382,36 @@ export type Database = {
         }
         Relationships: []
       }
+      super_admins: {
+        Row: {
+          created_at: string | null
+          email: string
+          id: string
+          is_active: boolean | null
+          permissions: Json | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          id?: string
+          is_active?: boolean | null
+          permissions?: Json | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          id?: string
+          is_active?: boolean | null
+          permissions?: Json | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       transactions: {
         Row: {
           amount: number
@@ -450,6 +480,10 @@ export type Database = {
           last_updated: string
           updated_by: string
         }[]
+      }
+      is_super_admin: {
+        Args: { user_id?: string }
+        Returns: boolean
       }
       update_ai_settings: {
         Args: { p_provider: string; p_model: string; p_api_key: string }

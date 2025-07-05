@@ -11,7 +11,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 
 const Auth = () => {
   const [email, setEmail] = useState("midiaputz@gmail.com");
-  const [password, setPassword] = useState("*Putz123");
+  const [password, setPassword] = useState("*Putz669");
   const [showConfirmationAlert, setShowConfirmationAlert] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const navigate = useNavigate();

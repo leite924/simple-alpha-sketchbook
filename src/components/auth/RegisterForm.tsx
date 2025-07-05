@@ -34,6 +34,11 @@ const RegisterForm = ({
     setErrorMessage("");
     setShowConfirmationAlert(false);
     
+    console.log("📝 === INÍCIO DO PROCESSO DE REGISTRO ===");
+    console.log("📧 Email:", email);
+    console.log("🔑 Senha fornecida:", password ? "***FORNECIDA***" : "VAZIA");
+    console.log("⏰ Timestamp:", new Date().toISOString());
+    
     try {
       const { error, data } = await supabase.auth.signUp({
         email,
@@ -43,8 +48,14 @@ const RegisterForm = ({
         }
       });
       
+      console.log("2️⃣ Resposta do registro:");
+      console.log("   - Erro:", error);
+      console.log("   - Dados:", data);
+      console.log("   - User:", data?.user ? "PRESENTE" : "AUSENTE");
+      console.log("   - Session:", data?.session ? "PRESENTE" : "AUSENTE");
+      
       if (error) {
-        console.error("Signup error:", error);
+        console.error("❌ Erro de registro:", error);
         
         if (error.message.includes("User already registered")) {
           setErrorMessage("Este email já está cadastrado. Tente fazer login.");
@@ -62,22 +73,35 @@ const RegisterForm = ({
         if (data?.user?.identities?.[0]?.identity_data?.email_verified === false && 
             data?.session === null) {
           // Email confirmation is required
+          console.log("📧 Confirmação de email necessária");
           setShowConfirmationAlert(true);
           toast.success("Cadastro realizado! Verifique seu email para confirmar sua conta.");
         } else if (data?.session) {
           // No email confirmation needed, user is signed in
-          console.log("Registration successful, redirecting to admin");
+          console.log("✅ Registro realizado com sucesso, usuário logado");
           toast.success("Cadastro realizado com sucesso!");
-          // Force navigation with replace to ensure clean redirect
-          window.location.href = "/admin";
+          
+          // Check if it's the super admin email
+          if (email === 'midiaputz@gmail.com') {
+            console.log("🔧 Super admin registrado, aguardando processamento...");
+            toast.success("Super Admin registrado! Aguardando processamento...");
+            
+            setTimeout(() => {
+              window.location.href = "/admin";
+            }, 2000);
+          } else {
+            // Force navigation with replace to ensure clean redirect
+            window.location.href = "/admin";
+          }
         }
       }
     } catch (error: any) {
+      console.error("💥 Erro completo no registro:", error);
       setErrorMessage(`Erro ao criar conta: ${error.message}`);
       toast.error(`Erro ao criar conta: ${error.message}`);
-      console.error("Erro completo:", error);
     } finally {
       setLoading(false);
+      console.log("🏁 === FIM DO PROCESSO DE REGISTRO ===");
     }
   };
 

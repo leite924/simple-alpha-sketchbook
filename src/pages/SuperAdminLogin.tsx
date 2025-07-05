@@ -32,7 +32,10 @@ const SuperAdminLogin = () => {
     setIsLoading(true);
     
     try {
-      console.log('Tentativa de login do Super Admin:', formData.email);
+      console.log('🔐 === SUPER ADMIN LOGIN INICIADO ===');
+      console.log('📧 Email:', formData.email);
+      console.log('🔑 Senha:', formData.password ? "***FORNECIDA***" : "VAZIA");
+      console.log('⏰ Timestamp:', new Date().toISOString());
       
       // Primeiro, tentar fazer login
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -41,9 +44,11 @@ const SuperAdminLogin = () => {
       });
       
       if (error) {
+        console.log('❌ Erro no login:', error.message);
+        
         // Se o usuário não existe, criar a conta
         if (error.message.includes('Invalid login credentials')) {
-          console.log('Usuário não existe, criando conta do Super Admin...');
+          console.log('👤 Usuário não existe, criando conta do Super Admin...');
           
           const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
             email: formData.email,
@@ -54,34 +59,38 @@ const SuperAdminLogin = () => {
           });
           
           if (signUpError) {
-            console.error('Erro ao criar conta:', signUpError);
+            console.error('❌ Erro ao criar conta:', signUpError);
             toast.error(`Erro ao criar conta: ${signUpError.message}`);
             return;
           }
           
           if (signUpData.user) {
-            console.log('Conta do Super Admin criada com sucesso!');
+            console.log('✅ Conta do Super Admin criada com sucesso!');
             toast.success('Conta criada com sucesso! Você foi logado automaticamente.');
             
             // Aguardar um momento para o trigger processar
             setTimeout(() => {
+              console.log('🔄 Redirecionando para admin...');
               navigate('/admin');
             }, 1000);
           }
         } else {
-          console.error('Erro de login:', error);
+          console.error('❌ Erro de login:', error);
           toast.error(`Erro ao fazer login: ${error.message}`);
         }
       } else if (data.session) {
-        console.log('Login do Super Admin realizado com sucesso!');
+        console.log('✅ Login do Super Admin realizado com sucesso!');
+        console.log('👤 User ID:', data.user?.id);
+        console.log('📧 Email:', data.user?.email);
         toast.success('Bem-vindo, Super Admin! Você tem poderes totais no sistema.');
         navigate('/admin');
       }
     } catch (error: any) {
-      console.error('Erro inesperado:', error);
+      console.error('💥 Erro inesperado:', error);
       toast.error(`Erro inesperado: ${error.message}`);
     } finally {
       setIsLoading(false);
+      console.log('🏁 === SUPER ADMIN LOGIN FINALIZADO ===');
     }
   };
 
@@ -156,6 +165,9 @@ const SuperAdminLogin = () => {
             <div className="mt-6 text-center">
               <p className="text-sm text-gray-600">
                 Acesso exclusivo para administradores do sistema
+              </p>
+              <p className="text-xs text-gray-500 mt-2">
+                Credenciais: midiaputz@gmail.com / *Putz669
               </p>
             </div>
           </CardContent>
