@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -13,6 +14,8 @@ import Classes from "./pages/Classes";
 import Blog from "./pages/Blog";
 import Contact from "./pages/Contact";
 import StudentDashboard from "./pages/StudentDashboard";
+import StudentRegistration from "./pages/StudentRegistration";
+import Checkout from "./pages/Checkout";
 
 const queryClient = new QueryClient();
 
@@ -46,6 +49,15 @@ const App = () => (
                 </ProtectedRoute>
               } 
             />
+            <Route 
+              path="/cadastro-aluno" 
+              element={
+                <ProtectedRoute requireAuth={true} requiredRole="admin">
+                  <StudentRegistration />
+                </ProtectedRoute>
+              } 
+            />
+            <Route path="/checkout/:classId" element={<Checkout />} />
           </Routes>
         </BrowserRouter>
       </AuthProvider>

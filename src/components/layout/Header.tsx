@@ -2,206 +2,189 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, User, LogOut } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Menu, X, User } from "lucide-react";
 
 const Header = () => {
-  const [isOpen, setIsOpen] = useState(false);
-  const { isAuthenticated, user, userRole, signOut } = useAuth();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { isAuthenticated, signOut, userRole } = useAuth();
   const navigate = useNavigate();
 
-  const handleSignOut = async () => {
+  const handleLogout = async () => {
     await signOut();
     navigate("/");
   };
 
-  const navigation = [
-    { name: 'Início', href: '/' },
-    { name: 'Cursos', href: '/courses' },
-    { name: 'Turmas', href: '/classes' },
-    { name: 'Blog', href: '/blog' },
-    { name: 'Contato', href: '/contact' },
-  ];
+  const canAccessAdmin = userRole === 'admin' || userRole === 'super_admin';
+  const canRegisterStudents = canAccessAdmin;
 
   return (
-    <header className="bg-white shadow-lg fixed w-full z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center py-4">
-          <div className="flex justify-start lg:w-0 lg:flex-1">
-            <Link to="/" className="text-2xl font-bold text-purple-600">
-              Escola de Fotografia
+    <header className="bg-white shadow-lg sticky top-0 z-50">
+      <div className="container mx-auto px-4">
+        <div className="flex items-center justify-between h-16">
+          <Link to="/" className="text-2xl font-bold text-purple-600">
+            EscolaIdiomas
+          </Link>
+
+          {/* Desktop Navigation */}
+          <nav className="hidden md:flex items-center space-x-8">
+            <Link to="/courses" className="text-gray-700 hover:text-purple-600 transition-colors">
+              Cursos
             </Link>
-          </div>
-          
-          <div className="-mr-2 -my-2 md:hidden">
-            <Button
-              variant="ghost"
-              onClick={() => setIsOpen(!isOpen)}
-              className="p-2"
-            >
-              {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-            </Button>
-          </div>
-          
-          <nav className="hidden md:flex space-x-10">
-            {navigation.map((item) => (
-              <Link
-                key={item.name}
-                to={item.href}
-                className="text-base font-medium text-gray-500 hover:text-gray-900 transition-colors"
-              >
-                {item.name}
-              </Link>
-            ))}
-          </nav>
-          
-          <div className="hidden md:flex items-center justify-end md:flex-1 lg:w-0 space-x-4">
-            {isAuthenticated ? (
+            <Link to="/classes" className="text-gray-700 hover:text-purple-600 transition-colors">
+              Turmas
+            </Link>
+            <Link to="/blog" className="text-gray-700 hover:text-purple-600 transition-colors">
+              Blog
+            </Link>
+            <Link to="/contact" className="text-gray-700 hover:text-purple-600 transition-colors">
+              Contato
+            </Link>
+            
+            {/* Links para usuários autenticados */}
+            {isAuthenticated && (
               <>
-                {(userRole === 'admin' || userRole === 'super_admin' || userRole === 'instructor') && (
-                  <Button 
-                    variant="outline" 
-                    onClick={() => navigate('/admin')}
-                    className="text-sm"
-                  >
+                {canAccessAdmin && (
+                  <Link to="/admin" className="text-gray-700 hover:text-purple-600 transition-colors">
                     Admin
-                  </Button>
+                  </Link>
                 )}
-                
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="gap-2">
-                      <User className="h-4 w-4" />
-                      {user?.email?.split('@')[0] || 'Usuário'}
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => navigate('/student')}>
-                      Minha Área
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleSignOut}>
-                      <LogOut className="mr-2 h-4 w-4" />
-                      Sair
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                {canRegisterStudents && (
+                  <Link to="/cadastro-aluno" className="text-gray-700 hover:text-purple-600 transition-colors">
+                    Cadastrar Aluno
+                  </Link>
+                )}
+                <Link to="/student" className="text-gray-700 hover:text-purple-600 transition-colors">
+                  Área do Aluno
+                </Link>
               </>
+            )}
+          </nav>
+
+          {/* Desktop Auth Buttons */}
+          <div className="hidden md:flex items-center space-x-4">
+            {isAuthenticated ? (
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2 text-sm text-gray-600">
+                  <User className="h-4 w-4" />
+                  <span className="capitalize">{userRole}</span>
+                </div>
+                <Button variant="outline" onClick={handleLogout}>
+                  Sair
+                </Button>
+              </div>
             ) : (
               <>
-                <Button variant="ghost" onClick={() => navigate('/login')}>
-                  Entrar
-                </Button>
-                <Button onClick={() => navigate('/login?register=true')}>
-                  Cadastrar
-                </Button>
+                <Link to="/login">
+                  <Button variant="ghost">Entrar</Button>
+                </Link>
+                <Link to="/auth">
+                  <Button>Cadastrar</Button>
+                </Link>
               </>
             )}
           </div>
+
+          {/* Mobile menu button */}
+          <button
+            className="md:hidden"
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+          >
+            {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          </button>
         </div>
-      </div>
-      
-      {/* Mobile menu */}
-      {isOpen && (
-        <div className="absolute top-0 inset-x-0 p-2 transition transform origin-top-right md:hidden">
-          <div className="rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 bg-white divide-y-2 divide-gray-50">
-            <div className="pt-5 pb-6 px-5">
-              <div className="flex items-center justify-between">
-                <Link to="/" className="text-xl font-bold text-purple-600">
-                  Escola de Fotografia
-                </Link>
-                <Button
-                  variant="ghost"
-                  onClick={() => setIsOpen(false)}
-                  className="p-2"
-                >
-                  <X className="h-6 w-6" />
-                </Button>
-              </div>
-              <div className="mt-6">
-                <nav className="grid gap-y-8">
-                  {navigation.map((item) => (
-                    <Link
-                      key={item.name}
-                      to={item.href}
-                      className="text-base font-medium text-gray-900 hover:text-gray-700"
-                      onClick={() => setIsOpen(false)}
+
+        {/* Mobile Navigation */}
+        {isMenuOpen && (
+          <div className="md:hidden py-4">
+            <nav className="flex flex-col space-y-4">
+              <Link 
+                to="/courses" 
+                className="text-gray-700 hover:text-purple-600 transition-colors"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Cursos
+              </Link>
+              <Link 
+                to="/classes" 
+                className="text-gray-700 hover:text-purple-600 transition-colors"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Turmas
+              </Link>
+              <Link 
+                to="/blog" 
+                className="text-gray-700 hover:text-purple-600 transition-colors"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Blog
+              </Link>
+              <Link 
+                to="/contact" 
+                className="text-gray-700 hover:text-purple-600 transition-colors"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Contato
+              </Link>
+              
+              {/* Mobile Links para usuários autenticados */}
+              {isAuthenticated && (
+                <>
+                  {canAccessAdmin && (
+                    <Link 
+                      to="/admin" 
+                      className="text-gray-700 hover:text-purple-600 transition-colors"
+                      onClick={() => setIsMenuOpen(false)}
                     >
-                      {item.name}
+                      Admin
                     </Link>
-                  ))}
-                </nav>
-              </div>
-            </div>
-            <div className="py-6 px-5 space-y-6">
-              {isAuthenticated ? (
-                <div className="space-y-4">
-                  <p className="text-sm text-gray-600">
-                    Logado como: {user?.email}
-                  </p>
-                  {(userRole === 'admin' || userRole === 'super_admin' || userRole === 'instructor') && (
-                    <Button 
-                      variant="outline" 
-                      onClick={() => {
-                        navigate('/admin');
-                        setIsOpen(false);
-                      }}
-                      className="w-full"
-                    >
-                      Painel Admin
-                    </Button>
                   )}
-                  <Button 
-                    variant="outline" 
-                    onClick={() => {
-                      navigate('/student');
-                      setIsOpen(false);
-                    }}
-                    className="w-full"
+                  {canRegisterStudents && (
+                    <Link 
+                      to="/cadastro-aluno" 
+                      className="text-gray-700 hover:text-purple-600 transition-colors"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Cadastrar Aluno
+                    </Link>
+                  )}
+                  <Link 
+                    to="/student" 
+                    className="text-gray-700 hover:text-purple-600 transition-colors"
+                    onClick={() => setIsMenuOpen(false)}
                   >
-                    Minha Área
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    onClick={handleSignOut}
-                    className="w-full gap-2"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    Sair
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <Button 
-                    variant="ghost" 
-                    onClick={() => {
-                      navigate('/login');
-                      setIsOpen(false);
-                    }}
-                    className="w-full"
-                  >
-                    Entrar
-                  </Button>
-                  <Button 
-                    onClick={() => {
-                      navigate('/login?register=true');
-                      setIsOpen(false);
-                    }}
-                    className="w-full"
-                  >
-                    Cadastrar
-                  </Button>
-                </div>
+                    Área do Aluno
+                  </Link>
+                </>
               )}
-            </div>
+              
+              {/* Mobile Auth Buttons */}
+              <div className="flex flex-col space-y-2 pt-4 border-t">
+                {isAuthenticated ? (
+                  <>
+                    <div className="flex items-center space-x-2 text-sm text-gray-600">
+                      <User className="h-4 w-4" />
+                      <span className="capitalize">{userRole}</span>
+                    </div>
+                    <Button variant="outline" onClick={handleLogout} className="w-full">
+                      Sair
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Link to="/login" onClick={() => setIsMenuOpen(false)}>
+                      <Button variant="ghost" className="w-full">Entrar</Button>
+                    </Link>
+                    <Link to="/auth" onClick={() => setIsMenuOpen(false)}>
+                      <Button className="w-full">Cadastrar</Button>
+                    </Link>
+                  </>
+                )}
+              </div>
+            </nav>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </header>
   );
 };
