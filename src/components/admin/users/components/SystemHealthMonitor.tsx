@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -127,31 +128,35 @@ const SystemHealthMonitor = () => {
           console.log('🔄 Criando perfil da Elienai...');
           
           // Primeiro verificar se existe usuário auth para este email
-          const { data: authUsers } = await supabase.auth.admin.listUsers();
-          const elienaiAuthUser = authUsers.users?.find(u => u.email === 'elienaitorres@gmail.com');
-          
-          if (elienaiAuthUser) {
-            // Criar perfil usando o ID do usuário auth
-            const { error: insertError } = await supabase
-              .from('profiles')
-              .insert({
-                id: elienaiAuthUser.id,
-                email: 'elienaitorres@gmail.com',
-                first_name: 'Elienai',
-                last_name: 'Torres'
-              });
-              
-            if (!insertError) {
-              console.log('✅ Perfil da Elienai criado com sucesso');
-              
-              // Também criar a role de admin
-              await supabase
-                .from('user_roles')
+          try {
+            const { data: authData } = await supabase.auth.admin.listUsers();
+            const elienaiAuthUser = authData.users?.find((user: any) => user.email === 'elienaitorres@gmail.com');
+            
+            if (elienaiAuthUser) {
+              // Criar perfil usando o ID do usuário auth
+              const { error: insertError } = await supabase
+                .from('profiles')
                 .insert({
-                  user_id: elienaiAuthUser.id,
-                  role: 'admin'
+                  id: elienaiAuthUser.id,
+                  email: 'elienaitorres@gmail.com',
+                  first_name: 'Elienai',
+                  last_name: 'Torres'
                 });
+                
+              if (!insertError) {
+                console.log('✅ Perfil da Elienai criado com sucesso');
+                
+                // Também criar a role de admin
+                await supabase
+                  .from('user_roles')
+                  .insert({
+                    user_id: elienaiAuthUser.id,
+                    role: 'admin'
+                  });
+              }
             }
+          } catch (authError) {
+            console.log('⚠️ Erro ao buscar usuários auth:', authError);
           }
         }
 
