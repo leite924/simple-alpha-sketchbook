@@ -12,7 +12,8 @@ import {
   Building,
   Calendar,
   Hash,
-  Wifi
+  Wifi,
+  Info
 } from 'lucide-react';
 import { CertificateInfo, CertificateValidationResult } from '@/services/certificateValidationService';
 
@@ -32,8 +33,8 @@ export const CertificateStatusDisplay = ({
           <div className="flex items-center gap-3">
             <Shield className="h-5 w-5 animate-spin text-blue-600" />
             <div>
-              <p className="font-medium text-blue-900">Validando certificado...</p>
-              <p className="text-sm text-blue-600">Verificando arquivo e conectividade</p>
+              <p className="font-medium text-blue-900">🔍 Validando certificado...</p>
+              <p className="text-sm text-blue-600">Verificando arquivo, senha e conectividade</p>
             </div>
           </div>
         </CardContent>
@@ -42,7 +43,19 @@ export const CertificateStatusDisplay = ({
   }
 
   if (!validationResult) {
-    return null;
+    return (
+      <Card className="border-gray-200 bg-gray-50">
+        <CardContent className="p-4">
+          <div className="flex items-center gap-3">
+            <Info className="h-5 w-5 text-gray-500" />
+            <div>
+              <p className="font-medium text-gray-700">Certificado não validado</p>
+              <p className="text-sm text-gray-500">Clique em "Validar Certificado Agora" para verificar</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
   }
 
   if (!validationResult.isValid) {
@@ -50,7 +63,7 @@ export const CertificateStatusDisplay = ({
       <Alert variant="destructive">
         <XCircle className="h-4 w-4" />
         <AlertDescription>
-          <strong>Certificado inválido:</strong> {validationResult.error}
+          <strong>❌ Certificado inválido:</strong> {validationResult.error}
         </AlertDescription>
       </Alert>
     );
@@ -73,16 +86,16 @@ export const CertificateStatusDisplay = ({
       return <Badge variant="secondary" className="gap-1"><Clock className="h-3 w-3" />Atenção</Badge>;
     }
     
-    return <Badge variant="default" className="gap-1 bg-green-600"><CheckCircle className="h-3 w-3" />Válido</Badge>;
+    return <Badge variant="default" className="gap-1 bg-green-600"><CheckCircle className="h-3 w-3" />✅ Válido</Badge>;
   };
 
   const getConnectivityBadge = () => {
     if (!connectivityTest) return null;
     
     if (connectivityTest.success) {
-      return <Badge variant="default" className="gap-1 bg-green-600"><Wifi className="h-3 w-3" />Conectado</Badge>;
+      return <Badge variant="default" className="gap-1 bg-green-600"><Wifi className="h-3 w-3" />🌐 Conectado</Badge>;
     } else {
-      return <Badge variant="destructive" className="gap-1"><XCircle className="h-3 w-3" />Falha</Badge>;
+      return <Badge variant="destructive" className="gap-1"><XCircle className="h-3 w-3" />❌ Falha</Badge>;
     }
   };
 
@@ -175,6 +188,26 @@ export const CertificateStatusDisplay = ({
               </p>
             </div>
           )}
+
+          {/* Status Resumo - Similar ao Bling */}
+          <div className="pt-4 border-t bg-white p-3 rounded-lg border">
+            <div className="flex items-center justify-between">
+              <span className="font-medium text-gray-900">Status Geral:</span>
+              <div className="flex items-center gap-2">
+                {validationResult.isValid && connectivityTest?.success ? (
+                  <>
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    <span className="text-green-600 font-medium">✅ Certificado OK</span>
+                  </>
+                ) : (
+                  <>
+                    <AlertTriangle className="h-4 w-4 text-orange-600" />
+                    <span className="text-orange-600 font-medium">⚠️ Atenção Necessária</span>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -183,7 +216,7 @@ export const CertificateStatusDisplay = ({
         <Alert variant={certificateInfo.daysUntilExpiry <= 30 ? "destructive" : "default"}>
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            <strong>Atenção:</strong> Seu certificado expira em {certificateInfo.daysUntilExpiry} dias. 
+            <strong>⚠️ Atenção:</strong> Seu certificado expira em {certificateInfo.daysUntilExpiry} dias. 
             Renove com antecedência para evitar interrupções no serviço.
           </AlertDescription>
         </Alert>

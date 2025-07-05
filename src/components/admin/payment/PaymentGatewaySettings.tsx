@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,11 +7,12 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { CreditCard, Upload, Shield, FileText, Database, TestTube } from "lucide-react";
+import { CreditCard, Upload, Shield, FileText, Database, TestTube, CheckCircle } from "lucide-react";
 import { useNFSeSettings } from "@/hooks/useNFSeSettings";
 import { useCertificateValidation } from "@/hooks/useCertificateValidation";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CertificateStatusDisplay } from "./certificate/CertificateStatusDisplay";
+import { toast } from "sonner";
 
 interface PaymentGatewaySettingsProps {
   onSave: () => void;
@@ -52,13 +54,16 @@ export const PaymentGatewaySettings = ({ onSave }: PaymentGatewaySettingsProps) 
 
   const handleValidateCertificate = async () => {
     if (!selectedCertificateFile) {
+      toast.error('Por favor, selecione um arquivo de certificado primeiro');
       return;
     }
 
     if (!settings.certificado.senha) {
+      toast.error('Por favor, digite a senha do certificado');
       return;
     }
 
+    console.log('🔐 Iniciando validação do certificado...');
     await validateCertificate(selectedCertificateFile, settings.certificado.senha, true);
   };
 
@@ -292,20 +297,34 @@ export const PaymentGatewaySettings = ({ onSave }: PaymentGatewaySettingsProps) 
             />
           </div>
 
-          {/* Botão de Validação */}
-          {selectedCertificateFile && settings.certificado.senha && (
-            <div className="pt-4 border-t">
-              <Button 
-                onClick={handleValidateCertificate}
-                disabled={isValidating}
-                className="w-full"
-                variant="outline"
-              >
-                <TestTube className="h-4 w-4 mr-2" />
-                {isValidating ? 'Validando...' : 'Validar Certificado Automaticamente'}
-              </Button>
+          {/* Botão de Validação - Mais Proeminente */}
+          <div className="pt-4 border-t bg-blue-50 p-4 rounded-lg">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h4 className="font-medium text-blue-900">Validação Automática</h4>
+                <p className="text-sm text-blue-600">Verifique se o certificado está configurado corretamente</p>
+              </div>
+              {validationResult?.isValid && (
+                <CheckCircle className="h-5 w-5 text-green-600" />
+              )}
             </div>
-          )}
+            
+            <Button 
+              onClick={handleValidateCertificate}
+              disabled={isValidating || !selectedCertificateFile || !settings.certificado.senha}
+              className="w-full bg-blue-600 hover:bg-blue-700"
+            >
+              <TestTube className="h-4 w-4 mr-2" />
+              {isValidating ? 'Validando Certificado...' : 'Validar Certificado Agora'}
+            </Button>
+            
+            {!selectedCertificateFile && (
+              <p className="text-xs text-gray-500 mt-2">* Selecione um arquivo de certificado primeiro</p>
+            )}
+            {selectedCertificateFile && !settings.certificado.senha && (
+              <p className="text-xs text-gray-500 mt-2">* Digite a senha do certificado</p>
+            )}
+          </div>
 
           {/* Display do Status do Certificado */}
           <CertificateStatusDisplay 
