@@ -11,6 +11,8 @@ export const useUserDeletion = () => {
         throw new Error("Usuário não encontrado");
       }
       
+      console.log('🗑️ Iniciando exclusão do usuário:', userToDelete.email);
+      
       // Buscar o perfil pelo email para obter o UUID
       const { data: profileData, error: searchError } = await supabase
         .from('profiles')
@@ -19,29 +21,44 @@ export const useUserDeletion = () => {
         .single();
         
       if (searchError) {
+        console.error('❌ Erro ao encontrar perfil:', searchError);
         throw new Error(`Erro ao encontrar perfil: ${searchError.message}`);
       }
       
-      // Excluir a função do usuário primeiro
+      console.log('👤 Perfil encontrado, UUID:', profileData.id);
+      
+      // 1. Primeiro, excluir todas as funções do usuário
+      console.log('🔧 Removendo funções do usuário...');
       const { error: roleError } = await supabase
         .from('user_roles')
         .delete()
         .eq('user_id', profileData.id);
         
-      if (roleError) throw roleError;
+      if (roleError) {
+        console.error('❌ Erro ao remover funções:', roleError);
+        // Continuar mesmo se houver erro nas funções
+      } else {
+        console.log('✅ Funções removidas com sucesso');
+      }
       
-      // Excluir o usuário do Supabase
+      // 2. Depois, excluir o perfil do usuário
+      console.log('👤 Removendo perfil do usuário...');
       const { error: profileError } = await supabase
         .from('profiles')
         .delete()
         .eq('id', profileData.id);
       
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.error('❌ Erro ao excluir perfil:', profileError);
+        throw new Error(`Erro ao excluir perfil: ${profileError.message}`);
+      }
       
+      console.log('✅ Usuário excluído com sucesso!');
       toast.success("Usuário excluído com sucesso!");
       return true;
+      
     } catch (error: any) {
-      console.error("Erro ao excluir usuário:", error);
+      console.error("❌ Erro ao excluir usuário:", error);
       toast.error(`Erro: ${error.message}`);
       return false;
     }
