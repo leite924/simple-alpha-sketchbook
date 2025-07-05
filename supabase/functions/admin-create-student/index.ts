@@ -55,84 +55,41 @@ serve(async (req) => {
       throw new Error('Email e nome são obrigatórios');
     }
 
-    // Verificar se já existe usuário com este email
-    const { data: profiles, error: profileError } = await supabaseAdmin
-      .from('profiles')
-      .select('id')
-      .eq('email', email)
-      .limit(1);
-    
-    let userId: string;
+    // Gerar ID para o novo perfil
+    const newProfileId = crypto.randomUUID();
+    console.log('🆔 Novo ID gerado:', newProfileId);
 
-    if (profiles && profiles.length > 0) {
-      // Usuário já existe, usar ID existente
-      userId = profiles[0].id;
-      console.log('ℹ️ Usuário já existe:', userId);
-      
-      // Atualizar perfil existente diretamente
-      const { error: updateError } = await supabaseAdmin
-        .from('profiles')
-        .update({
-          first_name: firstName.trim(),
-          last_name: lastName?.trim() || '',
-          cpf: profileData.cpf?.replace(/\D/g, '') || null,
-          birth_date: profileData.birthDate || null,
-          phone: profileData.phone || null,
-          address: profileData.address?.trim() || null,
-          address_number: profileData.addressNumber?.trim() || null,
-          address_complement: profileData.addressComplement?.trim() || null,
-          neighborhood: profileData.neighborhood?.trim() || null,
-          city: profileData.city?.trim() || null,
-          state: profileData.state?.trim().toUpperCase() || null,
-          postal_code: profileData.postalCode?.replace(/\D/g, '') || null,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', userId);
+    // Chamar a função SQL que existe, passando o ID do admin autenticado
+    const { data: resultUserId, error: functionError } = await supabaseAdmin
+      .rpc('admin_create_student_profile', {
+        p_admin_user_id: user.id, // ID do admin autenticado
+        p_id: newProfileId,
+        p_email: email.trim().toLowerCase(),
+        p_first_name: firstName.trim(),
+        p_last_name: lastName?.trim() || '',
+        p_cpf: profileData.cpf?.replace(/\D/g, '') || null,
+        p_birth_date: profileData.birthDate || null,
+        p_phone: profileData.phone || null,
+        p_address: profileData.address?.trim() || null,
+        p_address_number: profileData.addressNumber?.trim() || null,
+        p_address_complement: profileData.addressComplement?.trim() || null,
+        p_neighborhood: profileData.neighborhood?.trim() || null,
+        p_city: profileData.city?.trim() || null,
+        p_state: profileData.state?.trim().toUpperCase() || null,
+        p_postal_code: profileData.postalCode?.replace(/\D/g, '') || null
+      });
 
-      if (updateError) {
-        console.error('❌ Erro ao atualizar perfil:', updateError);
-        throw new Error(`Erro ao atualizar perfil: ${updateError.message}`);
-      }
-
-      console.log('✅ Perfil atualizado com sucesso:', userId);
-      
-    } else {
-      // Gerar novo ID para o usuário
-      userId = crypto.randomUUID();
-      console.log('✅ Novo ID gerado:', userId);
-
-      // Criar novo perfil diretamente
-      const { error: insertError } = await supabaseAdmin
-        .from('profiles')
-        .insert({
-          id: userId,
-          email: email.trim().toLowerCase(),
-          first_name: firstName.trim(),
-          last_name: lastName?.trim() || '',
-          cpf: profileData.cpf?.replace(/\D/g, '') || null,
-          birth_date: profileData.birthDate || null,
-          phone: profileData.phone || null,
-          address: profileData.address?.trim() || null,
-          address_number: profileData.addressNumber?.trim() || null,
-          address_complement: profileData.addressComplement?.trim() || null,
-          neighborhood: profileData.neighborhood?.trim() || null,
-          city: profileData.city?.trim() || null,
-          state: profileData.state?.trim().toUpperCase() || null,
-          postal_code: profileData.postalCode?.replace(/\D/g, '') || null
-        });
-
-      if (insertError) {
-        console.error('❌ Erro ao criar perfil:', insertError);
-        throw new Error(`Erro ao criar perfil: ${insertError.message}`);
-      }
-
-      console.log('✅ Perfil criado com sucesso:', userId);
+    if (functionError) {
+      console.error('❌ Erro na função SQL:', functionError);
+      throw new Error(`Erro ao processar perfil: ${functionError.message}`);
     }
+
+    console.log('✅ Função SQL executada com sucesso. ID retornado:', resultUserId);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        userId: userId,
+        userId: resultUserId,
         message: 'Aluno cadastrado com sucesso'
       }),
       { 
