@@ -1,12 +1,11 @@
 
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { CardContent, CardFooter } from "@/components/ui/card";
+import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { CardContent } from '@/components/ui/card';
+import { useAuth } from './AuthProvider';
+import { Loader2 } from 'lucide-react';
 
 interface LoginFormProps {
   email: string;
@@ -17,137 +16,41 @@ interface LoginFormProps {
   setErrorMessage: (message: string) => void;
 }
 
-const LoginForm = ({ 
-  email, 
-  setEmail, 
-  password, 
+const LoginForm: React.FC<LoginFormProps> = ({
+  email,
+  setEmail,
+  password,
   setPassword,
   setShowConfirmationAlert,
   setErrorMessage
-}: LoginFormProps) => {
-  const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
+}) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const { signIn } = useAuth();
 
-  const handleSignIn = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setErrorMessage("");
+    setIsLoading(true);
+    setErrorMessage('');
     setShowConfirmationAlert(false);
-    
-    console.log("🔐 === INÍCIO DO PROCESSO DE LOGIN (VERSÃO CORRIGIDA) ===");
-    console.log("📧 Email:", email);
-    console.log("🔑 Senha fornecida:", password ? "***FORNECIDA***" : "VAZIA");
-    console.log("🌐 Supabase URL:", "https://iflrfdhbhezmzbmuikqp.supabase.co");
-    console.log("⏰ Timestamp:", new Date().toISOString());
-    
-    try {
-      console.log("1️⃣ Tentando fazer login com Supabase...");
-      
-      const { error, data } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password: password,
-      });
-      
-      console.log("2️⃣ Resposta do Supabase:");
-      console.log("   - Erro:", error);
-      console.log("   - Dados:", data);
-      console.log("   - Session:", data?.session ? "PRESENTE" : "AUSENTE");
-      console.log("   - User:", data?.user ? "PRESENTE" : "AUSENTE");
-      
-      if (error) {
-        console.error("❌ Erro de login detalhado:");
-        console.error("   - Código:", error.status);
-        console.error("   - Mensagem:", error.message);
-        console.error("   - Nome:", error.name);
-        
-        if (error.message.includes("Email not confirmed")) {
-          console.log("📧 Email não confirmado");
-          setShowConfirmationAlert(true);
-          toast.error("É necessário confirmar o email antes de fazer login");
-        } else if (error.message.includes("Invalid login credentials")) {
-          console.log("🚫 Credenciais inválidas - tentando criar usuário...");
-          
-          // Se as credenciais são inválidas e é o email do super admin, tentar criar
-          if (email === 'midiaputz@gmail.com') {
-            console.log("🔧 Detectado email super admin, tentando criar usuário...");
-            
-            try {
-              const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-                email: email,
-                password: password,
-                options: {
-                  emailRedirectTo: `${window.location.origin}/admin`
-                }
-              });
-              
-              if (signUpError) {
-                console.error("❌ Erro ao criar usuário:", signUpError);
-                setErrorMessage(`Erro ao criar conta: ${signUpError.message}`);
-                toast.error(`Erro ao criar conta: ${signUpError.message}`);
-              } else if (signUpData.user) {
-                console.log("✅ Usuário super admin criado com sucesso!");
-                toast.success("Conta super admin criada! Aguarde processamento...");
-                
-                // Aguardar processamento do trigger
-                setTimeout(() => {
-                  console.log("🔄 Redirecionando para admin após criação...");
-                  navigate("/admin", { replace: true });
-                }, 2000);
-              }
-            } catch (createError: any) {
-              console.error("💥 Erro ao tentar criar usuário:", createError);
-              setErrorMessage(`Erro ao criar usuário: ${createError.message}`);
-              toast.error(`Erro ao criar usuário: ${createError.message}`);
-            }
-          } else {
-            setErrorMessage("Email ou senha incorretos. Verifique suas credenciais e tente novamente.");
-            toast.error("Credenciais inválidas");
-          }
-        } else if (error.message.includes("Email link is invalid")) {
-          console.log("🔗 Link de email inválido");
-          setErrorMessage("Link de email inválido ou expirado.");
-          toast.error("Link de email inválido");
-        } else if (error.message.includes("User not found")) {
-          console.log("👤 Usuário não encontrado");
-          setErrorMessage("Usuário não encontrado. Verifique o email.");
-          toast.error("Usuário não encontrado");
-        } else {
-          console.log("❓ Erro desconhecido");
-          setErrorMessage(`Erro ao fazer login: ${error.message}`);
-          toast.error(`Erro ao fazer login: ${error.message}`);
-        }
-      } else if (data.session) {
-        console.log("✅ Login bem-sucedido!");
-        console.log("   - Session ID:", data.session.access_token.substring(0, 20) + "...");
-        console.log("   - User ID:", data.user?.id);
-        console.log("   - User Email:", data.user?.email);
-        
-        toast.success("Login realizado com sucesso!");
-        
-        console.log("3️⃣ Redirecionando para /admin...");
-        navigate("/admin", { replace: true });
+
+    const { error } = await signIn(email, password);
+
+    if (error) {
+      if (error.message.includes('Invalid login credentials')) {
+        setErrorMessage('Email ou senha incorretos');
+      } else if (error.message.includes('Email not confirmed')) {
+        setErrorMessage('Por favor, confirme seu email antes de fazer login');
       } else {
-        console.log("⚠️ Login sem erro mas também sem session");
-        setErrorMessage("Erro inesperado: login sem sessão");
-        toast.error("Erro inesperado no login");
+        setErrorMessage(`Erro ao fazer login: ${error.message}`);
       }
-    } catch (error: any) {
-      console.error("💥 Erro completo no catch:");
-      console.error("   - Tipo:", typeof error);
-      console.error("   - Erro:", error);
-      console.error("   - Stack:", error.stack);
-      
-      setErrorMessage(`Erro ao fazer login: ${error.message}`);
-      toast.error(`Erro ao fazer login: ${error.message}`);
-    } finally {
-      setLoading(false);
-      console.log("🏁 === FIM DO PROCESSO DE LOGIN ===");
     }
+
+    setIsLoading(false);
   };
 
   return (
-    <form onSubmit={handleSignIn}>
-      <CardContent className="space-y-4 pt-4">
+    <CardContent>
+      <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
           <Input
@@ -157,25 +60,35 @@ const LoginForm = ({
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
+            disabled={isLoading}
           />
         </div>
+        
         <div className="space-y-2">
           <Label htmlFor="password">Senha</Label>
           <Input
             id="password"
             type="password"
+            placeholder="Sua senha"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
+            disabled={isLoading}
           />
         </div>
-      </CardContent>
-      <CardFooter>
-        <Button type="submit" className="w-full" disabled={loading}>
-          {loading ? "Entrando..." : "Entrar"}
+
+        <Button type="submit" className="w-full" disabled={isLoading}>
+          {isLoading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Entrando...
+            </>
+          ) : (
+            'Entrar'
+          )}
         </Button>
-      </CardFooter>
-    </form>
+      </form>
+    </CardContent>
   );
 };
 

@@ -8,13 +8,12 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
 const Header = () => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { user, signOut } = useAuth();
+  const [isOpen, setIsOpen] = useState(false);
+  const { isAuthenticated, user, userRole, signOut } = useAuth();
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
@@ -22,65 +21,72 @@ const Header = () => {
     navigate("/");
   };
 
-  const toggleMenu = () => {
-    setIsMenuOpen(!isMenuOpen);
-  };
+  const navigation = [
+    { name: 'Início', href: '/' },
+    { name: 'Cursos', href: '/courses' },
+    { name: 'Turmas', href: '/classes' },
+    { name: 'Blog', href: '/blog' },
+    { name: 'Contato', href: '/contact' },
+  ];
 
   return (
-    <header className="bg-white shadow-sm sticky top-0 z-50">
-      <div className="container mx-auto px-4">
-        <div className="flex justify-between items-center h-16">
-          <Link to="/" className="text-2xl font-bold text-purple">
-            Escola de Fotografia
-          </Link>
-
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex space-x-8">
-            <Link to="/" className="text-gray-700 hover:text-purple transition-colors">
-              Início
+    <header className="bg-white shadow-lg fixed w-full z-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center py-4">
+          <div className="flex justify-start lg:w-0 lg:flex-1">
+            <Link to="/" className="text-2xl font-bold text-purple-600">
+              Escola de Fotografia
             </Link>
-            <Link to="/courses" className="text-gray-700 hover:text-purple transition-colors">
-              Cursos
-            </Link>
-            <Link to="/classes" className="text-gray-700 hover:text-purple transition-colors">
-              Turmas
-            </Link>
-            <Link to="/blog" className="text-gray-700 hover:text-purple transition-colors">
-              Blog
-            </Link>
-            <Link to="/about" className="text-gray-700 hover:text-purple transition-colors">
-              Sobre
-            </Link>
-            <Link to="/contact" className="text-gray-700 hover:text-purple transition-colors">
-              Contato
-            </Link>
+          </div>
+          
+          <div className="-mr-2 -my-2 md:hidden">
+            <Button
+              variant="ghost"
+              onClick={() => setIsOpen(!isOpen)}
+              className="p-2"
+            >
+              {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </Button>
+          </div>
+          
+          <nav className="hidden md:flex space-x-10">
+            {navigation.map((item) => (
+              <Link
+                key={item.name}
+                to={item.href}
+                className="text-base font-medium text-gray-500 hover:text-gray-900 transition-colors"
+              >
+                {item.name}
+              </Link>
+            ))}
           </nav>
-
-          {/* Auth Section */}
-          <div className="hidden md:flex items-center space-x-4">
-            {user ? (
+          
+          <div className="hidden md:flex items-center justify-end md:flex-1 lg:w-0 space-x-4">
+            {isAuthenticated ? (
               <>
-                <Link to="/student-area" className="text-gray-700 hover:text-purple transition-colors">
-                  Área do Estudante
-                </Link>
-                <Link to="/admin" className="text-gray-700 hover:text-purple transition-colors">
-                  Administração
-                </Link>
+                {(userRole === 'admin' || userRole === 'super_admin' || userRole === 'instructor') && (
+                  <Button 
+                    variant="outline" 
+                    onClick={() => navigate('/admin')}
+                    className="text-sm"
+                  >
+                    Admin
+                  </Button>
+                )}
+                
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm" className="flex items-center space-x-2">
+                    <Button variant="ghost" className="gap-2">
                       <User className="h-4 w-4" />
-                      <span>{user.email}</span>
+                      {user?.email?.split('@')[0] || 'Usuário'}
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => navigate("/student-area")}>
-                      <User className="h-4 w-4 mr-2" />
-                      Meu Perfil
+                    <DropdownMenuItem onClick={() => navigate('/student')}>
+                      Minha Área
                     </DropdownMenuItem>
-                    <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleSignOut}>
-                      <LogOut className="h-4 w-4 mr-2" />
+                      <LogOut className="mr-2 h-4 w-4" />
                       Sair
                     </DropdownMenuItem>
                   </DropdownMenuContent>
@@ -88,124 +94,114 @@ const Header = () => {
               </>
             ) : (
               <>
-                <Link to="/auth">
-                  <Button variant="outline">Entrar</Button>
-                </Link>
-                <Link to="/auth">
-                  <Button>Cadastrar</Button>
-                </Link>
+                <Button variant="ghost" onClick={() => navigate('/login')}>
+                  Entrar
+                </Button>
+                <Button onClick={() => navigate('/login?register=true')}>
+                  Cadastrar
+                </Button>
               </>
             )}
           </div>
-
-          {/* Mobile menu button */}
-          <button
-            className="md:hidden"
-            onClick={toggleMenu}
-            aria-label="Toggle menu"
-          >
-            {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
         </div>
-
-        {/* Mobile Navigation */}
-        {isMenuOpen && (
-          <div className="md:hidden">
-            <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 border-t">
-              <Link
-                to="/"
-                className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-purple"
-                onClick={toggleMenu}
-              >
-                Início
-              </Link>
-              <Link
-                to="/courses"
-                className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-purple"
-                onClick={toggleMenu}
-              >
-                Cursos
-              </Link>
-              <Link
-                to="/classes"
-                className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-purple"
-                onClick={toggleMenu}
-              >
-                Turmas
-              </Link>
-              <Link
-                to="/blog"
-                className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-purple"
-                onClick={toggleMenu}
-              >
-                Blog
-              </Link>
-              <Link
-                to="/about"
-                className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-purple"
-                onClick={toggleMenu}
-              >
-                Sobre
-              </Link>
-              <Link
-                to="/contact"
-                className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-purple"
-                onClick={toggleMenu}
-              >
-                Contato
-              </Link>
-
-              {/* Mobile Auth Section */}
-              <div className="pt-4 border-t">
-                {user ? (
-                  <>
+      </div>
+      
+      {/* Mobile menu */}
+      {isOpen && (
+        <div className="absolute top-0 inset-x-0 p-2 transition transform origin-top-right md:hidden">
+          <div className="rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 bg-white divide-y-2 divide-gray-50">
+            <div className="pt-5 pb-6 px-5">
+              <div className="flex items-center justify-between">
+                <Link to="/" className="text-xl font-bold text-purple-600">
+                  Escola de Fotografia
+                </Link>
+                <Button
+                  variant="ghost"
+                  onClick={() => setIsOpen(false)}
+                  className="p-2"
+                >
+                  <X className="h-6 w-6" />
+                </Button>
+              </div>
+              <div className="mt-6">
+                <nav className="grid gap-y-8">
+                  {navigation.map((item) => (
                     <Link
-                      to="/student-area"
-                      className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-purple"
-                      onClick={toggleMenu}
+                      key={item.name}
+                      to={item.href}
+                      className="text-base font-medium text-gray-900 hover:text-gray-700"
+                      onClick={() => setIsOpen(false)}
                     >
-                      Área do Estudante
+                      {item.name}
                     </Link>
-                    <Link
-                      to="/admin"
-                      className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-purple"
-                      onClick={toggleMenu}
-                    >
-                      Administração
-                    </Link>
-                    <button
-                      onClick={() => {
-                        handleSignOut();
-                        toggleMenu();
-                      }}
-                      className="block w-full text-left px-3 py-2 text-base font-medium text-gray-700 hover:text-purple"
-                    >
-                      Sair ({user.email})
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <Link
-                      to="/auth"
-                      className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-purple"
-                      onClick={toggleMenu}
-                    >
-                      Entrar
-                    </Link>
-                    <Link
-                      to="/auth"
-                      className="block px-3 py-2 text-base font-medium text-purple hover:text-purple-dark"
-                      onClick={toggleMenu}
-                    >
-                      Cadastrar
-                    </Link>
-                  </>
-                )}
+                  ))}
+                </nav>
               </div>
             </div>
+            <div className="py-6 px-5 space-y-6">
+              {isAuthenticated ? (
+                <div className="space-y-4">
+                  <p className="text-sm text-gray-600">
+                    Logado como: {user?.email}
+                  </p>
+                  {(userRole === 'admin' || userRole === 'super_admin' || userRole === 'instructor') && (
+                    <Button 
+                      variant="outline" 
+                      onClick={() => {
+                        navigate('/admin');
+                        setIsOpen(false);
+                      }}
+                      className="w-full"
+                    >
+                      Painel Admin
+                    </Button>
+                  )}
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      navigate('/student');
+                      setIsOpen(false);
+                    }}
+                    className="w-full"
+                  >
+                    Minha Área
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    onClick={handleSignOut}
+                    className="w-full gap-2"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Sair
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <Button 
+                    variant="ghost" 
+                    onClick={() => {
+                      navigate('/login');
+                      setIsOpen(false);
+                    }}
+                    className="w-full"
+                  >
+                    Entrar
+                  </Button>
+                  <Button 
+                    onClick={() => {
+                      navigate('/login?register=true');
+                      setIsOpen(false);
+                    }}
+                    className="w-full"
+                  >
+                    Cadastrar
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </header>
   );
 };

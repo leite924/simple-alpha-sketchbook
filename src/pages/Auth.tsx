@@ -10,8 +10,8 @@ import AlertMessages from "@/components/auth/AlertMessages";
 import { useAuth } from "@/components/auth/AuthProvider";
 
 const Auth = () => {
-  const [email, setEmail] = useState("midiaputz@gmail.com");
-  const [password, setPassword] = useState("*Putz669");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showConfirmationAlert, setShowConfirmationAlert] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const navigate = useNavigate();
@@ -61,7 +61,7 @@ const Auth = () => {
           />
           
           <Tabs defaultValue={defaultTab} value={defaultTab} onValueChange={setDefaultTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-2 mx-6">
               <TabsTrigger value="login">Entrar</TabsTrigger>
               <TabsTrigger value="register">Cadastrar</TabsTrigger>
             </TabsList>

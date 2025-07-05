@@ -1,80 +1,56 @@
-
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider, useAuth } from "@/components/auth/AuthProvider";
-import LoadingPage from "@/components/LoadingPage";
+import { AuthProvider } from "@/components/auth/AuthProvider";
+import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import Index from "./pages/Index";
-import About from "./pages/About";
-import Contact from "./pages/Contact";
-import Courses from "./pages/Courses";
-import CourseDetail from "./pages/CourseDetail";
-import Classes from "./pages/Classes";
-import ClassDetail from "./pages/ClassDetail";
-import Blog from "./pages/Blog";
-import BlogPost from "./pages/BlogPost";
-import Quiz from "./pages/Quiz";
-import StudentArea from "./pages/StudentArea";
-import Finance from "./pages/Finance";
 import Admin from "./pages/Admin";
-import SuperAdminLogin from "./pages/SuperAdminLogin";
-import Login from "./pages/Login";
 import Auth from "./pages/Auth";
-import Checkout from "./pages/Checkout";
-import CheckoutSuccess from "./pages/CheckoutSuccess";
-import NotFound from "./pages/NotFound";
-import NFSeTest from "./pages/NFSeTest";
+import Login from "./pages/Login";
+import Courses from "./pages/Courses";
+import Classes from "./pages/Classes";
+import Blog from "./pages/Blog";
+import Contact from "./pages/Contact";
+import StudentDashboard from "./pages/StudentDashboard";
 
 const queryClient = new QueryClient();
 
-// Componente interno que usa o useAuth hook
-const AppRoutes = () => {
-  const { loading } = useAuth();
-
-  if (loading) {
-    return <LoadingPage />;
-  }
-
-  return (
-    <Routes>
-      <Route path="/" element={<Index />} />
-      <Route path="/sobre" element={<About />} />
-      <Route path="/contato" element={<Contact />} />
-      <Route path="/cursos" element={<Courses />} />
-      <Route path="/curso/:slug" element={<CourseDetail />} />
-      <Route path="/turmas" element={<Classes />} />
-      <Route path="/turma/:id" element={<ClassDetail />} />
-      <Route path="/blog" element={<Blog />} />
-      <Route path="/blog/:slug" element={<BlogPost />} />
-      <Route path="/quiz" element={<Quiz />} />
-      <Route path="/area-do-aluno" element={<StudentArea />} />
-      <Route path="/financeiro" element={<Finance />} />
-      <Route path="/admin" element={<Admin />} />
-      <Route path="/super-admin" element={<SuperAdminLogin />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/auth" element={<Auth />} />
-      <Route path="/checkout" element={<Checkout />} />
-      <Route path="/checkout/success" element={<CheckoutSuccess />} />
-      <Route path="/nfse-test" element={<NFSeTest />} />
-      <Route path="*" element={<NotFound />} />
-    </Routes>
-  );
-};
-
-function App() {
-  return (
-    <QueryClientProvider client={queryClient}>
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
       <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <BrowserRouter>
-            <AppRoutes />
-          </BrowserRouter>
-        </TooltipProvider>
+        <Toaster />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/login" element={<Login />} />
+            <Route 
+              path="/admin/*" 
+              element={
+                <ProtectedRoute requireAuth={true}>
+                  <Admin />
+                </ProtectedRoute>
+              } 
+            />
+            <Route path="/courses" element={<Courses />} />
+            <Route path="/classes" element={<Classes />} />
+            <Route path="/blog" element={<Blog />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route 
+              path="/student" 
+              element={
+                <ProtectedRoute requireAuth={true}>
+                  <StudentDashboard />
+                </ProtectedRoute>
+              } 
+            />
+          </Routes>
+        </BrowserRouter>
       </AuthProvider>
-    </QueryClientProvider>
-  );
-}
+    </TooltipProvider>
+  </QueryClientProvider>
+);
 
 export default App;

@@ -8,10 +8,12 @@ import LoginForm from "@/components/auth/LoginForm";
 import RegisterForm from "@/components/auth/RegisterForm";
 import AlertMessages from "@/components/auth/AlertMessages";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
 
 const Login = () => {
   const [email, setEmail] = useState("midiaputz@gmail.com");
-  const [password, setPassword] = useState("*Putz669");
+  const [password, setPassword] = useState("*Putz123");
   const [showConfirmationAlert, setShowConfirmationAlert] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const navigate = useNavigate();
@@ -23,9 +25,10 @@ const Login = () => {
   useEffect(() => {
     if (isAuthenticated && !loading) {
       console.log("User authenticated, redirecting to admin");
-      navigate("/admin", { replace: true });
+      const from = location.state?.from?.pathname || "/admin";
+      navigate(from, { replace: true });
     }
-  }, [isAuthenticated, loading, navigate]);
+  }, [isAuthenticated, loading, navigate, location]);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -56,47 +59,60 @@ const Login = () => {
   return (
     <MainLayout>
       <div className="container mx-auto flex items-center justify-center py-16">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle className="text-2xl text-center">Área Administrativa</CardTitle>
-            <CardDescription className="text-center">
-              Entre com suas credenciais para acessar o painel administrativo.
-            </CardDescription>
-          </CardHeader>
+        <div className="w-full max-w-md space-y-4">
+          <Button
+            variant="ghost"
+            onClick={() => navigate("/")}
+            className="mb-4"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Voltar ao início
+          </Button>
           
-          <AlertMessages 
-            errorMessage={errorMessage}
-            showConfirmationAlert={showConfirmationAlert}
-            email={email}
-          />
-          
-          <Tabs defaultValue={defaultTab} value={defaultTab} onValueChange={setDefaultTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login">Login</TabsTrigger>
-              <TabsTrigger value="register">Cadastro</TabsTrigger>
-            </TabsList>
-            <TabsContent value="login">
-              <LoginForm 
-                email={email}
-                setEmail={setEmail}
-                password={password}
-                setPassword={setPassword}
-                setShowConfirmationAlert={setShowConfirmationAlert}
-                setErrorMessage={setErrorMessage}
-              />
-            </TabsContent>
-            <TabsContent value="register">
-              <RegisterForm 
-                email={email}
-                setEmail={setEmail}
-                password={password}
-                setPassword={setPassword}
-                setShowConfirmationAlert={setShowConfirmationAlert}
-                setErrorMessage={setErrorMessage}
-              />
-            </TabsContent>
-          </Tabs>
-        </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-2xl text-center">Área Administrativa</CardTitle>
+              <CardDescription className="text-center">
+                Entre com suas credenciais para acessar o painel administrativo.
+              </CardDescription>
+            </CardHeader>
+            
+            <AlertMessages 
+              errorMessage={errorMessage}
+              showConfirmationAlert={showConfirmationAlert}
+              email={email}
+            />
+            
+            <Tabs defaultValue={defaultTab} value={defaultTab} onValueChange={setDefaultTab} className="w-full">
+              <TabsList className="grid w-full grid-cols-2 mx-6">
+                <TabsTrigger value="login">Login</TabsTrigger>
+                <TabsTrigger value="register">Cadastro</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="login">
+                <LoginForm 
+                  email={email}
+                  setEmail={setEmail}
+                  password={password}
+                  setPassword={setPassword}
+                  setShowConfirmationAlert={setShowConfirmationAlert}
+                  setErrorMessage={setErrorMessage}
+                />
+              </TabsContent>
+              
+              <TabsContent value="register">
+                <RegisterForm 
+                  email={email}
+                  setEmail={setEmail}
+                  password={password}
+                  setPassword={setPassword}
+                  setShowConfirmationAlert={setShowConfirmationAlert}
+                  setErrorMessage={setErrorMessage}
+                />
+              </TabsContent>
+            </Tabs>
+          </Card>
+        </div>
       </div>
     </MainLayout>
   );

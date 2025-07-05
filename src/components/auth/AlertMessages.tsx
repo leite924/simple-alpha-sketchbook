@@ -1,6 +1,7 @@
 
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Info, AlertCircle } from "lucide-react";
+import React from 'react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { CheckCircle2, AlertCircle } from 'lucide-react';
 
 interface AlertMessagesProps {
   errorMessage: string;
@@ -8,30 +9,26 @@ interface AlertMessagesProps {
   email: string;
 }
 
-const AlertMessages = ({ errorMessage, showConfirmationAlert, email }: AlertMessagesProps) => {
+const AlertMessages: React.FC<AlertMessagesProps> = ({
+  errorMessage,
+  showConfirmationAlert,
+  email
+}) => {
   return (
     <>
       {errorMessage && (
-        <Alert className="mx-6 mb-4 bg-red-50">
-          <AlertCircle className="h-4 w-4 text-red-500" />
-          <AlertDescription className="text-red-700">
-            {errorMessage}
-          </AlertDescription>
+        <Alert variant="destructive" className="mx-6 mb-4">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{errorMessage}</AlertDescription>
         </Alert>
       )}
       
       {showConfirmationAlert && (
-        <Alert className="mx-6 mb-4 bg-blue-50">
-          <Info className="h-4 w-4 text-blue-500" />
-          <AlertDescription className="text-blue-700">
-            Um email de confirmação foi enviado para <strong>{email}</strong>. 
-            Por favor, verifique sua caixa de entrada e confirme seu email antes de fazer login.
-            <br />
-            <span className="text-xs mt-1 block">
-              (Verifique também sua pasta de spam) 
-              <br />
-              Para administradores: faça login mesmo sem confirmar o email
-            </span>
+        <Alert className="mx-6 mb-4 border-green-200 bg-green-50">
+          <CheckCircle2 className="h-4 w-4 text-green-600" />
+          <AlertDescription className="text-green-800">
+            Conta criada com sucesso! Enviamos um email de confirmação para{' '}
+            <strong>{email}</strong>. Verifique sua caixa de entrada e clique no link para ativar sua conta.
           </AlertDescription>
         </Alert>
       )}
