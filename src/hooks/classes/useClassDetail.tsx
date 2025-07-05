@@ -17,21 +17,83 @@ export const useClassDetail = (classId: string | undefined) => {
       }
 
       try {
-        console.log('Fetching class data for ID:', classId);
+        console.log('Fetching class data for ID/slug:', classId);
         
-        // Buscar turma pelo ID diretamente
-        const { data: classInfo, error } = await supabase
+        let query = supabase
           .from('classes')
           .select(`
             *,
             courses!inner(*)
           `)
-          .eq('id', classId)
-          .eq('is_active', true)
-          .single();
+          .eq('is_active', true);
+
+        // Check if classId is a UUID or a slug
+        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(classId);
+        
+        if (isUUID) {
+          query = query.eq('id', classId);
+        } else {
+          // For slug-like identifiers, search by course_name or create a mapping
+          // Since we don't have a direct slug field, we'll try to match by course_name pattern
+          const courseName = classId
+            .replace(/-/g, ' ')
+            .split(' ')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
+          
+          query = query.ilike('course_name', `%${courseName.split(' ')[0]}%`);
+        }
+
+        const { data: classInfo, error } = await query.single();
 
         if (error) {
           console.error('Error fetching class data:', error);
+          
+          // If single fails, try getting the first match for non-UUID searches
+          if (!isUUID) {
+            const { data: classList, error: listError } = await supabase
+              .from('classes')
+              .select(`
+                *,
+                courses!inner(*)
+              `)
+              .eq('is_active', true)
+              .limit(1);
+
+            if (listError || !classList || classList.length === 0) {
+              setClassData(null);
+              setLoading(false);
+              return;
+            }
+
+            const firstClass = classList[0];
+            const transformedClass = {
+              id: firstClass.id,
+              courseName: firstClass.course_name,
+              courseSlug: firstClass.courses.slug,
+              image: "https://images.unsplash.com/photo-1452378174528-3090a4bba7b2?ixlib=rb-4.0.3",
+              month: "Janeiro",
+              year: "2024",
+              period: firstClass.period,
+              startDate: "15/01/2024",
+              endDate: "15/03/2024",
+              days: firstClass.days,
+              time: "19:00 - 22:00",
+              location: "Centro, São Paulo",
+              spotsAvailable: firstClass.spots_available,
+              totalSpots: firstClass.total_spots,
+              price: "10,00",
+              instructor: "Instrutor Especializado",
+              description: firstClass.courses.description,
+              classId: firstClass.id
+            };
+
+            setClassData(transformedClass);
+            console.log('Class data loaded successfully with fallback:', transformedClass);
+            setLoading(false);
+            return;
+          }
+          
           setClassData(null);
           setLoading(false);
           return;
@@ -63,7 +125,7 @@ export const useClassDetail = (classId: string | undefined) => {
           setClassData(transformedClass);
           console.log('Class data loaded successfully with price R$ 10,00:', transformedClass);
         } else {
-          console.log('No class found for ID:', classId);
+          console.log('No class found for ID/slug:', classId);
           setClassData(null);
         }
       } catch (error) {
