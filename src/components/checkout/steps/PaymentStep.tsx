@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -89,6 +88,12 @@ const PaymentStep = ({ onComplete, classData, orderBump, formData }: PaymentStep
     return true;
   };
 
+  const handlePaymentMethodChange = (value: string) => {
+    if (value === 'credit_card' || value === 'pix' || value === 'bank_slip') {
+      setPaymentMethod(value);
+    }
+  };
+
   const handleFinishOrder = async () => {
     if (!validateForm()) return;
 
@@ -145,7 +150,7 @@ const PaymentStep = ({ onComplete, classData, orderBump, formData }: PaymentStep
         {/* Payment Methods */}
         <div>
           <Label className="text-base font-medium mb-4 block">Escolha a forma de pagamento</Label>
-          <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod}>
+          <RadioGroup value={paymentMethod} onValueChange={handlePaymentMethodChange}>
             {paymentMethods.map((method) => {
               const Icon = method.icon;
               return (
