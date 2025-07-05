@@ -28,12 +28,6 @@ serve(async (req) => {
       }
     )
 
-    // Criar cliente normal para verificar permissões do usuário atual
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-    )
-
     // Verificar autenticação
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
@@ -41,9 +35,9 @@ serve(async (req) => {
       throw new Error('Authorization header is required');
     }
 
-    // Definir sessão no cliente normal
+    // Obter usuário do token JWT
     const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
     
     if (authError || !user) {
       console.error('❌ Auth error:', authError);
@@ -52,8 +46,8 @@ serve(async (req) => {
 
     console.log('✅ Usuário autenticado:', user.email);
 
-    // Verificar se o usuário é admin
-    const { data: userRole, error: roleError } = await supabaseClient
+    // Verificar se o usuário é admin usando o cliente admin
+    const { data: userRole, error: roleError } = await supabaseAdmin
       .from('user_roles')
       .select('role')
       .eq('user_id', user.id)
