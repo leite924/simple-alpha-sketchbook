@@ -508,6 +508,10 @@ export type Database = {
             }
         Returns: string
       }
+      admin_delete_user_by_email: {
+        Args: { user_email: string }
+        Returns: boolean
+      }
       get_ai_settings: {
         Args: Record<PropertyKey, never>
         Returns: {
