@@ -19,13 +19,7 @@ serve(async (req) => {
     // Criar cliente Supabase com service role (admin)
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      }
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
     // Verificar autenticação
@@ -76,36 +70,26 @@ serve(async (req) => {
     }
 
     // Verificar se já existe usuário com este email
-    const { data: existingUser } = await supabaseAdmin.auth.admin.getUserByEmail(email);
+    const { data: profiles, error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .select('id')
+      .eq('email', email)
+      .limit(1);
     
     let userId: string;
 
-    if (existingUser.user) {
+    if (profiles && profiles.length > 0) {
       // Usuário já existe, usar ID existente
-      userId = existingUser.user.id;
+      userId = profiles[0].id;
       console.log('ℹ️ Usuário já existe:', userId);
     } else {
-      // Criar novo usuário na autenticação
-      const { data: newUser, error: createUserError } = await supabaseAdmin.auth.admin.createUser({
-        email: email.trim().toLowerCase(),
-        email_confirm: true, // Confirmar email automaticamente
-        user_metadata: {
-          first_name: firstName.trim(),
-          last_name: lastName?.trim() || ''
-        }
-      });
-
-      if (createUserError || !newUser.user) {
-        console.error('❌ Erro ao criar usuário:', createUserError);
-        throw new Error(`Erro ao criar usuário: ${createUserError?.message}`);
-      }
-
-      userId = newUser.user.id;
-      console.log('✅ Novo usuário criado:', userId);
+      // Gerar novo ID para o usuário
+      userId = crypto.randomUUID();
+      console.log('✅ Novo ID gerado:', userId);
     }
 
     // Usar a função administrativa para criar/atualizar o perfil
-    const { data: profileId, error: profileError } = await supabaseAdmin.rpc('admin_create_student_profile', {
+    const { data: profileId, error: createProfileError } = await supabaseAdmin.rpc('admin_create_student_profile', {
       p_id: userId,
       p_email: email.trim().toLowerCase(),
       p_first_name: firstName.trim(),
@@ -122,9 +106,9 @@ serve(async (req) => {
       p_postal_code: profileData.postalCode?.replace(/\D/g, '') || null
     });
 
-    if (profileError) {
-      console.error('❌ Erro ao criar/atualizar perfil:', profileError);
-      throw new Error(`Erro ao processar perfil: ${profileError.message}`);
+    if (createProfileError) {
+      console.error('❌ Erro ao criar/atualizar perfil:', createProfileError);
+      throw new Error(`Erro ao processar perfil: ${createProfileError.message}`);
     }
 
     console.log('✅ Perfil criado/atualizado com sucesso:', profileId);
