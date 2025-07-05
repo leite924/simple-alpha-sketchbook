@@ -1,5 +1,5 @@
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
 import { 
   CertificateValidationService, 
@@ -17,18 +17,33 @@ export const useCertificateValidation = () => {
     testConnectivity: boolean = true,
     showToasts: boolean = true
   ) => {
-    if (!file || !password) {
+    console.log('🔐 useCertificateValidation.validateCertificate chamado');
+    console.log('📁 Arquivo:', file?.name, 'Tamanho:', file?.size);
+    console.log('🔑 Senha fornecida:', password ? 'sim' : 'não');
+    console.log('🌐 Testar conectividade:', testConnectivity);
+    console.log('🔔 Mostrar toasts:', showToasts);
+
+    if (!file) {
+      console.error('❌ Arquivo não fornecido');
       if (showToasts) {
-        toast.error('Arquivo e senha do certificado são obrigatórios');
+        toast.error('Arquivo do certificado é obrigatório');
       }
-      return;
+      return null;
+    }
+
+    if (!password || password.length < 4) {
+      console.error('❌ Senha não fornecida ou muito curta');
+      if (showToasts) {
+        toast.error('Senha do certificado é obrigatória e deve ter pelo menos 4 caracteres');
+      }
+      return null;
     }
 
     setIsValidating(true);
     setValidationResult(null);
 
     try {
-      console.log('🔐 Iniciando validação automática do certificado...');
+      console.log('🔐 Iniciando validação do certificado...');
       
       const result = await CertificateValidationService.validateCertificate(
         file,
@@ -36,9 +51,10 @@ export const useCertificateValidation = () => {
         testConnectivity
       );
 
+      console.log('📊 Resultado da validação:', result);
       setValidationResult(result);
 
-      if (showToasts) {
+      if (showToasts && result) {
         if (result.isValid && result.certificateInfo) {
           const expiryCheck = CertificateValidationService.checkExpiryWarning(result.certificateInfo);
           
@@ -77,12 +93,13 @@ export const useCertificateValidation = () => {
       }
       const errorResult = {
         isValid: false,
-        error: 'Erro inesperado na validação'
+        error: error instanceof Error ? error.message : 'Erro inesperado na validação'
       };
       setValidationResult(errorResult);
       return errorResult;
     } finally {
       setIsValidating(false);
+      console.log('⏹️ Validação finalizada');
     }
   }, []);
 
@@ -99,10 +116,12 @@ export const useCertificateValidation = () => {
   }, [autoValidationEnabled, validateCertificate]);
 
   const clearValidation = useCallback(() => {
+    console.log('🧹 Limpando resultado da validação');
     setValidationResult(null);
   }, []);
 
   const toggleAutoValidation = useCallback((enabled: boolean) => {
+    console.log('⚙️ Auto-validação alterada para:', enabled);
     setAutoValidationEnabled(enabled);
   }, []);
 

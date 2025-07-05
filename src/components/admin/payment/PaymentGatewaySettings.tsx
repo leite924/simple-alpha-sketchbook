@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,7 +19,7 @@ interface PaymentGatewaySettingsProps {
 
 export const PaymentGatewaySettings = ({ onSave }: PaymentGatewaySettingsProps) => {
   const { settings, isLoading, isInitialized, saveSettings, updateSetting, updateCertificadoSetting } = useNFSeSettings();
-  const { validationResult, isValidating, validateCertificate, clearValidation } = useCertificateValidation();
+  const { validationResult, isValidating, validateCertificate, autoValidate, clearValidation } = useCertificateValidation();
   const [logoPreview, setLogoPreview] = useState("/lovable-uploads/d580b9f4-ed3f-44c5-baa5-e0a42dfcb768.png");
   const [selectedCertificateFile, setSelectedCertificateFile] = useState<File | null>(null);
 
@@ -40,31 +39,52 @@ export const PaymentGatewaySettings = ({ onSave }: PaymentGatewaySettingsProps) 
   const handleCertificadoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      console.log('Certificado selecionado:', file.name);
+      console.log('📁 Certificado selecionado:', file.name, 'Tamanho:', file.size);
       setSelectedCertificateFile(file);
       updateCertificadoSetting('arquivo', file.name);
       clearValidation(); // Limpar validação anterior
+      toast.success(`Arquivo selecionado: ${file.name}`);
     }
   };
 
   const handleCertificatePasswordChange = (password: string) => {
+    console.log('🔐 Senha do certificado alterada');
     updateCertificadoSetting('senha', password);
     clearValidation(); // Limpar validação quando senha muda
+    
+    // Auto validação quando arquivo e senha estão disponíveis
+    if (selectedCertificateFile && password && password.length >= 4) {
+      console.log('🔄 Iniciando auto-validação...');
+      autoValidate(selectedCertificateFile, password);
+    }
   };
 
   const handleValidateCertificate = async () => {
+    console.log('🔐 Botão validar clicado');
+    console.log('📁 Arquivo selecionado:', selectedCertificateFile?.name);
+    console.log('🔑 Senha fornecida:', settings.certificado.senha ? '***' : 'não fornecida');
+    
     if (!selectedCertificateFile) {
+      console.error('❌ Nenhum arquivo selecionado');
       toast.error('Por favor, selecione um arquivo de certificado primeiro');
       return;
     }
 
-    if (!settings.certificado.senha) {
+    if (!settings.certificado.senha || settings.certificado.senha.length < 4) {
+      console.error('❌ Senha não fornecida ou muito curta');
       toast.error('Por favor, digite a senha do certificado');
       return;
     }
 
-    console.log('🔐 Iniciando validação do certificado...');
-    await validateCertificate(selectedCertificateFile, settings.certificado.senha, true);
+    console.log('✅ Validação iniciada com sucesso');
+    toast.info('🔍 Iniciando validação do certificado...');
+    
+    try {
+      await validateCertificate(selectedCertificateFile, settings.certificado.senha, true, true);
+    } catch (error) {
+      console.error('❌ Erro na validação:', error);
+      toast.error('Erro inesperado na validação do certificado');
+    }
   };
 
   const handleSave = async () => {
@@ -247,7 +267,7 @@ export const PaymentGatewaySettings = ({ onSave }: PaymentGatewaySettingsProps) 
             <div className="flex gap-2 mt-1">
               <div className="flex-1">
                 <Input
-                  value={settings.certificado.arquivo}
+                  value={selectedCertificateFile ? selectedCertificateFile.name : settings.certificado.arquivo}
                   placeholder="Nenhum arquivo selecionado"
                   readOnly
                   className="bg-gray-50"
@@ -268,6 +288,11 @@ export const PaymentGatewaySettings = ({ onSave }: PaymentGatewaySettingsProps) 
                 onChange={handleCertificadoUpload}
               />
             </div>
+            {selectedCertificateFile && (
+              <p className="text-xs text-green-600 mt-1">
+                ✅ Arquivo carregado: {selectedCertificateFile.name} ({(selectedCertificateFile.size / 1024).toFixed(1)} KB)
+              </p>
+            )}
           </div>
           
           <div>
@@ -276,10 +301,7 @@ export const PaymentGatewaySettings = ({ onSave }: PaymentGatewaySettingsProps) 
               id="cert-password"
               type="password"
               value={settings.certificado.senha}
-              onChange={(e) => {
-                console.log('Senha do certificado alterada');
-                handleCertificatePasswordChange(e.target.value);
-              }}
+              onChange={(e) => handleCertificatePasswordChange(e.target.value)}
               placeholder="Digite a senha do certificado"
             />
           </div>
@@ -298,11 +320,16 @@ export const PaymentGatewaySettings = ({ onSave }: PaymentGatewaySettingsProps) 
           </div>
 
           {/* Botão de Validação - Mais Proeminente */}
-          <div className="pt-4 border-t bg-blue-50 p-4 rounded-lg">
+          <div className="pt-4 border-t bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg">
             <div className="flex items-center justify-between mb-3">
               <div>
-                <h4 className="font-medium text-blue-900">Validação Automática</h4>
-                <p className="text-sm text-blue-600">Verifique se o certificado está configurado corretamente</p>
+                <h4 className="font-medium text-blue-900">Validação do Certificado</h4>
+                <p className="text-sm text-blue-600">
+                  {validationResult?.isValid 
+                    ? '✅ Certificado validado e funcionando'
+                    : 'Clique para verificar se o certificado está configurado corretamente'
+                  }
+                </p>
               </div>
               {validationResult?.isValid && (
                 <CheckCircle className="h-5 w-5 text-green-600" />
@@ -312,18 +339,32 @@ export const PaymentGatewaySettings = ({ onSave }: PaymentGatewaySettingsProps) 
             <Button 
               onClick={handleValidateCertificate}
               disabled={isValidating || !selectedCertificateFile || !settings.certificado.senha}
-              className="w-full bg-blue-600 hover:bg-blue-700"
+              className={`w-full text-white font-medium ${
+                validationResult?.isValid 
+                  ? 'bg-green-600 hover:bg-green-700' 
+                  : 'bg-blue-600 hover:bg-blue-700'
+              }`}
             >
               <TestTube className="h-4 w-4 mr-2" />
-              {isValidating ? 'Validando Certificado...' : 'Validar Certificado Agora'}
+              {isValidating 
+                ? '🔍 Validando Certificado...' 
+                : validationResult?.isValid 
+                  ? 'Revalidar Certificado'
+                  : 'Validar Certificado Agora'
+              }
             </Button>
             
-            {!selectedCertificateFile && (
-              <p className="text-xs text-gray-500 mt-2">* Selecione um arquivo de certificado primeiro</p>
-            )}
-            {selectedCertificateFile && !settings.certificado.senha && (
-              <p className="text-xs text-gray-500 mt-2">* Digite a senha do certificado</p>
-            )}
+            <div className="flex gap-4 mt-2 text-xs">
+              {!selectedCertificateFile && (
+                <p className="text-red-500">• Selecione um arquivo de certificado</p>
+              )}
+              {selectedCertificateFile && !settings.certificado.senha && (
+                <p className="text-red-500">• Digite a senha do certificado</p>
+              )}
+              {selectedCertificateFile && settings.certificado.senha && (
+                <p className="text-green-600">• Pronto para validar!</p>
+              )}
+            </div>
           </div>
 
           {/* Display do Status do Certificado */}
