@@ -53,38 +53,102 @@ export const PaymentGatewaySettings = ({ onSave }: PaymentGatewaySettingsProps) 
     clearValidation(); // Limpar validação quando senha muda
     
     // Auto validação quando arquivo e senha estão disponíveis
-    if (selectedCertificateFile && password && password.length >= 4) {
+    const hasFile = selectedCertificateFile || settings.certificado.arquivo;
+    if (hasFile && password && password.length >= 4) {
       console.log('🔄 Iniciando auto-validação...');
-      autoValidate(selectedCertificateFile, password);
+      
+      // Se temos arquivo selecionado, usar ele; senão simular um arquivo
+      const fileToValidate = selectedCertificateFile || createMockFileFromName(settings.certificado.arquivo);
+      if (fileToValidate) {
+        autoValidate(fileToValidate, password);
+      }
+    }
+  };
+
+  // Função para criar um arquivo simulado baseado no nome salvo
+  const createMockFileFromName = (fileName: string): File | null => {
+    if (!fileName) return null;
+    try {
+      // Criar um arquivo vazio com o nome correto para validação
+      const blob = new Blob([''], { type: 'application/x-pkcs12' });
+      return new File([blob], fileName, { type: 'application/x-pkcs12' });
+    } catch (error) {
+      console.error('❌ Erro ao criar arquivo simulado:', error);
+      return null;
     }
   };
 
   const handleValidateCertificate = async () => {
     console.log('🔐 Botão validar clicado');
     console.log('📁 Arquivo selecionado:', selectedCertificateFile?.name);
+    console.log('💾 Arquivo salvo:', settings.certificado.arquivo);
     console.log('🔑 Senha fornecida:', settings.certificado.senha ? '***' : 'não fornecida');
     
-    if (!selectedCertificateFile) {
-      console.error('❌ Nenhum arquivo selecionado');
+    // Verificar se temos arquivo (selecionado ou salvo)
+    const hasSelectedFile = selectedCertificateFile !== null;
+    const hasSavedFile = settings.certificado.arquivo && settings.certificado.arquivo.trim() !== '';
+    const hasValidPassword = settings.certificado.senha && settings.certificado.senha.length >= 4;
+    
+    console.log('🔍 Estado da validação:');
+    console.log('  - Arquivo selecionado:', hasSelectedFile);
+    console.log('  - Arquivo salvo:', hasSavedFile);
+    console.log('  - Senha válida:', hasValidPassword);
+    
+    if (!hasSelectedFile && !hasSavedFile) {
+      console.error('❌ Nenhum arquivo disponível');
       toast.error('Por favor, selecione um arquivo de certificado primeiro');
       return;
     }
 
-    if (!settings.certificado.senha || settings.certificado.senha.length < 4) {
+    if (!hasValidPassword) {
       console.error('❌ Senha não fornecida ou muito curta');
-      toast.error('Por favor, digite a senha do certificado');
+      toast.error('Por favor, digite a senha do certificado (mínimo 4 caracteres)');
       return;
     }
 
-    console.log('✅ Validação iniciada com sucesso');
+    // Determinar qual arquivo usar para validação
+    let fileToValidate: File | null = null;
+    
+    if (hasSelectedFile) {
+      fileToValidate = selectedCertificateFile;
+      console.log('✅ Usando arquivo selecionado:', fileToValidate?.name);
+    } else if (hasSavedFile) {
+      fileToValidate = createMockFileFromName(settings.certificado.arquivo);
+      console.log('✅ Usando arquivo salvo simulado:', settings.certificado.arquivo);
+    }
+
+    if (!fileToValidate) {
+      console.error('❌ Falha ao preparar arquivo para validação');
+      toast.error('Erro ao preparar arquivo para validação');
+      return;
+    }
+
+    console.log('🚀 Validação iniciada com sucesso');
     toast.info('🔍 Iniciando validação do certificado...');
     
     try {
-      await validateCertificate(selectedCertificateFile, settings.certificado.senha, true, true);
+      await validateCertificate(fileToValidate, settings.certificado.senha, true, true);
     } catch (error) {
       console.error('❌ Erro na validação:', error);
       toast.error('Erro inesperado na validação do certificado');
     }
+  };
+
+  // Verificar se o botão deve estar habilitado
+  const isValidateButtonEnabled = () => {
+    const hasFile = selectedCertificateFile || (settings.certificado.arquivo && settings.certificado.arquivo.trim() !== '');
+    const hasPassword = settings.certificado.senha && settings.certificado.senha.length >= 4;
+    const notValidating = !isValidating;
+    
+    const enabled = hasFile && hasPassword && notValidating;
+    
+    console.log('🔘 Estado do botão validar:');
+    console.log('  - Tem arquivo:', hasFile);
+    console.log('  - Tem senha:', hasPassword);
+    console.log('  - Não está validando:', notValidating);
+    console.log('  - Botão habilitado:', enabled);
+    
+    return enabled;
   };
 
   const handleSave = async () => {
@@ -293,6 +357,11 @@ export const PaymentGatewaySettings = ({ onSave }: PaymentGatewaySettingsProps) 
                 ✅ Arquivo carregado: {selectedCertificateFile.name} ({(selectedCertificateFile.size / 1024).toFixed(1)} KB)
               </p>
             )}
+            {!selectedCertificateFile && settings.certificado.arquivo && (
+              <p className="text-xs text-blue-600 mt-1">
+                💾 Arquivo salvo: {settings.certificado.arquivo}
+              </p>
+            )}
           </div>
           
           <div>
@@ -338,7 +407,7 @@ export const PaymentGatewaySettings = ({ onSave }: PaymentGatewaySettingsProps) 
             
             <Button 
               onClick={handleValidateCertificate}
-              disabled={isValidating || !selectedCertificateFile || !settings.certificado.senha}
+              disabled={!isValidateButtonEnabled()}
               className={`w-full text-white font-medium ${
                 validationResult?.isValid 
                   ? 'bg-green-600 hover:bg-green-700' 
@@ -355,13 +424,16 @@ export const PaymentGatewaySettings = ({ onSave }: PaymentGatewaySettingsProps) 
             </Button>
             
             <div className="flex gap-4 mt-2 text-xs">
-              {!selectedCertificateFile && (
+              {!selectedCertificateFile && !settings.certificado.arquivo && (
                 <p className="text-red-500">• Selecione um arquivo de certificado</p>
               )}
-              {selectedCertificateFile && !settings.certificado.senha && (
+              {(selectedCertificateFile || settings.certificado.arquivo) && !settings.certificado.senha && (
                 <p className="text-red-500">• Digite a senha do certificado</p>
               )}
-              {selectedCertificateFile && settings.certificado.senha && (
+              {(selectedCertificateFile || settings.certificado.arquivo) && settings.certificado.senha && settings.certificado.senha.length < 4 && (
+                <p className="text-red-500">• Senha deve ter pelo menos 4 caracteres</p>
+              )}
+              {(selectedCertificateFile || settings.certificado.arquivo) && settings.certificado.senha && settings.certificado.senha.length >= 4 && (
                 <p className="text-green-600">• Pronto para validar!</p>
               )}
             </div>

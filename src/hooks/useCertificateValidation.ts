@@ -107,11 +107,18 @@ export const useCertificateValidation = () => {
   const autoValidate = useCallback(async (file: File | null, password: string) => {
     if (autoValidationEnabled && file && password && password.length >= 4) {
       console.log('🔄 Executando validação automática...');
+      console.log('📁 Arquivo para auto-validação:', file.name);
+      console.log('🔑 Senha para auto-validação:', password ? '***' : 'não fornecida');
       
       // Pequeno delay para evitar validações desnecessárias
       setTimeout(() => {
         validateCertificate(file, password, true, false);
-      }, 1000);
+      }, 1500);
+    } else {
+      console.log('🚫 Auto-validação não executada:');
+      console.log('  - Auto-validação habilitada:', autoValidationEnabled);
+      console.log('  - Arquivo presente:', !!file);
+      console.log('  - Senha válida:', password && password.length >= 4);
     }
   }, [autoValidationEnabled, validateCertificate]);
 
