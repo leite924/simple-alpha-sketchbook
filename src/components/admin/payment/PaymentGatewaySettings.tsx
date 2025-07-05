@@ -8,23 +8,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { CreditCard, Upload } from "lucide-react";
+import { useNFSeSettings } from "@/hooks/useNFSeSettings";
 
 interface PaymentGatewaySettingsProps {
   onSave: () => void;
 }
 
 export const PaymentGatewaySettings = ({ onSave }: PaymentGatewaySettingsProps) => {
-  const [invoiceSettings, setInvoiceSettings] = useState({
-    autoGenerate: false,
-    autoGenerateStatus: "completed",
-  });
-
+  const { settings, isLoading, saveSettings, updateSetting } = useNFSeSettings();
   const [logoPreview, setLogoPreview] = useState("/lovable-uploads/d580b9f4-ed3f-44c5-baa5-e0a42dfcb768.png");
 
   const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      // Em um sistema real, aqui teríamos upload para o servidor
       const reader = new FileReader();
       reader.onload = (e) => {
         if (e.target?.result) {
@@ -32,6 +28,13 @@ export const PaymentGatewaySettings = ({ onSave }: PaymentGatewaySettingsProps) 
         }
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSave = async () => {
+    const success = await saveSettings(settings);
+    if (success) {
+      onSave();
     }
   };
 
@@ -89,18 +92,18 @@ export const PaymentGatewaySettings = ({ onSave }: PaymentGatewaySettingsProps) 
             <div className="flex items-center space-x-2">
               <Switch 
                 id="auto-generate" 
-                checked={invoiceSettings.autoGenerate}
-                onCheckedChange={(checked) => setInvoiceSettings({...invoiceSettings, autoGenerate: checked})}
+                checked={settings.autoGenerate}
+                onCheckedChange={(checked) => updateSetting('autoGenerate', checked)}
               />
               <Label htmlFor="auto-generate">Gerar notas fiscais automaticamente</Label>
             </div>
             
-            {invoiceSettings.autoGenerate && (
+            {settings.autoGenerate && (
               <div>
                 <Label htmlFor="invoice-status">Estado para emissão automática</Label>
                 <Select 
-                  value={invoiceSettings.autoGenerateStatus}
-                  onValueChange={(value) => setInvoiceSettings({...invoiceSettings, autoGenerateStatus: value})}
+                  value={settings.autoGenerateStatus}
+                  onValueChange={(value: 'completed' | 'all') => updateSetting('autoGenerateStatus', value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione o status" />
@@ -115,17 +118,32 @@ export const PaymentGatewaySettings = ({ onSave }: PaymentGatewaySettingsProps) 
 
             <div>
               <Label htmlFor="cnpj">CNPJ</Label>
-              <Input id="cnpj" placeholder="XX.XXX.XXX/0001-XX" />
+              <Input 
+                id="cnpj" 
+                placeholder="XX.XXX.XXX/0001-XX" 
+                value={settings.cnpj}
+                onChange={(e) => updateSetting('cnpj', e.target.value)}
+              />
             </div>
             
             <div>
               <Label htmlFor="razao-social">Razão Social</Label>
-              <Input id="razao-social" placeholder="Escola Pernambucana de Fotografia LTDA" />
+              <Input 
+                id="razao-social" 
+                placeholder="Escola Pernambucana de Fotografia LTDA" 
+                value={settings.razaoSocial}
+                onChange={(e) => updateSetting('razaoSocial', e.target.value)}
+              />
             </div>
             
             <div>
               <Label htmlFor="codigo-servico">Código de Serviço</Label>
-              <Input id="codigo-servico" placeholder="Ex: 8.02" />
+              <Input 
+                id="codigo-servico" 
+                placeholder="Ex: 8.02" 
+                value={settings.codigoServico}
+                onChange={(e) => updateSetting('codigoServico', e.target.value)}
+              />
             </div>
           </div>
         </div>
@@ -171,9 +189,9 @@ export const PaymentGatewaySettings = ({ onSave }: PaymentGatewaySettingsProps) 
       </div>
       
       <div className="flex justify-end">
-        <Button onClick={onSave} className="px-6">
+        <Button onClick={handleSave} className="px-6" disabled={isLoading}>
           <CreditCard className="mr-2 h-4 w-4" />
-          Salvar Configurações
+          {isLoading ? 'Salvando...' : 'Salvar Configurações'}
         </Button>
       </div>
     </div>
