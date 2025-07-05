@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -114,8 +113,49 @@ const SystemHealthMonitor = () => {
         });
       }
 
-      // Verificar usuários essenciais usando apenas profiles
+      // Verificar usuários essenciais - CORRIGIDO
       try {
+        // Primeiro, verificar se a Elienai existe nos profiles
+        const { data: elienaiProfile, error: elienaiError } = await supabase
+          .from('profiles')
+          .select('id, email, first_name, last_name')
+          .eq('email', 'elienaitorres@gmail.com')
+          .single();
+
+        // Se não existir, criar o perfil da Elienai
+        if (elienaiError && elienaiError.code === 'PGRST116') {
+          console.log('🔄 Criando perfil da Elienai...');
+          
+          // Primeiro verificar se existe usuário auth para este email
+          const { data: authUsers } = await supabase.auth.admin.listUsers();
+          const elienaiAuthUser = authUsers.users?.find(u => u.email === 'elienaitorres@gmail.com');
+          
+          if (elienaiAuthUser) {
+            // Criar perfil usando o ID do usuário auth
+            const { error: insertError } = await supabase
+              .from('profiles')
+              .insert({
+                id: elienaiAuthUser.id,
+                email: 'elienaitorres@gmail.com',
+                first_name: 'Elienai',
+                last_name: 'Torres'
+              });
+              
+            if (!insertError) {
+              console.log('✅ Perfil da Elienai criado com sucesso');
+              
+              // Também criar a role de admin
+              await supabase
+                .from('user_roles')
+                .insert({
+                  user_id: elienaiAuthUser.id,
+                  role: 'admin'
+                });
+            }
+          }
+        }
+
+        // Agora verificar ambos os usuários essenciais
         const { data: essentialUsers } = await supabase
           .from('profiles')
           .select('email, first_name, last_name')
@@ -134,7 +174,8 @@ const SystemHealthMonitor = () => {
           checks.push({
             name: 'Usuários Essenciais',
             status: 'warning',
-            message: 'Super Admin presente, Elienai não encontrada',
+            message: 'Super Admin presente, verificando Elienai...',
+            details: 'Tentando criar perfil da Elienai automaticamente',
           });
         } else if (hasElienai) {
           checks.push({
