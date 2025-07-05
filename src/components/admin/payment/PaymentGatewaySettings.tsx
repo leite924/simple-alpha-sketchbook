@@ -32,7 +32,8 @@ export const PaymentGatewaySettings = ({ onSave }: PaymentGatewaySettingsProps) 
   };
 
   const handleSave = async () => {
-    const success = await saveSettings(settings);
+    console.log('Salvando configurações manuais...');
+    const success = await saveSettings();
     if (success) {
       onSave();
     }
@@ -93,7 +94,10 @@ export const PaymentGatewaySettings = ({ onSave }: PaymentGatewaySettingsProps) 
               <Switch 
                 id="auto-generate" 
                 checked={settings.autoGenerate}
-                onCheckedChange={(checked) => updateSetting('autoGenerate', checked)}
+                onCheckedChange={(checked) => {
+                  console.log('Toggle alterado para:', checked);
+                  updateSetting('autoGenerate', checked);
+                }}
               />
               <Label htmlFor="auto-generate">Gerar notas fiscais automaticamente</Label>
             </div>
@@ -103,7 +107,10 @@ export const PaymentGatewaySettings = ({ onSave }: PaymentGatewaySettingsProps) 
                 <Label htmlFor="invoice-status">Estado para emissão automática</Label>
                 <Select 
                   value={settings.autoGenerateStatus}
-                  onValueChange={(value: 'completed' | 'all') => updateSetting('autoGenerateStatus', value)}
+                  onValueChange={(value: 'completed' | 'all') => {
+                    console.log('Status alterado para:', value);
+                    updateSetting('autoGenerateStatus', value);
+                  }}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione o status" />
@@ -122,7 +129,10 @@ export const PaymentGatewaySettings = ({ onSave }: PaymentGatewaySettingsProps) 
                 id="cnpj" 
                 placeholder="XX.XXX.XXX/0001-XX" 
                 value={settings.cnpj}
-                onChange={(e) => updateSetting('cnpj', e.target.value)}
+                onChange={(e) => {
+                  console.log('CNPJ alterado para:', e.target.value);
+                  updateSetting('cnpj', e.target.value);
+                }}
               />
             </div>
             
@@ -132,7 +142,10 @@ export const PaymentGatewaySettings = ({ onSave }: PaymentGatewaySettingsProps) 
                 id="razao-social" 
                 placeholder="Escola Pernambucana de Fotografia LTDA" 
                 value={settings.razaoSocial}
-                onChange={(e) => updateSetting('razaoSocial', e.target.value)}
+                onChange={(e) => {
+                  console.log('Razão Social alterada para:', e.target.value);
+                  updateSetting('razaoSocial', e.target.value);
+                }}
               />
             </div>
             
@@ -142,7 +155,10 @@ export const PaymentGatewaySettings = ({ onSave }: PaymentGatewaySettingsProps) 
                 id="codigo-servico" 
                 placeholder="Ex: 8.02" 
                 value={settings.codigoServico}
-                onChange={(e) => updateSetting('codigoServico', e.target.value)}
+                onChange={(e) => {
+                  console.log('Código de Serviço alterado para:', e.target.value);
+                  updateSetting('codigoServico', e.target.value);
+                }}
               />
             </div>
           </div>
