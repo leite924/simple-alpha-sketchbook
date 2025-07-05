@@ -6,6 +6,7 @@ interface EnrollmentFormProps {
   totalSpots: number;
   classTitle: string;
   classPeriod: string;
+  classId?: string;
 }
 
 // This component is a wrapper to maintain backward compatibility

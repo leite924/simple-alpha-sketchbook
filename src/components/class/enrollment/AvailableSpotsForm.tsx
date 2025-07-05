@@ -59,8 +59,12 @@ const AvailableSpotsForm = ({
       />
       
       <Button className="w-full" disabled={isSubmitting}>
-        {isSubmitting ? "Processando..." : "Reservar minha vaga"}
+        {isSubmitting ? "Processando..." : "Prosseguir para pagamento"}
       </Button>
+      
+      <p className="text-xs text-gray-500 text-center">
+        Você será redirecionado para finalizar sua matrícula
+      </p>
     </form>
   );
 };

@@ -7,105 +7,14 @@ import { Link } from "react-router-dom";
 import { Calendar, Clock, Filter, MapPin, Search, Users } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
-// Mock classes data
-const classes = [
-  {
-    id: 1,
-    courseName: "Fotografia Básica",
-    courseSlug: "fotografia-basica",
-    image: "https://images.unsplash.com/photo-1452378174528-3090a4bba7b2?ixlib=rb-4.0.3",
-    month: "Agosto",
-    year: "2023",
-    period: "Noturno",
-    startDate: "07/08/2023",
-    endDate: "01/09/2023",
-    days: "Segundas e Quartas",
-    time: "19:00 - 22:00",
-    location: "Centro, São Paulo",
-    spotsAvailable: 5,
-    totalSpots: 15,
-    price: "R$ 1.200",
-    instructor: "Carlos Mendes",
-  },
-  {
-    id: 2,
-    courseName: "Fotografia Básica",
-    courseSlug: "fotografia-basica",
-    image: "https://images.unsplash.com/photo-1452378174528-3090a4bba7b2?ixlib=rb-4.0.3",
-    month: "Setembro",
-    year: "2023",
-    period: "Matutino",
-    startDate: "11/09/2023",
-    endDate: "06/10/2023",
-    days: "Terças e Quintas",
-    time: "09:00 - 12:00",
-    location: "Centro, São Paulo",
-    spotsAvailable: 10,
-    totalSpots: 15,
-    price: "R$ 1.200",
-    instructor: "Ana Silva",
-  },
-  {
-    id: 3,
-    courseName: "Fotografia de Retrato",
-    courseSlug: "fotografia-retrato",
-    image: "https://images.unsplash.com/photo-1441057206919-63d19fac2369?ixlib=rb-4.0.3",
-    month: "Setembro",
-    year: "2023",
-    period: "Noturno",
-    startDate: "04/09/2023",
-    endDate: "13/10/2023",
-    days: "Segundas e Quartas",
-    time: "19:00 - 22:00",
-    location: "Centro, São Paulo",
-    spotsAvailable: 8,
-    totalSpots: 12,
-    price: "R$ 1.500",
-    instructor: "Carlos Mendes",
-  },
-  {
-    id: 4,
-    courseName: "Fotografia de Paisagem",
-    courseSlug: "fotografia-paisagem",
-    image: "https://images.unsplash.com/photo-1439886183900-e79ec0057170?ixlib=rb-4.0.3",
-    month: "Outubro",
-    year: "2023",
-    period: "Final de Semana",
-    startDate: "07/10/2023",
-    endDate: "28/10/2023",
-    days: "Sábados",
-    time: "09:00 - 16:00",
-    location: "Centro, São Paulo",
-    spotsAvailable: 15,
-    totalSpots: 15,
-    price: "R$ 1.400",
-    instructor: "Ana Silva",
-  },
-  {
-    id: 5,
-    courseName: "Pós-produção e Edição",
-    courseSlug: "pos-producao-edicao",
-    image: "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?ixlib=rb-4.0.3",
-    month: "Setembro",
-    year: "2023",
-    period: "Noturno",
-    startDate: "12/09/2023",
-    endDate: "19/10/2023",
-    days: "Terças e Quintas",
-    time: "19:00 - 22:00",
-    location: "Centro, São Paulo",
-    spotsAvailable: 0,
-    totalSpots: 15,
-    price: "R$ 1.600",
-    instructor: "Ricardo Oliveira",
-  },
-];
+import { useClasses } from "@/hooks/classes/useClasses";
 
 const Classes = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [periodFilter, setPeriodFilter] = useState("all");
   const [monthFilter, setMonthFilter] = useState("all");
+  
+  const { data: classes = [], isLoading, error } = useClasses();
 
   const filteredClasses = classes.filter((classItem) => {
     const matchesSearch = classItem.courseName
@@ -118,6 +27,19 @@ const Classes = () => {
       
     return matchesSearch && matchesPeriod && matchesMonth;
   });
+
+  if (error) {
+    return (
+      <MainLayout>
+        <div className="container mx-auto py-10">
+          <div className="bg-red-50 p-6 rounded-lg">
+            <h2 className="text-xl font-bold text-red-700 mb-4">Erro ao carregar turmas</h2>
+            <p>{error instanceof Error ? error.message : 'Ocorreu um erro inesperado'}</p>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
@@ -172,7 +94,7 @@ const Classes = () => {
                     <SelectItem value="all">Todos os turnos</SelectItem>
                     <SelectItem value="matutino">Matutino</SelectItem>
                     <SelectItem value="noturno">Noturno</SelectItem>
-                    <SelectItem value="final de semana">Final de Semana</SelectItem>
+                    <SelectItem value="integral">Integral</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -184,7 +106,11 @@ const Classes = () => {
       {/* Classes Listing */}
       <section className="py-12 md:py-16">
         <div className="container mx-auto px-4">
-          {filteredClasses.length > 0 ? (
+          {isLoading ? (
+            <div className="flex justify-center py-16">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+            </div>
+          ) : filteredClasses.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {filteredClasses.map((classItem) => (
                 <div
@@ -273,7 +199,7 @@ const Classes = () => {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button size="lg" variant="outline" asChild>
-              <Link to="/cursos">Ver todos os cursos</Link>
+              <Link to="/courses">Ver todos os cursos</Link>
             </Button>
             <Button size="lg" asChild>
               <Link to="/#contato">Entrar na lista de espera</Link>
