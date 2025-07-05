@@ -38,7 +38,7 @@ export const useClassDetail = (classId: string | undefined) => {
         }
 
         if (classInfo) {
-          // Transform to expected format com preço fixo de R$ 10,00
+          // Transform to expected format com preço SEMPRE de R$ 10,00
           const transformedClass = {
             id: classInfo.id,
             courseName: classInfo.course_name,
@@ -54,14 +54,14 @@ export const useClassDetail = (classId: string | undefined) => {
             location: "Centro, São Paulo",
             spotsAvailable: classInfo.spots_available,
             totalSpots: classInfo.total_spots,
-            price: "R$ 10,00", // Preço fixo de R$ 10,00
+            price: "10,00", // Preço SEMPRE R$ 10,00 (string formatada)
             instructor: "Instrutor Especializado",
             description: classInfo.courses.description,
             classId: classInfo.id
           };
 
           setClassData(transformedClass);
-          console.log('Class data loaded successfully:', transformedClass);
+          console.log('Class data loaded successfully with price R$ 10,00:', transformedClass);
         } else {
           console.log('No class found for ID:', classId);
           setClassData(null);

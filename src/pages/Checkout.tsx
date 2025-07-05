@@ -38,12 +38,12 @@ const Checkout = () => {
     );
   }
 
-  // Preparar dados para o checkout com preço fixo de R$ 10,00
+  // Preparar dados para o checkout com preço FIXO de R$ 10,00
   const checkoutClassData = {
     id: classData.id,
     courseName: classData.courseName,
     period: classData.period,
-    price: 10.00, // Preço fixo de R$ 10,00
+    price: 10.00, // Preço SEMPRE R$ 10,00 (number)
     image: 'https://images.unsplash.com/photo-1452378174528-3090a4bba7b2?ixlib=rb-4.0.3'
   };
 

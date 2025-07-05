@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -19,7 +20,7 @@ interface ClassDetailsProps {
   price: string;
   description?: string;
   image?: string;
-  classData?: any; // Add classData as an optional prop
+  classData?: any;
 }
 
 const ClassDetails: React.FC<ClassDetailsProps> = ({
@@ -36,7 +37,7 @@ const ClassDetails: React.FC<ClassDetailsProps> = ({
   price,
   description,
   image,
-  classData, // Add classData to destructuring
+  classData,
 }) => {
   const navigate = useNavigate();
 
@@ -49,6 +50,9 @@ const ClassDetails: React.FC<ClassDetailsProps> = ({
   const handleEnroll = () => {
     navigate(`/checkout/${id}`);
   };
+
+  // Garantir que o preço seja sempre R$ 10,00
+  const displayPrice = "10,00";
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -129,7 +133,7 @@ const ClassDetails: React.FC<ClassDetailsProps> = ({
             <h2 className="text-xl font-semibold mb-4">Inscrição</h2>
             
             <div className="mb-6">
-              <p className="text-2xl font-bold">R$ {price}</p>
+              <p className="text-2xl font-bold text-green-600">R$ {displayPrice}</p>
               <p className="text-sm text-muted-foreground">Investimento total</p>
             </div>
             
