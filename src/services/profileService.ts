@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
 import { Database } from '@/integrations/supabase/types';
@@ -38,7 +37,7 @@ export async function findUserByEmail(email: string): Promise<string | undefined
 }
 
 /**
- * Creates a new user profile using the administrative function
+ * Creates a new user profile using the administrative Edge Function
  */
 export async function createUserAsAdmin(
   email: string,
@@ -58,60 +57,48 @@ export async function createUserAsAdmin(
   }
 ): Promise<string | undefined> {
   try {
-    console.log('🔐 Cadastrando aluno via função administrativa:', { email, firstName, lastName });
+    console.log('🔐 Cadastrando aluno via Edge Function administrativa:', { email, firstName, lastName });
     console.log('📊 Profile data:', profileData);
-    
-    // Generate a UUID for the new profile
-    const profileId = crypto.randomUUID();
-    console.log('🆔 ID gerado para novo perfil:', profileId);
     
     // Validate required fields
     if (!email || !firstName) {
       console.error('❌ Campos obrigatórios faltando:', { email, firstName });
       throw new Error('Email e nome são obrigatórios');
     }
-    
-    // Use the administrative function to create or update the profile
-    const { data, error } = await supabase.rpc('admin_create_student_profile', {
-      p_id: profileId,
-      p_email: email.trim().toLowerCase(),
-      p_first_name: firstName.trim(),
-      p_last_name: lastName?.trim() || '',
-      p_cpf: profileData.cpf?.replace(/\D/g, '') || null,
-      p_birth_date: profileData.birthDate || null,
-      p_phone: profileData.phone || null,
-      p_address: profileData.address?.trim() || null,
-      p_address_number: profileData.addressNumber?.trim() || null,
-      p_address_complement: profileData.addressComplement?.trim() || null,
-      p_neighborhood: profileData.neighborhood?.trim() || null,
-      p_city: profileData.city?.trim() || null,
-      p_state: profileData.state?.trim().toUpperCase() || null,
-      p_postal_code: profileData.postalCode?.replace(/\D/g, '') || null
+
+    // Chamar Edge Function administrativa
+    const { data, error } = await supabase.functions.invoke('admin-create-student', {
+      body: {
+        email: email.trim().toLowerCase(),
+        firstName: firstName.trim(),
+        lastName: lastName?.trim() || '',
+        profileData: {
+          cpf: profileData.cpf?.replace(/\D/g, '') || null,
+          birthDate: profileData.birthDate || null,
+          phone: profileData.phone || null,
+          address: profileData.address?.trim() || null,
+          addressNumber: profileData.addressNumber?.trim() || null,
+          addressComplement: profileData.addressComplement?.trim() || null,
+          neighborhood: profileData.neighborhood?.trim() || null,
+          city: profileData.city?.trim() || null,
+          state: profileData.state?.trim().toUpperCase() || null,
+          postalCode: profileData.postalCode?.replace(/\D/g, '') || null
+        }
+      }
     });
     
     if (error) {
-      console.error('❌ Erro ao criar perfil via função administrativa:', error);
-      console.error('🔍 Detalhes do erro:', {
-        code: error.code,
-        message: error.message,
-        details: error.details,
-        hint: error.hint
-      });
-      
-      // Tratamento específico de erros
-      if (error.message?.includes('Acesso negado')) {
-        throw new Error('Você não tem permissão para cadastrar alunos. Verifique se está logado como administrador.');
-      }
-      
-      if (error.code === '23505') {
-        throw new Error('Este email já está cadastrado no sistema');
-      }
-      
-      throw new Error(`Erro ao cadastrar aluno: ${error.message}`);
+      console.error('❌ Erro ao chamar Edge Function:', error);
+      throw new Error(`Erro no servidor: ${error.message}`);
+    }
+
+    if (!data.success) {
+      console.error('❌ Edge Function retornou erro:', data.error);
+      throw new Error(data.error || 'Erro desconhecido no cadastro');
     }
     
-    console.log('✅ Aluno cadastrado com sucesso via função administrativa:', data);
-    return data;
+    console.log('✅ Aluno cadastrado com sucesso via Edge Function:', data.userId);
+    return data.userId;
     
   } catch (error) {
     console.error('❌ Erro geral no cadastro administrativo:', error);

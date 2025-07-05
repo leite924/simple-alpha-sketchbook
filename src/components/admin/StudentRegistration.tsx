@@ -60,10 +60,12 @@ const AdminStudentRegistration = () => {
       
       if (error instanceof Error) {
         // Mensagens de erro mais específicas
-        if (error.message.includes('permissão')) {
+        if (error.message.includes('permissão') || error.message.includes('Acesso negado')) {
           toast.error('Erro de permissão: Você precisa estar logado como administrador para cadastrar alunos.');
-        } else if (error.message.includes('já está cadastrado')) {
+        } else if (error.message.includes('já está cadastrado') || error.message.includes('already exists')) {
           toast.error('Este email já está cadastrado no sistema. Os dados foram atualizados.');
+        } else if (error.message.includes('servidor') || error.message.includes('server')) {
+          toast.error('Erro do servidor. Tente novamente em alguns instantes.');
         } else {
           toast.error(`Erro no cadastro: ${error.message}`);
         }
