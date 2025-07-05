@@ -81,76 +81,56 @@ export const useUserEditing = () => {
         }
       }
       
-      console.log("10. Verificando função do usuário...");
-      // Atualizar a função do usuário se necessário
-      const { data: existingRole, error: roleCheckError } = await supabase
-        .from('user_roles')
-        .select('*')
-        .eq('user_id', existingProfile.id)
-        .single();
-        
-      if (roleCheckError && roleCheckError.code !== 'PGRST116') {
-        console.error("ERRO ao verificar função:", roleCheckError);
-        throw roleCheckError;
-      }
-      
-      console.log("11. Função existente:", existingRole);
+      console.log("10. Atualizando função do usuário...");
       
       // Mapeamento de roles do frontend para roles do banco
       const roleMapping: Record<string, any> = {
         "admin": "admin",
-        "viewer": "user",
+        "viewer": "viewer", 
         "instructor": "instructor",
         "student": "student",
         "super_admin": "super_admin"
       };
       
       // Determinar o role baseado nos emails especiais ou seleção
-      let dbRole = roleMapping[values.role] || "user";
+      let dbRole = roleMapping[values.role] || "viewer";
       if (isElienai) {
         dbRole = "admin";
       } else if (isSuperAdmin) {
         dbRole = "super_admin";
       }
       
-      console.log("12. Função a ser aplicada:", dbRole);
+      console.log("11. Função a ser aplicada:", dbRole);
       
-      if (!existingRole) {
-        console.log("13. Inserindo nova função...");
-        // Inserir nova função
-        const { error: insertError } = await supabase
-          .from('user_roles')
-          .insert({
-            user_id: existingProfile.id, 
-            role: dbRole
-          });
-          
-        if (insertError) {
-          console.error("ERRO ao inserir função:", insertError);
-          throw insertError;
-        }
-        console.log("14. Nova função inserida com sucesso");
-      } else if (existingRole.role !== dbRole) {
-        console.log("15. Atualizando função existente para:", dbRole);
+      // PRIMEIRO: Excluir todos os roles existentes do usuário
+      const { error: deleteRolesError } = await supabase
+        .from('user_roles')
+        .delete()
+        .eq('user_id', existingProfile.id);
         
-        // Atualizar função existente
-        const { error: updateError } = await supabase
-          .from('user_roles')
-          .update({ 
-            role: dbRole
-          })
-          .eq('user_id', existingProfile.id);
-          
-        if (updateError) {
-          console.error("ERRO ao atualizar função:", updateError);
-          throw updateError;
-        }
-        console.log("16. Função atualizada com sucesso");
-      } else {
-        console.log("15. Função já está correta, nenhuma alteração necessária");
+      if (deleteRolesError) {
+        console.error("ERRO ao excluir roles existentes:", deleteRolesError);
+        throw deleteRolesError;
       }
       
-      console.log("17. Exibindo mensagem de sucesso...");
+      console.log("12. Roles existentes excluídos");
+      
+      // SEGUNDO: Inserir o novo role
+      const { error: insertError } = await supabase
+        .from('user_roles')
+        .insert({
+          user_id: existingProfile.id, 
+          role: dbRole
+        });
+        
+      if (insertError) {
+        console.error("ERRO ao inserir novo role:", insertError);
+        throw insertError;
+      }
+      
+      console.log("13. Novo role inserido com sucesso");
+      
+      console.log("14. Exibindo mensagem de sucesso...");
       
       // Mensagens mais inteligentes baseadas no contexto
       if (isSuperAdmin) {
@@ -158,11 +138,11 @@ export const useUserEditing = () => {
       } else if (isElienai) {
         toast.success("Administrador Elienai atualizado com sucesso!");
       } else if (values._changePassword && isCurrentUserSuperAdmin) {
-        toast.success("Usuário e senha atualizados com sucesso!");
+        toast.success(`Usuário atualizado como ${dbRole} e senha alterada com sucesso!`);
       } else if (values._changePassword && !isCurrentUserSuperAdmin) {
-        toast.success("Perfil atualizado com sucesso! Nota: Apenas super administradores podem alterar senhas.");
+        toast.success(`Perfil atualizado como ${dbRole} com sucesso! Nota: Apenas super administradores podem alterar senhas.`);
       } else {
-        toast.success("Usuário atualizado com sucesso!");
+        toast.success(`Usuário atualizado como ${dbRole} com sucesso!`);
       }
       
       console.log("=== PROCESSO CONCLUÍDO COM SUCESSO ===");

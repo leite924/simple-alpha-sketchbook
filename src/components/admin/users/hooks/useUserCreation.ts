@@ -93,7 +93,7 @@ export const useUserCreation = () => {
       console.log("6. Usuário criado via signup com ID:", signupData.user.id);
       
       // Aguardar um pouco para o trigger do perfil processar
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 2000));
       
       // Determinar o role baseado no email e configuração
       let finalRole: "admin" | "instructor" | "student" | "super_admin" | "viewer" = "viewer";
@@ -113,9 +113,22 @@ export const useUserCreation = () => {
         finalRole = roleMapping[values.role] || "viewer";
       }
       
-      console.log("7. Atribuindo role:", finalRole);
+      console.log("7. Substituindo role padrão pelo role correto:", finalRole);
       
-      // Inserir role usando as permissões do super admin atual
+      // PRIMEIRO: Excluir o role padrão "viewer" que foi criado automaticamente
+      const { error: deleteDefaultRoleError } = await supabase
+        .from('user_roles')
+        .delete()
+        .eq('user_id', signupData.user.id)
+        .eq('role', 'viewer');
+        
+      if (deleteDefaultRoleError) {
+        console.log("Aviso: Não foi possível excluir role padrão:", deleteDefaultRoleError);
+      } else {
+        console.log("8. Role padrão 'viewer' removido com sucesso");
+      }
+      
+      // SEGUNDO: Inserir o role correto
       const { error: roleError } = await supabase
         .from('user_roles')
         .insert({
@@ -124,18 +137,35 @@ export const useUserCreation = () => {
         });
         
       if (roleError) {
-        console.error("Erro ao inserir role:", roleError);
-        console.log("Role será inserido automaticamente pelo sistema");
+        console.error("Erro ao inserir role correto:", roleError);
+        // Tentar novamente após uma pausa
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        const { error: retryRoleError } = await supabase
+          .from('user_roles')
+          .upsert({
+            user_id: signupData.user.id,
+            role: finalRole
+          });
+          
+        if (retryRoleError) {
+          console.error("Erro na segunda tentativa de inserir role:", retryRoleError);
+          toast.error(`Usuário criado mas erro ao definir papel: ${retryRoleError.message}`);
+        } else {
+          console.log("9. Role inserido com sucesso na segunda tentativa");
+        }
+      } else {
+        console.log("9. Role correto inserido com sucesso");
       }
       
-      console.log("8. Usuário criado com sucesso!");
+      console.log("10. Usuário criado com sucesso!");
       
       if (values.email === 'elienaitorres@gmail.com') {
         toast.success("Usuário Elienai criado como admin com sucesso!");
       } else if (values.email === 'midiaputz@gmail.com') {
         toast.success("Super Admin criado com sucesso!");
       } else {
-        toast.success("Usuário criado com sucesso no sistema!");
+        toast.success(`Usuário criado com sucesso como ${finalRole}!`);
       }
       
       return true;
