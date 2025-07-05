@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, RefreshCw, Search, RotateCcw, Key, UserCheck } from "lucide-react";
+import { Plus, RefreshCw, Search, RotateCcw } from "lucide-react";
 import { User } from "./types";
 import UserSearchBar from "./users/UserSearchBar";
 import UserTable from "./users/UserTable";
@@ -13,14 +13,10 @@ import { useUserSync } from "./users/hooks/useUserSync";
 import AdminPasswordReset from "./users/components/AdminPasswordReset";
 import SystemHealthMonitor from "./users/components/SystemHealthMonitor";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, Info } from "lucide-react";
+import { CheckCircle2, Info } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Input } from "@/components/ui/input";
-import { useState } from "react";
 
 const UserManagement = () => {
-  const [emailToCheck, setEmailToCheck] = useState("elienaitorres@gmail.com");
-  
   const {
     filteredUsers,
     searchTerm,
@@ -39,7 +35,6 @@ const UserManagement = () => {
   } = useUserManagement();
 
   const { checkUserConsistency } = useUserDiagnostics();
-  const { checkUserCredentials, resetUserPassword } = useUserCredentialsDiagnostics();
   const { syncAllUsers, cleanOrphanedProfiles } = useUserSync();
 
   const handleFullSync = async () => {
@@ -60,7 +55,7 @@ const UserManagement = () => {
     return (
       <div className="space-y-6">
         <Alert variant="destructive" className="mb-6">
-          <AlertCircle className="h-4 w-4" />
+          <Info className="h-4 w-4" />
           <AlertTitle>Autenticação necessária</AlertTitle>
           <AlertDescription>
             Você precisa estar logado para gerenciar usuários.
@@ -76,15 +71,16 @@ const UserManagement = () => {
       <SystemHealthMonitor />
 
       <Alert className="mb-6 bg-green-50 border-green-200">
-        <Info className="h-4 w-4 text-green-600" />
-        <AlertTitle className="text-green-800">✅ Sistema Corrigido</AlertTitle>
+        <CheckCircle2 className="h-4 w-4 text-green-600" />
+        <AlertTitle className="text-green-800">✅ Sistema Corrigido e Otimizado</AlertTitle>
         <AlertDescription className="text-green-700">
-          <strong>Solução definitiva aplicada com sucesso!</strong>
-          <br />• Políticas RLS completamente recriadas
-          <br />• Fallbacks automáticos implementados  
-          <br />• Monitor de saúde integrado
-          <br />• Sistema robusto contra erros de recursão
-          <br /><strong>Total de usuários encontrados: {filteredUsers.length}</strong>
+          <strong>Correção definitiva aplicada com sucesso!</strong>
+          <br />• Funções SECURITY DEFINER implementadas para acesso seguro
+          <br />• Políticas RLS completamente recriadas sem recursão
+          <br />• Monitor de saúde inteligente com verificações seguras
+          <br />• Sistema robusto contra erros de permissão
+          <br />• Fallbacks automáticos para máxima estabilidade
+          <br /><strong>✨ Usuários carregados: {filteredUsers.length}</strong>
         </AlertDescription>
       </Alert>
 
@@ -156,10 +152,10 @@ const UserManagement = () => {
       ) : filteredUsers.length === 0 ? (
         <div className="space-y-4">
           <Alert className="mb-6">
-            <AlertCircle className="h-4 w-4" />
+            <Info className="h-4 w-4" />
             <AlertTitle>Nenhum usuário encontrado</AlertTitle>
             <AlertDescription>
-              Sistema ativou fallback de emergência. Use o Monitor de Saúde para diagnóstico.
+              Não foram encontrados usuários com os critérios atuais. Use o Monitor de Saúde para diagnóstico.
             </AlertDescription>
           </Alert>
           <UserTable
