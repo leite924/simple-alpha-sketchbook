@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,7 +8,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { CreditCard, Smartphone, Receipt, Shield } from 'lucide-react';
-import { usePaymentProcessing } from '@/hooks/payments/usePaymentProcessing';
+import { usePagarmeIntegration } from '@/components/admin/payment/hooks/usePagarmeIntegration';
 import { toast } from 'sonner';
 
 interface PaymentStepProps {
@@ -18,7 +19,7 @@ interface PaymentStepProps {
 }
 
 const PaymentStep = ({ onComplete, classData, orderBump, formData }: PaymentStepProps) => {
-  const { processCheckout, isProcessing } = usePaymentProcessing();
+  const { handleCardPayment, handleGeneratePaymentLink, isProcessing } = usePagarmeIntegration();
   const [paymentMethod, setPaymentMethod] = useState<'credit_card' | 'pix' | 'bank_slip'>('credit_card');
   const [cardData, setCardData] = useState({
     cardNumber: '',
@@ -98,40 +99,56 @@ const PaymentStep = ({ onComplete, classData, orderBump, formData }: PaymentStep
     if (!validateForm()) return;
 
     try {
-      // Preparar dados completos para o processamento
-      const checkoutData = {
-        // Dados pessoais
+      // Preparar dados do cliente
+      const customer = {
         firstName: formData.personalInfo.firstName,
         lastName: formData.personalInfo.lastName,
         email: formData.personalInfo.email,
         cpf: formData.personalInfo.cpf,
         phone: formData.personalInfo.phone,
-        birthDate: new Date().toISOString().split('T')[0], // Default - pode ser coletado no form se necessário
-        
-        // Endereço
-        address: formData.address.address,
-        addressNumber: formData.address.addressNumber,
-        addressComplement: formData.address.addressComplement || '',
-        neighborhood: formData.address.neighborhood,
-        city: formData.address.city,
-        state: formData.address.state,
-        postalCode: formData.address.postalCode,
-        
-        // Pagamento
-        paymentMethod: paymentMethod,
-        cardNumber: cardData.cardNumber,
-        cardHolderName: cardData.cardName,
-        expiryDate: cardData.expiryDate,
-        cvv: cardData.cvv,
-        installments: parseInt(cardData.installments),
-        
-        // Turma e cupom
-        classId: classData.id,
-        couponCode: '', // Pode ser implementado depois
-        agreeTerms: true
+        address: {
+          street: formData.address.address,
+          number: formData.address.addressNumber,
+          complement: formData.address.addressComplement || '',
+          neighborhood: formData.address.neighborhood,
+          city: formData.address.city,
+          state: formData.address.state,
+          zipCode: formData.address.postalCode
+        }
       };
 
-      await processCheckout(checkoutData);
+      // Preparar itens do pedido
+      const items = [
+        {
+          id: classData.id,
+          title: classData.courseName,
+          unitPrice: Math.round(classData.price * 100), // Pagarme usa centavos
+          quantity: 1,
+          tangible: false
+        }
+      ];
+
+      const totalAmount = Math.round(baseTotal * 100); // Pagarme usa centavos
+
+      if (paymentMethod === 'credit_card') {
+        // Processar pagamento com cartão via Pagarme
+        const cardPaymentData = {
+          number: cardData.cardNumber.replace(/\s/g, ''),
+          holderName: cardData.cardName,
+          expiryDate: cardData.expiryDate,
+          cvv: cardData.cvv,
+          installments: parseInt(cardData.installments)
+        };
+
+        await handleCardPayment(cardPaymentData, customer, totalAmount, items);
+      } else {
+        // Gerar link de pagamento para PIX ou Boleto via Pagarme
+        await handleGeneratePaymentLink(customer, totalAmount, paymentMethod, items);
+      }
+
+      toast.success('Matrícula processada com sucesso!');
+      onComplete({ paymentMethod, ...cardData });
+      
     } catch (error) {
       console.error('Erro no checkout:', error);
       toast.error('Erro ao processar pagamento. Tente novamente.');
@@ -139,10 +156,10 @@ const PaymentStep = ({ onComplete, classData, orderBump, formData }: PaymentStep
   };
 
   return (
-    <Card>
+    <Card className="border-border">
       <CardHeader>
-        <CardTitle className="flex items-center space-x-2">
-          <span className="bg-blue-600 text-white w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold">3</span>
+        <CardTitle className="flex items-center space-x-2 text-card-foreground">
+          <span className="bg-primary text-primary-foreground w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold">3</span>
           <span>Forma de pagamento</span>
         </CardTitle>
       </CardHeader>
@@ -154,11 +171,11 @@ const PaymentStep = ({ onComplete, classData, orderBump, formData }: PaymentStep
             {paymentMethods.map((method) => {
               const Icon = method.icon;
               return (
-                <div key={method.id} className="flex items-center space-x-3 p-4 border rounded-lg hover:bg-gray-50">
+                <div key={method.id} className="flex items-center space-x-3 p-4 border border-border rounded-lg hover:bg-accent/50">
                   <RadioGroupItem value={method.id} id={method.id} />
-                  <Icon className="w-6 h-6 text-gray-600" />
+                  <Icon className="w-6 h-6 text-muted-foreground" />
                   <div className="flex-1">
-                    <span className="font-medium">{method.name}</span>
+                    <span className="font-medium text-foreground">{method.name}</span>
                   </div>
                   <Badge className={`${method.badgeColor} text-white text-xs`}>
                     {method.badge}
@@ -171,7 +188,7 @@ const PaymentStep = ({ onComplete, classData, orderBump, formData }: PaymentStep
 
         {/* Credit Card Form */}
         {paymentMethod === 'credit_card' && (
-          <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
+          <div className="space-y-4 p-4 bg-muted/50 rounded-lg border border-border">
             <div>
               <Label htmlFor="cardNumber">Número do Cartão</Label>
               <Input
@@ -180,6 +197,7 @@ const PaymentStep = ({ onComplete, classData, orderBump, formData }: PaymentStep
                 value={cardData.cardNumber}
                 onChange={(e) => handleInputChange('cardNumber', formatCardNumber(e.target.value))}
                 maxLength={19}
+                className="bg-background"
               />
             </div>
 
@@ -192,6 +210,7 @@ const PaymentStep = ({ onComplete, classData, orderBump, formData }: PaymentStep
                   value={cardData.expiryDate}
                   onChange={(e) => handleInputChange('expiryDate', formatExpiryDate(e.target.value))}
                   maxLength={5}
+                  className="bg-background"
                 />
               </div>
               <div>
@@ -202,6 +221,7 @@ const PaymentStep = ({ onComplete, classData, orderBump, formData }: PaymentStep
                   value={cardData.cvv}
                   onChange={(e) => handleInputChange('cvv', e.target.value.replace(/\D/g, ''))}
                   maxLength={4}
+                  className="bg-background"
                 />
               </div>
             </div>
@@ -213,13 +233,14 @@ const PaymentStep = ({ onComplete, classData, orderBump, formData }: PaymentStep
                 placeholder="Nome conforme impresso no cartão"
                 value={cardData.cardName}
                 onChange={(e) => handleInputChange('cardName', e.target.value)}
+                className="bg-background"
               />
             </div>
 
             <div>
               <Label>Parcelamento</Label>
               <Select value={cardData.installments} onValueChange={(value) => handleInputChange('installments', value)}>
-                <SelectTrigger>
+                <SelectTrigger className="bg-background">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -267,7 +288,7 @@ const PaymentStep = ({ onComplete, classData, orderBump, formData }: PaymentStep
           <Button 
             onClick={handleFinishOrder}
             disabled={isProcessing}
-            className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-6 text-lg font-semibold"
+            className="w-full bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground py-6 text-lg font-semibold"
           >
             <div className="flex flex-col items-center space-y-1">
               <span>
@@ -280,8 +301,9 @@ const PaymentStep = ({ onComplete, classData, orderBump, formData }: PaymentStep
             </div>
           </Button>
 
-          <div className="text-center text-sm text-gray-500">
+          <div className="text-center text-sm text-muted-foreground">
             <p>Seus dados estão protegidos com certificado SSL</p>
+            <p className="mt-1">Processamento via Pagarme</p>
           </div>
         </div>
       </CardContent>

@@ -38,24 +38,24 @@ export const useClassDetail = (classId: string | undefined) => {
         }
 
         if (classInfo) {
-          // Transform to expected format
+          // Transform to expected format com preço fixo de R$ 10,00
           const transformedClass = {
             id: classInfo.id,
             courseName: classInfo.course_name,
             courseSlug: classInfo.courses.slug,
             image: "https://images.unsplash.com/photo-1452378174528-3090a4bba7b2?ixlib=rb-4.0.3",
-            month: "Janeiro", // Pode ser extraído de uma data real se necessário
+            month: "Janeiro",
             year: "2024",
             period: classInfo.period,
-            startDate: "15/01/2024", // Datas fictícias - podem ser adicionadas à tabela
+            startDate: "15/01/2024",
             endDate: "15/03/2024",
             days: classInfo.days,
-            time: "19:00 - 22:00", // Pode ser adicionado à tabela
-            location: "Centro, São Paulo", // Pode ser adicionado à tabela
+            time: "19:00 - 22:00",
+            location: "Centro, São Paulo",
             spotsAvailable: classInfo.spots_available,
             totalSpots: classInfo.total_spots,
-            price: `R$ ${classInfo.price.toFixed(2).replace('.', ',')}`,
-            instructor: "Instrutor Especializado", // Pode ser adicionado à tabela
+            price: "R$ 10,00", // Preço fixo de R$ 10,00
+            instructor: "Instrutor Especializado",
             description: classInfo.courses.description,
             classId: classInfo.id
           };

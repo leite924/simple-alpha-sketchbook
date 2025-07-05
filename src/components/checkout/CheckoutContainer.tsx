@@ -1,16 +1,11 @@
 
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
-import { Badge } from '@/components/ui/badge';
 import PersonalInfoStep from './steps/PersonalInfoStep';
 import AddressStep from './steps/AddressStep';
 import PaymentStep from './steps/PaymentStep';
 import OrderBump from './OrderBump';
-import { CheckCircle, CreditCard, Smartphone, Receipt } from 'lucide-react';
+import { CheckCircle } from 'lucide-react';
 
 interface CheckoutContainerProps {
   classData: {
@@ -58,7 +53,7 @@ const CheckoutContainer = ({ classData }: CheckoutContainerProps) => {
   };
 
   return (
-    <Card className="w-full">
+    <Card className="w-full border-border">
       <CardContent className="p-8">
         {/* Progress Steps */}
         <div className="flex items-center justify-between mb-8">
@@ -67,19 +62,19 @@ const CheckoutContainer = ({ classData }: CheckoutContainerProps) => {
               <div className={`
                 w-10 h-10 rounded-full flex items-center justify-center font-semibold
                 ${currentStep >= step.number 
-                  ? 'bg-blue-600 text-white' 
-                  : 'bg-gray-200 text-gray-600'
+                  ? 'bg-primary text-primary-foreground' 
+                  : 'bg-muted text-muted-foreground'
                 }
               `}>
                 {currentStep > step.number ? <CheckCircle className="w-5 h-5" /> : step.number}
               </div>
               <div className="ml-3">
-                <p className={`font-medium ${currentStep >= step.number ? 'text-blue-600' : 'text-gray-600'}`}>
+                <p className={`font-medium ${currentStep >= step.number ? 'text-primary' : 'text-muted-foreground'}`}>
                   {step.title}
                 </p>
               </div>
               {index < steps.length - 1 && (
-                <div className={`w-16 h-0.5 mx-4 ${currentStep > step.number ? 'bg-blue-600' : 'bg-gray-200'}`} />
+                <div className={`w-16 h-0.5 mx-4 ${currentStep > step.number ? 'bg-primary' : 'bg-border'}`} />
               )}
             </div>
           ))}
