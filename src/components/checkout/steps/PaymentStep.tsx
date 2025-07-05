@@ -8,20 +8,20 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { CreditCard, Smartphone, Receipt, Shield } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { usePaymentProcessing } from '@/hooks/payments/usePaymentProcessing';
 import { toast } from 'sonner';
 
 interface PaymentStepProps {
   onComplete: (data: any) => void;
   classData: any;
   orderBump: boolean;
+  formData: any;
 }
 
-const PaymentStep = ({ onComplete, classData, orderBump }: PaymentStepProps) => {
-  const navigate = useNavigate();
-  const [paymentMethod, setPaymentMethod] = useState('credit-card');
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [formData, setFormData] = useState({
+const PaymentStep = ({ onComplete, classData, orderBump, formData }: PaymentStepProps) => {
+  const { processCheckout, isProcessing } = usePaymentProcessing();
+  const [paymentMethod, setPaymentMethod] = useState('credit_card');
+  const [cardData, setCardData] = useState({
     cardNumber: '',
     cardName: '',
     expiryDate: '',
@@ -31,7 +31,7 @@ const PaymentStep = ({ onComplete, classData, orderBump }: PaymentStepProps) => 
 
   const paymentMethods = [
     {
-      id: 'credit-card',
+      id: 'credit_card',
       name: 'Cartão de Crédito',
       icon: CreditCard,
       badge: 'Aprovação Imediata',
@@ -45,7 +45,7 @@ const PaymentStep = ({ onComplete, classData, orderBump }: PaymentStepProps) => 
       badgeColor: 'bg-green-500'
     },
     {
-      id: 'boleto',
+      id: 'bank_slip',
       name: 'Boleto Bancário',
       icon: Receipt,
       badge: 'Aprovação em 3 dias',
@@ -53,24 +53,24 @@ const PaymentStep = ({ onComplete, classData, orderBump }: PaymentStepProps) => 
     }
   ];
 
-  const total = classData.price + (orderBump ? 199.90 : 0);
+  const baseTotal = classData.price + (orderBump ? 199.90 : 0);
   
   const installmentOptions = [
-    { value: '1', label: `1x de R$ ${total.toFixed(2).replace('.', ',')} sem juros` },
-    { value: '2', label: `2x de R$ ${(total / 2).toFixed(2).replace('.', ',')} sem juros` },
-    { value: '3', label: `3x de R$ ${(total / 3).toFixed(2).replace('.', ',')} sem juros` },
-    { value: '6', label: `6x de R$ ${(total / 6).toFixed(2).replace('.', ',')} sem juros` },
-    { value: '12', label: `12x de R$ ${(total / 12).toFixed(2).replace('.', ',')} sem juros` }
+    { value: '1', label: `1x de R$ ${baseTotal.toFixed(2).replace('.', ',')} sem juros` },
+    { value: '2', label: `2x de R$ ${(baseTotal / 2).toFixed(2).replace('.', ',')} sem juros` },
+    { value: '3', label: `3x de R$ ${(baseTotal / 3).toFixed(2).replace('.', ',')} sem juros` },
+    { value: '6', label: `6x de R$ ${(baseTotal / 6).toFixed(2).replace('.', ',')} sem juros` },
+    { value: '12', label: `12x de R$ ${(baseTotal / 12).toFixed(2).replace('.', ',')} sem juros` }
   ];
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setCardData(prev => ({ ...prev, [field]: value }));
   };
 
   const formatCardNumber = (value: string) => {
     const cleaned = value.replace(/\D/g, '');
     const formatted = cleaned.replace(/(\d{4})(?=\d)/g, '$1 ');
-    return formatted;
+    return formatted.slice(0, 19);
   };
 
   const formatExpiryDate = (value: string) => {
@@ -79,14 +79,58 @@ const PaymentStep = ({ onComplete, classData, orderBump }: PaymentStepProps) => 
     return formatted;
   };
 
+  const validateForm = () => {
+    if (paymentMethod === 'credit_card') {
+      if (!cardData.cardNumber || !cardData.cardName || !cardData.expiryDate || !cardData.cvv) {
+        toast.error('Por favor, preencha todos os dados do cartão');
+        return false;
+      }
+    }
+    return true;
+  };
+
   const handleFinishOrder = async () => {
-    setIsProcessing(true);
-    
-    // Simulate payment processing
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    toast.success('Pagamento processado com sucesso!');
-    navigate('/checkout/success');
+    if (!validateForm()) return;
+
+    try {
+      // Preparar dados completos para o processamento
+      const checkoutData = {
+        // Dados pessoais
+        firstName: formData.personalInfo.firstName,
+        lastName: formData.personalInfo.lastName,
+        email: formData.personalInfo.email,
+        cpf: formData.personalInfo.cpf,
+        phone: formData.personalInfo.phone,
+        birthDate: new Date().toISOString().split('T')[0], // Default - pode ser coletado no form se necessário
+        
+        // Endereço
+        address: formData.address.address,
+        addressNumber: formData.address.addressNumber,
+        addressComplement: formData.address.addressComplement || '',
+        neighborhood: formData.address.neighborhood,
+        city: formData.address.city,
+        state: formData.address.state,
+        postalCode: formData.address.postalCode,
+        
+        // Pagamento
+        paymentMethod: paymentMethod,
+        cardNumber: cardData.cardNumber,
+        cardHolderName: cardData.cardName,
+        expiryDate: cardData.expiryDate,
+        cvv: cardData.cvv,
+        installments: parseInt(cardData.installments),
+        
+        // Turma e cupom
+        classId: classData.id,
+        couponCode: '', // Pode ser implementado depois
+        agreeTerms: true
+      };
+
+      await processCheckout(checkoutData);
+    } catch (error) {
+      console.error('Erro no checkout:', error);
+      toast.error('Erro ao processar pagamento. Tente novamente.');
+    }
   };
 
   return (
@@ -121,14 +165,14 @@ const PaymentStep = ({ onComplete, classData, orderBump }: PaymentStepProps) => 
         </div>
 
         {/* Credit Card Form */}
-        {paymentMethod === 'credit-card' && (
+        {paymentMethod === 'credit_card' && (
           <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
             <div>
               <Label htmlFor="cardNumber">Número do Cartão</Label>
               <Input
                 id="cardNumber"
                 placeholder="0000 0000 0000 0000"
-                value={formData.cardNumber}
+                value={cardData.cardNumber}
                 onChange={(e) => handleInputChange('cardNumber', formatCardNumber(e.target.value))}
                 maxLength={19}
               />
@@ -140,7 +184,7 @@ const PaymentStep = ({ onComplete, classData, orderBump }: PaymentStepProps) => 
                 <Input
                   id="expiryDate"
                   placeholder="MM/AA"
-                  value={formData.expiryDate}
+                  value={cardData.expiryDate}
                   onChange={(e) => handleInputChange('expiryDate', formatExpiryDate(e.target.value))}
                   maxLength={5}
                 />
@@ -150,8 +194,8 @@ const PaymentStep = ({ onComplete, classData, orderBump }: PaymentStepProps) => 
                 <Input
                   id="cvv"
                   placeholder="123"
-                  value={formData.cvv}
-                  onChange={(e) => handleInputChange('cvv', e.target.value)}
+                  value={cardData.cvv}
+                  onChange={(e) => handleInputChange('cvv', e.target.value.replace(/\D/g, ''))}
                   maxLength={4}
                 />
               </div>
@@ -162,14 +206,14 @@ const PaymentStep = ({ onComplete, classData, orderBump }: PaymentStepProps) => 
               <Input
                 id="cardName"
                 placeholder="Nome conforme impresso no cartão"
-                value={formData.cardName}
+                value={cardData.cardName}
                 onChange={(e) => handleInputChange('cardName', e.target.value)}
               />
             </div>
 
             <div>
               <Label>Parcelamento</Label>
-              <Select value={formData.installments} onValueChange={(value) => handleInputChange('installments', value)}>
+              <Select value={cardData.installments} onValueChange={(value) => handleInputChange('installments', value)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -194,13 +238,13 @@ const PaymentStep = ({ onComplete, classData, orderBump }: PaymentStepProps) => 
             </div>
             <p className="text-sm text-blue-700">
               Após finalizar o pedido, você receberá o código PIX para pagamento. 
-              O curso será liberado automaticamente após a confirmação do pagamento.
+              A matrícula será confirmada automaticamente após a aprovação do pagamento.
             </p>
           </div>
         )}
 
         {/* Boleto Instructions */}
-        {paymentMethod === 'boleto' && (
+        {paymentMethod === 'bank_slip' && (
           <div className="p-4 bg-orange-50 rounded-lg border border-orange-200">
             <div className="flex items-center space-x-2 mb-2">
               <Receipt className="w-5 h-5 text-orange-600" />
@@ -208,7 +252,7 @@ const PaymentStep = ({ onComplete, classData, orderBump }: PaymentStepProps) => 
             </div>
             <p className="text-sm text-orange-700">
               O boleto será enviado por e-mail. O prazo para pagamento é de 3 dias úteis.
-              Após o pagamento, o curso será liberado em até 2 dias úteis.
+              Após o pagamento, a matrícula será confirmada em até 2 dias úteis.
             </p>
           </div>
         )}
@@ -222,7 +266,7 @@ const PaymentStep = ({ onComplete, classData, orderBump }: PaymentStepProps) => 
           >
             <div className="flex flex-col items-center space-y-1">
               <span>
-                {isProcessing ? 'Processando...' : 'Finalizar Pedido'}
+                {isProcessing ? 'Processando...' : 'Finalizar Matrícula'}
               </span>
               <div className="flex items-center space-x-1 text-sm opacity-90">
                 <Shield className="w-4 h-4" />

@@ -50,6 +50,11 @@ const CheckoutContainer = ({ classData }: CheckoutContainerProps) => {
 
   const handleOrderBumpChange = (selected: boolean) => {
     setFormData(prev => ({ ...prev, orderBump: selected }));
+    
+    // Dispatch custom event for CheckoutSummary to listen
+    window.dispatchEvent(new CustomEvent('orderBumpChange', { 
+      detail: { selected } 
+    }));
   };
 
   return (
@@ -86,15 +91,13 @@ const CheckoutContainer = ({ classData }: CheckoutContainerProps) => {
         )}
         
         {currentStep === 2 && (
-          <AddressStep onComplete={(data) => handleStepComplete(2, data)} />
-        )}
-        
-        {/* Order Bump - Show between steps 2 and 3 */}
-        {currentStep === 2 && (
-          <OrderBump 
-            onSelectionChange={handleOrderBumpChange}
-            selected={formData.orderBump}
-          />
+          <>
+            <AddressStep onComplete={(data) => handleStepComplete(2, data)} />
+            <OrderBump 
+              onSelectionChange={handleOrderBumpChange}
+              selected={formData.orderBump}
+            />
+          </>
         )}
         
         {currentStep === 3 && (
@@ -102,6 +105,7 @@ const CheckoutContainer = ({ classData }: CheckoutContainerProps) => {
             onComplete={(data) => handleStepComplete(3, data)}
             classData={classData}
             orderBump={formData.orderBump}
+            formData={formData}
           />
         )}
       </CardContent>

@@ -6,16 +6,44 @@ import CheckoutContainer from '@/components/checkout/CheckoutContainer';
 import CheckoutSummary from '@/components/checkout/CheckoutSummary';
 import { Card } from '@/components/ui/card';
 import { useClassDetail } from '@/hooks/classes/useClassDetail';
+import { Loader2 } from 'lucide-react';
 
 const Checkout = () => {
   const { classId } = useParams();
-  
-  // Mock class data for now - in a real app, you'd fetch this based on classId
-  const classData = {
-    id: classId || '650e8400-e29b-41d4-a716-446655440001',
-    courseName: 'Fotografia Básica',
-    period: 'Noturno',
-    price: 1200.00,
+  const { data: classData, isLoading, error } = useClassDetail(classId || '');
+
+  if (isLoading) {
+    return (
+      <MainLayout>
+        <div className="min-h-screen bg-gray-50 py-8 flex items-center justify-center">
+          <div className="flex items-center space-x-2">
+            <Loader2 className="w-6 h-6 animate-spin" />
+            <span>Carregando dados da turma...</span>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (error || !classData) {
+    return (
+      <MainLayout>
+        <div className="min-h-screen bg-gray-50 py-8 flex items-center justify-center">
+          <Card className="p-8 text-center">
+            <h2 className="text-xl font-semibold mb-2">Turma não encontrada</h2>
+            <p className="text-gray-600">Não foi possível carregar os dados da turma.</p>
+          </Card>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  // Preparar dados para o checkout
+  const checkoutClassData = {
+    id: classData.id,
+    courseName: classData.course_name,
+    period: classData.period,
+    price: parseFloat(classData.price.toString()),
     image: 'https://images.unsplash.com/photo-1452378174528-3090a4bba7b2?ixlib=rb-4.0.3'
   };
 
@@ -27,7 +55,7 @@ const Checkout = () => {
           <div className="flex justify-between items-center mb-8 bg-white p-6 rounded-lg shadow-sm">
             <div className="flex items-center space-x-4">
               <img src="/placeholder.svg" alt="Logo" className="w-12 h-12" />
-              <h1 className="text-2xl font-bold text-gray-900">Checkout</h1>
+              <h1 className="text-2xl font-bold text-gray-900">Checkout - {classData.course_name}</h1>
             </div>
             <div className="flex items-center space-x-2 bg-green-100 px-4 py-2 rounded-full">
               <span className="text-green-600">🔒</span>
@@ -39,12 +67,12 @@ const Checkout = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Checkout Form */}
             <div className="lg:col-span-2">
-              <CheckoutContainer classData={classData} />
+              <CheckoutContainer classData={checkoutClassData} />
             </div>
             
             {/* Order Summary */}
             <div className="lg:col-span-1">
-              <CheckoutSummary classData={classData} />
+              <CheckoutSummary classData={checkoutClassData} />
             </div>
           </div>
         </div>
