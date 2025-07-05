@@ -40,7 +40,7 @@ const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = ({
 }) => {
   const [isSearchingCep, setIsSearchingCep] = useState(false);
   
-  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<StudentRegistrationFormData>({
+  const { register, handleSubmit, setValue, watch, formState: { errors }, reset } = useForm<StudentRegistrationFormData>({
     resolver: zodResolver(studentRegistrationSchema),
     defaultValues: {
       countryCode: '+55'
@@ -55,6 +55,11 @@ const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = ({
     setIsSearchingCep(true);
     try {
       const cleanCep = cep.replace(/\D/g, '');
+      if (cleanCep.length !== 8) {
+        toast.error('CEP deve ter 8 dígitos');
+        return;
+      }
+      
       const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
       const data = await response.json();
       
@@ -70,6 +75,7 @@ const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = ({
       
       toast.success('Endereço encontrado!');
     } catch (error) {
+      console.error('Erro ao buscar CEP:', error);
       toast.error('Erro ao buscar CEP');
     } finally {
       setIsSearchingCep(false);
@@ -93,7 +99,17 @@ const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = ({
   };
 
   const handleFormSubmit = async (data: StudentRegistrationFormData) => {
-    await onSubmit(data);
+    console.log('📝 Dados do formulário:', data);
+    
+    try {
+      await onSubmit(data);
+      // Reset form after successful submission
+      reset();
+      toast.success('Formulário resetado após sucesso');
+    } catch (error) {
+      console.error('❌ Erro no handleFormSubmit:', error);
+      toast.error('Erro ao processar formulário');
+    }
   };
 
   return (
@@ -114,6 +130,7 @@ const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = ({
                 {...register("fullName")}
                 placeholder="Digite seu nome completo"
                 className={errors.fullName ? "border-red-500" : ""}
+                disabled={isLoading}
               />
               {errors.fullName && (
                 <p className="text-sm text-red-500 mt-1">{errors.fullName.message}</p>
@@ -132,6 +149,7 @@ const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = ({
                   setValue('cpf', formatted);
                 }}
                 className={errors.cpf ? "border-red-500" : ""}
+                disabled={isLoading}
               />
               {errors.cpf && (
                 <p className="text-sm text-red-500 mt-1">{errors.cpf.message}</p>
@@ -146,6 +164,7 @@ const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = ({
                 {...register("email")}
                 placeholder="seu@email.com"
                 className={errors.email ? "border-red-500" : ""}
+                disabled={isLoading}
               />
               {errors.email && (
                 <p className="text-sm text-red-500 mt-1">{errors.email.message}</p>
@@ -173,6 +192,7 @@ const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = ({
                     }
                   }}
                   className={errors.postalCode ? "border-red-500" : ""}
+                  disabled={isLoading}
                 />
                 {errors.postalCode && (
                   <p className="text-sm text-red-500 mt-1">{errors.postalCode.message}</p>
@@ -182,7 +202,7 @@ const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = ({
                 type="button"
                 variant="outline"
                 onClick={() => searchCep(postalCode)}
-                disabled={isSearchingCep || postalCode?.length < 8}
+                disabled={isSearchingCep || postalCode?.length < 8 || isLoading}
                 className="mt-6"
               >
                 {isSearchingCep ? (
@@ -201,6 +221,7 @@ const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = ({
                   {...register("address")}
                   placeholder="Rua, Avenida, etc."
                   className={errors.address ? "border-red-500" : ""}
+                  disabled={isLoading}
                 />
                 {errors.address && (
                   <p className="text-sm text-red-500 mt-1">{errors.address.message}</p>
@@ -213,6 +234,7 @@ const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = ({
                   {...register("addressNumber")}
                   placeholder="123"
                   className={errors.addressNumber ? "border-red-500" : ""}
+                  disabled={isLoading}
                 />
                 {errors.addressNumber && (
                   <p className="text-sm text-red-500 mt-1">{errors.addressNumber.message}</p>
@@ -226,6 +248,7 @@ const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = ({
                 id="addressComplement"
                 {...register("addressComplement")}
                 placeholder="Apto, Bloco, etc. (opcional)"
+                disabled={isLoading}
               />
             </div>
 
@@ -237,6 +260,7 @@ const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = ({
                   {...register("neighborhood")}
                   placeholder="Bairro"
                   className={errors.neighborhood ? "border-red-500" : ""}
+                  disabled={isLoading}
                 />
                 {errors.neighborhood && (
                   <p className="text-sm text-red-500 mt-1">{errors.neighborhood.message}</p>
@@ -249,6 +273,7 @@ const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = ({
                   {...register("city")}
                   placeholder="Cidade"
                   className={errors.city ? "border-red-500" : ""}
+                  disabled={isLoading}
                 />
                 {errors.city && (
                   <p className="text-sm text-red-500 mt-1">{errors.city.message}</p>
@@ -262,6 +287,7 @@ const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = ({
                   placeholder="UF"
                   maxLength={2}
                   className={errors.state ? "border-red-500" : ""}
+                  disabled={isLoading}
                 />
                 {errors.state && (
                   <p className="text-sm text-red-500 mt-1">{errors.state.message}</p>
@@ -277,7 +303,7 @@ const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = ({
             <div className="grid grid-cols-3 gap-2">
               <div>
                 <Label htmlFor="countryCode">País *</Label>
-                <Select onValueChange={(value) => setValue('countryCode', value)} defaultValue="+55">
+                <Select onValueChange={(value) => setValue('countryCode', value)} defaultValue="+55" disabled={isLoading}>
                   <SelectTrigger className={errors.countryCode ? "border-red-500" : ""}>
                     <SelectValue placeholder="DDI" />
                   </SelectTrigger>
@@ -302,6 +328,7 @@ const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = ({
                   placeholder="11"
                   maxLength={2}
                   className={errors.areaCode ? "border-red-500" : ""}
+                  disabled={isLoading}
                 />
                 {errors.areaCode && (
                   <p className="text-sm text-red-500 mt-1">{errors.areaCode.message}</p>
@@ -316,6 +343,7 @@ const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = ({
                   placeholder="999999999"
                   maxLength={9}
                   className={errors.phoneNumber ? "border-red-500" : ""}
+                  disabled={isLoading}
                 />
                 {errors.phoneNumber && (
                   <p className="text-sm text-red-500 mt-1">{errors.phoneNumber.message}</p>
