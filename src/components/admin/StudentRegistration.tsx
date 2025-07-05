@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import StudentRegistrationForm from '@/components/student/StudentRegistrationForm';
-import { createUser } from '@/services/profileService';
+import { createUserAsAdmin } from '@/services/profileService';
 import { toast } from 'sonner';
 
 const AdminStudentRegistration = () => {
@@ -40,7 +40,7 @@ const AdminStudentRegistration = () => {
       
       console.log('📊 Profile data preparado:', profileData);
 
-      const userId = await createUser(
+      const userId = await createUserAsAdmin(
         data.email.trim().toLowerCase(),
         firstName,
         lastName,
@@ -51,7 +51,7 @@ const AdminStudentRegistration = () => {
         console.log('✅ Aluno cadastrado/atualizado com sucesso:', userId);
         toast.success('Aluno cadastrado com sucesso pelo administrador!');
       } else {
-        console.error('❌ createUser retornou undefined');
+        console.error('❌ createUserAsAdmin retornou undefined');
         throw new Error('Erro ao processar dados do usuário');
       }
       
@@ -59,8 +59,17 @@ const AdminStudentRegistration = () => {
       console.error('❌ Erro no cadastro de aluno:', error);
       
       if (error instanceof Error) {
+        // Mensagens de erro mais específicas
+        if (error.message.includes('permissão')) {
+          toast.error('Erro de permissão: Você precisa estar logado como administrador para cadastrar alunos.');
+        } else if (error.message.includes('já está cadastrado')) {
+          toast.error('Este email já está cadastrado no sistema. Os dados foram atualizados.');
+        } else {
+          toast.error(`Erro no cadastro: ${error.message}`);
+        }
         throw error; // Re-throw para o formulário tratar
       } else {
+        toast.error('Erro inesperado ao cadastrar aluno');
         throw new Error('Erro inesperado ao cadastrar aluno');
       }
     } finally {
@@ -77,6 +86,10 @@ const AdminStudentRegistration = () => {
         <CardContent>
           <p className="text-gray-600 mb-6">
             Use este formulário para cadastrar novos alunos ou atualizar dados de alunos existentes.
+            <br />
+            <small className="text-sm text-blue-600">
+              ℹ️ Esta função requer privilégios de administrador
+            </small>
           </p>
         </CardContent>
       </Card>

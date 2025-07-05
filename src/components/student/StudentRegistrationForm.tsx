@@ -5,11 +5,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertCircle } from 'lucide-react';
 import { studentRegistrationSchema, StudentRegistrationFormData, StudentRegistrationFormProps } from './registration/types';
 import PersonalDataSection from './registration/PersonalDataSection';
 import AddressSection from './registration/AddressSection';
 import WhatsAppSection from './registration/WhatsAppSection';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = ({ 
   onSubmit, 
@@ -34,7 +35,8 @@ const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = ({
       console.error('❌ Erro no handleFormSubmit:', error);
       // Não resetar o formulário em caso de erro
       if (error instanceof Error) {
-        toast.error(`Erro: ${error.message}`);
+        // Não mostrar toast aqui, deixar o componente pai tratar
+        console.log('Erro tratado pelo componente pai:', error.message);
       } else {
         toast.error('Erro inesperado ao processar formulário');
       }
@@ -47,6 +49,15 @@ const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = ({
         <CardTitle>Cadastro de Aluno</CardTitle>
       </CardHeader>
       <CardContent>
+        {isLoading && (
+          <Alert className="mb-4">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <AlertDescription>
+              Processando cadastro... Aguarde alguns instantes.
+            </AlertDescription>
+          </Alert>
+        )}
+
         <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
           <PersonalDataSection 
             register={register}
