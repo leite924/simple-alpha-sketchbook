@@ -131,11 +131,30 @@ serve(async (req) => {
       console.log('✅ Perfil criado com sucesso');
     }
 
+    // NOVO: Atribuir papel de "student" ao usuário cadastrado
+    console.log('🎓 Atribuindo papel de student ao usuário:', resultUserId);
+    
+    const { error: roleError } = await supabaseAdmin
+      .from('user_roles')
+      .upsert({
+        user_id: resultUserId,
+        role: 'student'
+      });
+
+    if (roleError) {
+      console.error('❌ Erro ao atribuir papel de student:', roleError);
+      // Não falhar a operação por causa do papel, apenas logar o erro
+      console.log('⚠️ Perfil criado mas papel não foi atribuído');
+    } else {
+      console.log('✅ Papel de student atribuído com sucesso');
+    }
+
     return new Response(
       JSON.stringify({ 
         success: true, 
         userId: resultUserId,
-        message: 'Aluno cadastrado com sucesso'
+        role: 'student',
+        message: 'Aluno cadastrado com sucesso como estudante'
       }),
       { 
         headers: { 
