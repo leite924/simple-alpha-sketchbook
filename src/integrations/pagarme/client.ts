@@ -109,7 +109,7 @@ export const processCardPayment = async (
 
     const result = await response.json();
     
-    // Salvar transação no banco local usando a tabela transactions existente
+    // Salvar transação na nova tabela payment_transactions
     await saveTransactionToSupabase(customer.userId || '', {
       id: result.id,
       status: result.status,
@@ -180,7 +180,7 @@ export const generatePixPayment = async (
     const result = await response.json();
     const pixData = result.charges[0].last_transaction;
 
-    // Salvar transação no banco local usando a tabela transactions existente
+    // Salvar transação na nova tabela payment_transactions
     await saveTransactionToSupabase(customer.userId || '', {
       id: result.id,
       status: result.status,
@@ -247,7 +247,7 @@ export const generateBoletoPayment = async (
     const result = await response.json();
     const boletoData = result.charges[0].last_transaction;
 
-    // Salvar transação no banco local usando a tabela transactions existente
+    // Salvar transação na nova tabela payment_transactions
     await saveTransactionToSupabase(customer.userId || '', {
       id: result.id,
       status: result.status,
@@ -302,6 +302,10 @@ export const checkTransactionStatus = async (transactionId: string): Promise<str
     }
 
     const result = await response.json();
+    
+    // Atualizar status no banco de dados
+    await updateTransactionStatus(transactionId, result.status);
+    
     return result.status;
   } catch (error) {
     console.error('Erro ao verificar status:', error);
@@ -309,21 +313,48 @@ export const checkTransactionStatus = async (transactionId: string): Promise<str
   }
 };
 
-// Save transaction to Supabase using existing transactions table
+// Update transaction status in database
+export const updateTransactionStatus = async (
+  pagarmeTransactionId: string,
+  newStatus: string
+): Promise<void> => {
+  try {
+    const { error } = await supabase
+      .from('payment_transactions')
+      .update({ status: newStatus })
+      .eq('pagarme_transaction_id', pagarmeTransactionId);
+
+    if (error) {
+      console.error('Erro ao atualizar status:', error);
+      throw error;
+    }
+  } catch (error) {
+    console.error('Erro ao atualizar no Supabase:', error);
+    throw error;
+  }
+};
+
+// Save transaction to Supabase using the new payment_transactions table
 export const saveTransactionToSupabase = async (
   userId: string, 
   transaction: PagarmeTransaction
 ): Promise<void> => {
   try {
-    // Use the existing transactions table with a different structure
     const { error } = await supabase
-      .from('transactions')
+      .from('payment_transactions')
       .insert({
-        description: `Pagamento ${transaction.paymentMethod} - ${transaction.customerName}`,
-        type: 'receita',
+        user_id: userId,
+        pagarme_transaction_id: transaction.id,
+        status: transaction.status,
         amount: transaction.amount,
-        reference_id: transaction.id,
-        reference_type: 'pagarme_payment'
+        method: transaction.paymentMethod,
+        customer_name: transaction.customerName,
+        customer_email: transaction.customerEmail,
+        card_brand: transaction.cardBrand,
+        installments: transaction.installments,
+        pix_qr_code: transaction.pixQrCode,
+        pix_code: transaction.pixCode,
+        boleto_url: transaction.boletoUrl
       });
 
     if (error) {
@@ -332,6 +363,27 @@ export const saveTransactionToSupabase = async (
     }
   } catch (error) {
     console.error('Erro ao salvar no Supabase:', error);
+    throw error;
+  }
+};
+
+// Get user payment transactions
+export const getUserPaymentTransactions = async (userId: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('payment_transactions')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Erro ao buscar transações:', error);
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Erro ao buscar no Supabase:', error);
     throw error;
   }
 };
