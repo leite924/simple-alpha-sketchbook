@@ -68,8 +68,10 @@ function App() {
             
             {/* Páginas de cursos e turmas */}
             <Route path="/courses" element={<Courses />} />
+            <Route path="/cursos" element={<Courses />} />
             <Route path="/classes" element={<Classes />} />
             <Route path="/curso/:slug" element={<CourseDetail />} />
+            <Route path="/cursos/:slug" element={<CourseDetail />} />
             <Route path="/turma/:classSlug" element={<ClassDetail />} />
             <Route path="/turmas/:classSlug" element={<ClassDetail />} />
             
