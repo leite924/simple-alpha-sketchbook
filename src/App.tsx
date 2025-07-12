@@ -1,54 +1,45 @@
+import { Suspense, lazy } from "react";
+import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/components/auth/AuthProvider";
+import MainLayout from "@/components/layout/MainLayout";
+import LoadingPage from "@/components/LoadingPage";
 
-import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { Toaster } from 'sonner';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { AuthProvider } from '@/components/auth/AuthProvider';
+// Pages
+const HomePage = lazy(() => import("@/pages/HomePage"));
+const CoursesPage = lazy(() => import("@/pages/CoursesPage"));
+const CourseDetailsPage = lazy(() => import("@/pages/CourseDetailsPage"));
+const ClassesPage = lazy(() => import("@/pages/ClassesPage"));
+const ClassDetailsPage = lazy(() => import("@/pages/ClassDetailsPage"));
+const BlogPage = lazy(() => import("@/pages/BlogPage"));
+const BlogPostPage = lazy(() => import("@/pages/BlogPostPage"));
+const ContactPage = lazy(() => import("@/pages/ContactPage"));
+const AboutPage = lazy(() => import("@/pages/AboutPage"));
+const PricingPage = lazy(() => import("@/pages/PricingPage"));
+const TermsPage = lazy(() => import("@/pages/TermsPage"));
+const PrivacyPage = lazy(() => import("@/pages/PrivacyPage"));
+const FaqPage = lazy(() => import("@/pages/FaqPage"));
+const LoginPage = lazy(() => import("@/pages/LoginPage"));
+const RegisterPage = lazy(() => import("@/pages/RegisterPage"));
+const ProfilePage = lazy(() => import("@/pages/ProfilePage"));
+const AdminPage = lazy(() => import("@/pages/AdminPage"));
+const PaymentsPage = lazy(() => import("@/pages/PaymentsPage"));
+const NFSePage = lazy(() => import("@/pages/NFSePage"));
+const CheckoutPage = lazy(() => import("@/pages/CheckoutPage"));
+const ForgotPasswordPage = lazy(() => import("@/pages/ForgotPasswordPage"));
+const ResetPasswordPage = lazy(() => import("@/pages/ResetPasswordPage"));
+const NotFoundPage = lazy(() => import("@/pages/NotFoundPage"));
 
-// Páginas principais
-import Index from '@/pages/Index';
-import About from '@/pages/About';
-import Contact from '@/pages/Contact';
-import NotFound from '@/pages/NotFound';
-
-// Páginas de curso/turma
-import Courses from '@/pages/Courses';
-import Classes from '@/pages/Classes';
-import CourseDetail from '@/pages/CourseDetail';
-import ClassDetail from '@/pages/ClassDetail';
-
-// Páginas de blog
-import Blog from '@/pages/Blog';
-import BlogPost from '@/pages/BlogPost';
-
-// Páginas de autenticação
-import Login from '@/pages/Login';
-import Auth from '@/pages/Auth';
-
-// Páginas de administração
-import Admin from '@/pages/Admin';
-import Finance from '@/pages/Finance';
-import SuperAdminLogin from '@/pages/SuperAdminLogin';
-
-// Páginas de estudante
-import StudentArea from '@/pages/StudentArea';
-import StudentDashboard from '@/pages/StudentDashboard';
-import StudentRegistration from '@/pages/StudentRegistration';
-
-// Páginas de checkout
-import Checkout from '@/pages/Checkout';
-import CheckoutSuccess from '@/pages/CheckoutSuccess';
-
-// Páginas especiais
-import NFSeTest from '@/pages/NFSeTest';
-import NFSeHomologation from '@/pages/NFSeHomologation';
-import Quiz from '@/pages/Quiz';
+// Adicionar import para página de status do banco
+const DatabaseStatus = lazy(() => import("@/pages/DatabaseStatus"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
       retry: 1,
-      refetchOnWindowFocus: false,
     },
   },
 });
@@ -56,61 +47,46 @@ const queryClient = new QueryClient({
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
+      <TooltipProvider>
+        <Toaster />
         <BrowserRouter>
-          <Routes>
-            {/* Página inicial */}
-            <Route path="/" element={<Index />} />
-            
-            {/* Páginas principais */}
-            <Route path="/about" element={<About />} />
-            <Route path="/contact" element={<Contact />} />
-            
-            {/* Páginas de cursos e turmas */}
-            <Route path="/courses" element={<Courses />} />
-            <Route path="/cursos" element={<Courses />} />
-            <Route path="/classes" element={<Classes />} />
-            <Route path="/curso/:slug" element={<CourseDetail />} />
-            <Route path="/cursos/:slug" element={<CourseDetail />} />
-            <Route path="/turma/:classSlug" element={<ClassDetail />} />
-            <Route path="/turmas/:classSlug" element={<ClassDetail />} />
-            
-            {/* Páginas de blog */}
-            <Route path="/blog" element={<Blog />} />
-            <Route path="/blog/:slug" element={<BlogPost />} />
-            
-            {/* Páginas de autenticação */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/auth" element={<Auth />} />
-            
-            {/* Páginas de estudante */}
-            <Route path="/student-area" element={<StudentArea />} />
-            <Route path="/student" element={<StudentArea />} />
-            <Route path="/student-dashboard" element={<StudentDashboard />} />
-            <Route path="/cadastro-aluno" element={<StudentRegistration />} />
-            
-            {/* Páginas de administração */}
-            <Route path="/admin" element={<Admin />} />
-            <Route path="/finance" element={<Finance />} />
-            <Route path="/finance/:tab" element={<Finance />} />
-            <Route path="/super-admin-login" element={<SuperAdminLogin />} />
-            
-            {/* Páginas de checkout */}
-            <Route path="/checkout" element={<Checkout />} />
-            <Route path="/checkout/:classId" element={<Checkout />} />
-            <Route path="/checkout/success" element={<CheckoutSuccess />} />
-            
-            {/* Páginas especiais */}
-            <Route path="/quiz" element={<Quiz />} />
-            <Route path="/nfse-test" element={<NFSeTest />} />
-            <Route path="/nfse-homologacao" element={<NFSeHomologation />} />
-            
-            {/* Rota 404 */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-          <Toaster />
+          <AuthProvider>
+            <MainLayout>
+              <Suspense fallback={<LoadingPage />}>
+                <Routes>
+                  <Route path="/" element={<HomePage />} />
+                  <Route path="/cursos" element={<CoursesPage />} />
+                  <Route path="/cursos/:slug" element={<CourseDetailsPage />} />
+                  <Route path="/turmas" element={<ClassesPage />} />
+                  <Route path="/turmas/:slug" element={<ClassDetailsPage />} />
+                  <Route path="/blog" element={<BlogPage />} />
+                  <Route path="/blog/:slug" element={<BlogPostPage />} />
+                  <Route path="/contato" element={<ContactPage />} />
+                  <Route path="/sobre" element={<AboutPage />} />
+                  <Route path="/precos" element={<PricingPage />} />
+                  <Route path="/termos" element={<TermsPage />} />
+                  <Route path="/privacidade" element={<PrivacyPage />} />
+                  <Route path="/faq" element={<FaqPage />} />
+                  <Route path="/login" element={<LoginPage />} />
+                  <Route path="/register" element={<RegisterPage />} />
+                  <Route path="/perfil" element={<ProfilePage />} />
+                  <Route path="/admin" element={<AdminPage />} />
+                  <Route path="/pagamentos" element={<PaymentsPage />} />
+                  <Route path="/nfse" element={<NFSePage />} />
+                  <Route path="/checkout" element={<CheckoutPage />} />
+                  <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                  <Route path="/reset-password" element={<ResetPasswordPage />} />
+                  <Route path="*" element={<NotFoundPage />} />
+                  
+                  {/* Rota para status do banco */}
+                  <Route path="/database-status" element={<DatabaseStatus />} />
+                  
+                </Routes>
+              </Suspense>
+            </MainLayout>
+          </AuthProvider>
         </BrowserRouter>
-      </AuthProvider>
+      </TooltipProvider>
     </QueryClientProvider>
   );
 }
