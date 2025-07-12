@@ -1,3 +1,4 @@
+
 import { Suspense, lazy } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -7,8 +8,8 @@ import { AuthProvider } from "@/components/auth/AuthProvider";
 import MainLayout from "@/components/layout/MainLayout";
 import LoadingPage from "@/components/LoadingPage";
 
-// Pages
-const HomePage = lazy(() => import("@/pages/HomePage"));
+// Pages - using existing files and creating new ones as needed
+const HomePage = lazy(() => import("@/pages/Index")); // Using existing Index.tsx
 const CoursesPage = lazy(() => import("@/pages/CoursesPage"));
 const CourseDetailsPage = lazy(() => import("@/pages/CourseDetailsPage"));
 const ClassesPage = lazy(() => import("@/pages/ClassesPage"));
@@ -30,9 +31,9 @@ const NFSePage = lazy(() => import("@/pages/NFSePage"));
 const CheckoutPage = lazy(() => import("@/pages/CheckoutPage"));
 const ForgotPasswordPage = lazy(() => import("@/pages/ForgotPasswordPage"));
 const ResetPasswordPage = lazy(() => import("@/pages/ResetPasswordPage"));
-const NotFoundPage = lazy(() => import("@/pages/NotFoundPage"));
+const NotFoundPage = lazy(() => import("@/pages/NotFound")); // Using existing NotFound.tsx
 
-// Adicionar import para página de status do banco
+// Database status page
 const DatabaseStatus = lazy(() => import("@/pages/DatabaseStatus"));
 
 const queryClient = new QueryClient({
@@ -76,11 +77,8 @@ function App() {
                   <Route path="/checkout" element={<CheckoutPage />} />
                   <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                   <Route path="/reset-password" element={<ResetPasswordPage />} />
-                  <Route path="*" element={<NotFoundPage />} />
-                  
-                  {/* Rota para status do banco */}
                   <Route path="/database-status" element={<DatabaseStatus />} />
-                  
+                  <Route path="*" element={<NotFoundPage />} />
                 </Routes>
               </Suspense>
             </MainLayout>
