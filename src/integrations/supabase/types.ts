@@ -41,6 +41,36 @@ export type Database = {
         }
         Relationships: []
       }
+      asaas_customers: {
+        Row: {
+          asaas_customer_id: string
+          created_at: string | null
+          email: string
+          id: string
+          name: string
+          phone: string | null
+          user_id: string | null
+        }
+        Insert: {
+          asaas_customer_id: string
+          created_at?: string | null
+          email: string
+          id?: string
+          name: string
+          phone?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          asaas_customer_id?: string
+          created_at?: string | null
+          email?: string
+          id?: string
+          name?: string
+          phone?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       blog_posts: {
         Row: {
           author: string | null
@@ -360,6 +390,54 @@ export type Database = {
           webservice_environment?: string
           webservice_url_homologacao?: string | null
           webservice_url_producao?: string | null
+        }
+        Relationships: []
+      }
+      orders: {
+        Row: {
+          asaas_payment_id: string | null
+          created_at: string | null
+          customer_address: Json | null
+          customer_email: string
+          customer_name: string
+          customer_phone: string | null
+          id: string
+          items: Json
+          payment_method: string
+          status: string
+          total: number
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          asaas_payment_id?: string | null
+          created_at?: string | null
+          customer_address?: Json | null
+          customer_email: string
+          customer_name: string
+          customer_phone?: string | null
+          id?: string
+          items: Json
+          payment_method: string
+          status?: string
+          total: number
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          asaas_payment_id?: string | null
+          created_at?: string | null
+          customer_address?: Json | null
+          customer_email?: string
+          customer_name?: string
+          customer_phone?: string | null
+          id?: string
+          items?: Json
+          payment_method?: string
+          status?: string
+          total?: number
+          updated_at?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
